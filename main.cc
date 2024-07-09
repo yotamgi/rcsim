@@ -195,6 +195,7 @@ int main()
     heli_params.yaw_sensitivity = 90.;
     heli_params.mass = 1;
     heli_params.max_lift = heli_params.mass * 10 * 3;
+    heli_params.drag = irrvec3(0.5, 4, 0.1);
 
     Heli heli(heli_params, smgr, driver);
 
@@ -273,7 +274,7 @@ int main()
         lift = lift < -1 ? -1 : lift;
         servo_data.lift = lift;
         
-        heli.update(time_delta, irrvec3(0, 0, 0), servo_data);
+        heli.update(time_delta, irrvec3(0, 0, -1), servo_data);
         heli.update_ui();
         
         camera_node->setTarget(heli.get_position());

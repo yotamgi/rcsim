@@ -20,6 +20,7 @@ struct HeliParams {
     double yaw_sensitivity;  //  [degree / sec]
     double mass;  //  [Kg]
     double max_lift;  //  [N]
+    irrvec3 drag;  // [N / (M / SEC)]
 };
 
 /**
@@ -62,6 +63,7 @@ private:
     double m_yaw_sensitivity;
     double m_mass;
     double m_max_lift;
+    irrvec3 m_drag_vec;
 };
 
 

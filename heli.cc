@@ -22,6 +22,7 @@ Heli::Heli(const HeliParams &params, irr::scene::ISceneManager* smgr,
     m_yaw_sensitivity = params.yaw_sensitivity;
     m_mass = params.mass;
     m_max_lift = params.max_lift;
+    m_drag_vec = params.drag;
 
     update_ui();
 }
@@ -55,9 +56,16 @@ void Heli::update(double time_delta,
     irrvec3 lift = heli_up * servo_data.lift * m_max_lift;
     std::cout << "Lift: (" << lift.X << ", " << lift.Y << ", " << lift.Z << ")" << std::endl;
 
-    // TODO Aerodynamic force.
+    // Aerodynamic force.
+    irrvec3 airspeed = m_v - wind_speed;
+    irr::core::matrix4 world_to_heli = m_rotation.getTransposed();
+    world_to_heli.rotateVect(airspeed);  // In heli coord system.
+    irrvec3 aerodynamic_drag = m_drag_vec * airspeed;
+    m_rotation.rotateVect(aerodynamic_drag);  // Back in world coord system.
+    std::cout << "airspeed: (" << airspeed.X << ", " << airspeed.Y << ", " << airspeed.Z << ")" << std::endl;
+    std::cout << "Aerodynamic drag: (" << aerodynamic_drag.X << ", " << aerodynamic_drag.Y << ", " << aerodynamic_drag.Z << ")" << std::endl;
 
-    irrvec3 total_force = gravity + lift;
+    irrvec3 total_force = gravity + lift - aerodynamic_drag;
     irrvec3 acc = total_force / m_mass;
     m_v += time_delta * acc;
     m_pos += time_delta * m_v;

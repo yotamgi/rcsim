@@ -279,8 +279,8 @@ int main()
         
         camera_node->setTarget(heli.get_position());
 
-        if (heli.get_position().Y < 0) {
-            heli.set_position(irrvec3(heli.get_position().X, 0, heli.get_position().Z));
+        if (heli.get_position().Y < 0.5) {
+            heli.set_position(irrvec3(heli.get_position().X, 0.5, heli.get_position().Z));
             heli.set_velocity(irrvec3(heli.get_velocity().X, 0, heli.get_velocity().Z));
         }
 	}

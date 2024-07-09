@@ -114,7 +114,7 @@ int main()
 	*/
 	EventReceiver receiver;
 	IrrlichtDevice *device =
-		createDevice( video::EDT_OPENGL, dimension2d<u32>(1024, 768), 32,
+		createDevice( video::EDT_OPENGL, dimension2d<u32>(1600, 1200), 32,
 			false, false, false, &receiver);
 
 	if (!device)

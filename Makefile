@@ -4,10 +4,10 @@ LDFLAGS = -rdynamic -g $(CXXFLAGS)
 # target specific settings
 LDFLAGS += -lIrrlicht
 
-all: main
+all: rcsim
 
-run: main
-	./main
+run: rcsim
+	./rcsim
 
 heli.o: heli.cc
 	$(CXX) -c $(CXXFLAGS) heli.cc -o heli.o
@@ -15,10 +15,10 @@ heli.o: heli.cc
 main.o: main.cc
 	$(CXX) -c $(CXXFLAGS) main.cc -o main.o
 
-main: main.o heli.o
-	$(CXX) main.o heli.o -o main $(LDFLAGS) 
+rcsim: main.o heli.o
+	$(CXX) main.o heli.o -o rcsim $(LDFLAGS) 
 
 clean:
-	rm -f main.o heli.o main
+	rm -f rcsim.o heli.o rcsim
 
 .PHONY: all clean

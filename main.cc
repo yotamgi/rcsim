@@ -187,14 +187,14 @@ int main()
     HeliParams heli_params;    
     heli_params.shape_path = std::string("media/Bell/source/Copter_2.obj");
     heli_params.texture_path = std::string("media/Bell/textures/1001_albedo.jpg");
-    heli_params.shape_scale = irrvec3(0.01, 0.01, 0.01);
+    heli_params.shape_scale = irrvec3(0.005, 0.005, 0.005);
     heli_params.init_pos = irrvec3(0, 3, 0);
     heli_params.shape_rotation = irrvec3(0, -90, 0);
     heli_params.init_rotation = irrvec3(0, 0, 0);
-    heli_params.swash_sensitivity = 90.;
-    heli_params.yaw_sensitivity = 90.;
-    heli_params.mass = 1;
-    heli_params.max_lift = heli_params.mass * 10 * 3;
+    heli_params.swash_sensitivity = 150.;
+    heli_params.yaw_sensitivity = 150.;
+    heli_params.mass = 0.5;
+    heli_params.max_lift = heli_params.mass * 10 * 5;
     heli_params.drag = irrvec3(0.5, 4, 0.1);
     heli_params.torbulant_airspeed = 7;
 
@@ -280,8 +280,8 @@ int main()
         
         camera_node->setTarget(heli.get_position());
 
-        if (heli.get_position().Y < 0.5) {
-            heli.set_position(irrvec3(heli.get_position().X, 0.5, heli.get_position().Z));
+        if (heli.get_position().Y < 0.25) {
+            heli.set_position(irrvec3(heli.get_position().X, 0.25, heli.get_position().Z));
             heli.set_velocity(irrvec3(heli.get_velocity().X, 0, heli.get_velocity().Z));
         }
 	}

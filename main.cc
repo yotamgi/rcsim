@@ -115,7 +115,7 @@ int main()
 	EventReceiver receiver;
 	IrrlichtDevice *device =
 		createDevice( video::EDT_OPENGL, dimension2d<u32>(1600, 1200), 32,
-			false, false, false, &receiver);
+			false, true, false, &receiver);
 
 	if (!device)
 		return 1;
@@ -145,6 +145,13 @@ int main()
 	guienv->addStaticText(L"Hello World! This is the Irrlicht Software renderer!",
 		rect<s32>(10,10,260,22), true);
 
+    // Light configuration.
+	smgr->setAmbientLight(video::SColorf(0.5, 0.5, 0.5));
+    smgr->addLightSceneNode(0, core::vector3df(200,200,200),
+		video::SColorf(0.3, 0.3, 0.3),2000);
+    smgr->setShadowColor(video::SColor(80,0,0,0));
+
+
 	/*
 	To show something interesting, we load a Quake 2 model and display it.
 	We only have to get the Mesh from the Scene Manager with getMesh() and add
@@ -165,23 +172,16 @@ int main()
 	}
 	IMeshSceneNode* node = smgr->addMeshSceneNode(mesh);
 
-	/*
-	To let the mesh look a little bit nicer, we change its material. We
-	disable lighting because we do not have a dynamic light in here, and
-	the mesh would be totally black otherwise. Then we set the frame loop,
-	such that the predefined STAND animation is used. And last, we apply a
-	texture to the mesh. Without it the mesh would be drawn using only a
-	color.
-	*/
-	if (node)
-	{
-		node->setPosition(core::vector3df(0, 0, 0));
-		node->setScale(core::vector3df(10, 10, 10));
-		node->setMaterialFlag(EMF_LIGHTING, false);
-        node->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, false);
-        node->setDebugDataVisible(scene::EDS_OFF);
-	    node->setMaterialTexture(0, driver->getTexture("media/BasketballStadium/textures/BasketZemin_Color.png"));
-	}
+    node->setPosition(core::vector3df(0, 0, 0));
+    node->setScale(core::vector3df(10, 10, 10));
+    node->setMaterialFlag(EMF_LIGHTING, true);
+    node->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
+    node->setDebugDataVisible(scene::EDS_OFF);
+    node->setMaterialTexture(0, driver->getTexture("media/BasketballStadium/textures/BasketZemin_Color.png"));
+    for (unsigned int i=0; i < node->getMaterialCount(); i++) {
+        node->getMaterial(i).AmbientColor.set(255, 255, 255, 255);
+    }
+
 
     // Init the Heli object.
     HeliParams heli_params;    

@@ -13,13 +13,17 @@ Heli::Heli(const HeliParams &params, irr::scene::ISceneManager* smgr,
 	     irr::video::IVideoDriver* driver):
          torbulant_rand(3., 1)
 {
-	irr::scene::IMesh* heli_mesh = smgr->getMesh(params.shape_path.c_str());
+	irr::scene::IAnimatedMesh* heli_mesh = smgr->getMesh(params.shape_path.c_str());
 	m_node = smgr->addMeshSceneNode(heli_mesh);
     m_node->setScale(params.shape_scale);
-    m_node->setMaterialFlag(irr::video::EMF_LIGHTING, false);
-    m_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, false);
+    m_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+    m_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
     m_node->setDebugDataVisible(irr::scene::EDS_OFF);
     m_node->setMaterialTexture(0, driver->getTexture(params.texture_path.c_str()));
+    m_node->addShadowVolumeSceneNode();
+    for (unsigned int i=0; i < m_node->getMaterialCount(); i++) {
+        m_node->getMaterial(i).AmbientColor.set(255, 255, 255, 255);
+    }
 
     m_pos = params.init_pos;
     m_v = irrvec3(0, 0, 0);

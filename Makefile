@@ -9,16 +9,21 @@ all: rcsim
 run: rcsim
 	./rcsim
 
+OBJS = smooth_rand.o heli.o main.o
+
+smooth_rand.o: smooth_rand.cc
+	$(CXX) -c $(CXXFLAGS) smooth_rand.cc -o smooth_rand.o
+
 heli.o: heli.cc
 	$(CXX) -c $(CXXFLAGS) heli.cc -o heli.o
 
 main.o: main.cc
 	$(CXX) -c $(CXXFLAGS) main.cc -o main.o
 
-rcsim: main.o heli.o
-	$(CXX) main.o heli.o -o rcsim $(LDFLAGS) 
+rcsim: ${OBJS}
+	$(CXX) ${OBJS} -o rcsim $(LDFLAGS) 
 
 clean:
-	rm -f rcsim.o heli.o rcsim
+	rm -f ${OBJS} rcsim
 
 .PHONY: all clean

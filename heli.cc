@@ -1,10 +1,17 @@
 #include "heli.h"
+#include "smooth_rand.h"
 #include <iostream>
+#include <cmath>
 
 double GRAVITY_CONSTANT = 9.8;
 
+float norm(irrvec3 vec) {
+    return std::sqrt(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
+}
+
 Heli::Heli(const HeliParams &params, irr::scene::ISceneManager* smgr,
-	     irr::video::IVideoDriver* driver)
+	     irr::video::IVideoDriver* driver):
+         torbulant_rand(3., 1)
 {
 	irr::scene::IMesh* heli_mesh = smgr->getMesh(params.shape_path.c_str());
 	m_node = smgr->addMeshSceneNode(heli_mesh);
@@ -23,6 +30,7 @@ Heli::Heli(const HeliParams &params, irr::scene::ISceneManager* smgr,
     m_mass = params.mass;
     m_max_lift = params.max_lift;
     m_drag_vec = params.drag;
+    m_torbulant_airspeed = params.torbulant_airspeed;
 
     update_ui();
 }
@@ -64,6 +72,15 @@ void Heli::update(double time_delta,
     m_rotation.rotateVect(aerodynamic_drag);  // Back in world coord system.
     std::cout << "airspeed: (" << airspeed.X << ", " << airspeed.Y << ", " << airspeed.Z << ")" << std::endl;
     std::cout << "Aerodynamic drag: (" << aerodynamic_drag.X << ", " << aerodynamic_drag.Y << ", " << aerodynamic_drag.Z << ")" << std::endl;
+
+    // Account for torbulation in low airspeed.
+    float torbulant_coeff = m_torbulant_airspeed - norm(airspeed);
+    torbulant_coeff = torbulant_coeff > 1 ? 1 : torbulant_coeff;
+    torbulant_coeff = torbulant_coeff < 0 ? 0 : torbulant_coeff;
+    torbulant_coeff *= torbulant_rand.update(time_delta);
+    float lift_torbulant_effect = 1 - torbulant_coeff / 2;
+    std::cout << "Lift torbulant effect: " << lift_torbulant_effect << std::endl;
+    lift *= lift_torbulant_effect;
 
     irrvec3 total_force = gravity + lift - aerodynamic_drag;
     irrvec3 acc = total_force / m_mass;

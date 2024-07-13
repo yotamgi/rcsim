@@ -196,6 +196,7 @@ int main()
     heli_params.mass = 1;
     heli_params.max_lift = heli_params.mass * 10 * 3;
     heli_params.drag = irrvec3(0.5, 4, 0.1);
+    heli_params.torbulant_airspeed = 7;
 
     Heli heli(heli_params, smgr, driver);
 

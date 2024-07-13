@@ -1,9 +1,11 @@
 #ifndef __HELI_H__
 #define __HELI_H__
 
+#include "smooth_rand.h"
 #include <string>
 #include <irrlicht/irrlicht.h>
 #include <memory>
+
 
 typedef irr::core::vector3df irrvec3;
 
@@ -21,6 +23,7 @@ struct HeliParams {
     double mass;  //  [Kg]
     double max_lift;  //  [N]
     irrvec3 drag;  // [N / (M / SEC)]
+    float torbulant_airspeed;  // [M / SEC]
 };
 
 /**
@@ -57,12 +60,14 @@ private:
     irr::core::matrix4 m_rotation;
     irr::core::matrix4 m_shape_rotation;
 	irr::scene::IMeshSceneNode* m_node;
+    SmoothRandFloat torbulant_rand;
 
     // From params.
     double m_swash_sensitivity;
     double m_yaw_sensitivity;
     double m_mass;
     double m_max_lift;
+    double m_torbulant_airspeed;
     irrvec3 m_drag_vec;
 };
 

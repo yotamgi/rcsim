@@ -3,17 +3,54 @@
 #include <iostream>
 #include <cmath>
 
+const float PI = 3.14159265;
 double GRAVITY_CONSTANT = 9.8;
 
 float norm(irrvec3 vec) {
     return std::sqrt(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
 }
 
+class RotorBlur : public irr::scene::IVertexManipulator
+{
+public:
+    RotorBlur(float radius) : radius(radius) {
+    }
+    void operator()(irr::video::S3DVertex& vertex) const {
+        float distance = std::sqrt(vertex.Pos.X*vertex.Pos.X + vertex.Pos.Z*vertex.Pos.Z);
+        float alpha = get_width(distance) / (2 * distance * PI);
+        alpha = alpha > 1 ? 1 : alpha;
+        irr::video::SColor color = get_color(distance);
+        vertex.Color.set(255 * alpha, color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    virtual float get_width(float along_radius) const = 0;
+    virtual irr::video::SColor get_color(float along_radius) const = 0;
+private:
+    float radius;
+};
+
+
+class MainRotorBlur : public RotorBlur {
+public:
+    MainRotorBlur():RotorBlur(375) {}
+    virtual float get_width(float along_radius) const  {
+        if (along_radius < 20) return 20;
+        return 300;
+    }
+    virtual irr::video::SColor get_color(float along_radious) const {
+        if (along_radious < 20) return irr::video::SColor(255, 128, 128, 128);
+        if (along_radious > 352 && along_radious < 360)
+            return irr::video::SColor(255, 255, 255, 255);
+        else return irr::video::SColor(255, 0, 0, 0);
+    }
+};
+
+
 Heli::Heli(const HeliParams &params, irr::scene::ISceneManager* smgr,
 	     irr::video::IVideoDriver* driver):
          torbulant_rand(3., 1)
 {
-	irr::scene::IAnimatedMesh* heli_mesh = smgr->getMesh(params.shape_path.c_str());
+	irr::scene::IMesh* heli_mesh = smgr->getMesh(params.shape_path.c_str());
 	m_node = smgr->addMeshSceneNode(heli_mesh);
     m_node->setScale(params.shape_scale);
     m_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
@@ -24,6 +61,21 @@ Heli::Heli(const HeliParams &params, irr::scene::ISceneManager* smgr,
     for (unsigned int i=0; i < m_node->getMaterialCount(); i++) {
         m_node->getMaterial(i).AmbientColor.set(255, 255, 255, 255);
     }
+
+    // Main rotor blur.
+    irr::scene::IMeshSceneNode* blur_node = smgr->addSphereSceneNode(
+            375,  // Radius.
+            256,
+            m_node,
+            -1,
+            irrvec3(-35, 180, 0),  // Position.
+            irrvec3(0, 0, 0),  // Rotation
+            irrvec3(1, 0.03, 1)  // Scale - make it flat.
+    );
+    blur_node->setMaterialFlag(irr::video::EMF_LIGHTING, false);
+    blur_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+    blur_node->getMaterial(0).MaterialType = irr::video::EMT_TRANSPARENT_VERTEX_ALPHA;
+    smgr->getMeshManipulator()->apply(MainRotorBlur(), blur_node->getMesh());
 
     m_pos = params.init_pos;
     m_v = irrvec3(0, 0, 0);

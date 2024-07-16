@@ -2,6 +2,7 @@
 #define __HELI_H__
 
 #include "smooth_rand.h"
+#include "rotor_blur.h"
 #include <string>
 #include <irrlicht/irrlicht.h>
 #include <memory>
@@ -61,6 +62,7 @@ private:
     irr::core::matrix4 m_shape_rotation;
 	irr::scene::IMeshSceneNode* m_node;
     SmoothRandFloat torbulant_rand;
+    std::shared_ptr<RotorBlur> m_main_rotor_blur;
 
     // From params.
     double m_swash_sensitivity;

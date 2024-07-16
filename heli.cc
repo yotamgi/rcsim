@@ -3,36 +3,27 @@
 #include <iostream>
 #include <cmath>
 
-const float PI = 3.14159265;
 double GRAVITY_CONSTANT = 9.8;
 
 float norm(irrvec3 vec) {
     return std::sqrt(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
 }
 
-class RotorBlur : public irr::scene::IVertexManipulator
-{
-public:
-    RotorBlur(float radius) : radius(radius) {
-    }
-    void operator()(irr::video::S3DVertex& vertex) const {
-        float distance = std::sqrt(vertex.Pos.X*vertex.Pos.X + vertex.Pos.Z*vertex.Pos.Z);
-        float alpha = get_width(distance) / (2 * distance * PI);
-        alpha = alpha > 1 ? 1 : alpha;
-        irr::video::SColor color = get_color(distance);
-        vertex.Color.set(255 * alpha, color.getRed(), color.getGreen(), color.getBlue());
-    }
-
-    virtual float get_width(float along_radius) const = 0;
-    virtual irr::video::SColor get_color(float along_radius) const = 0;
-private:
-    float radius;
-};
-
 
 class MainRotorBlur : public RotorBlur {
 public:
-    MainRotorBlur():RotorBlur(375) {}
+    MainRotorBlur(irr::scene::ISceneManager *smgr, irr::scene::IMeshSceneNode *parent) {
+        init_ui(
+            smgr,
+            375,  // radius.
+            irrvec3(-45, 180, 0),  // position.
+            irrvec3(0, 0, 0),  // rotation.
+            0.03,  // thichkess.
+            parent  // parent_node
+        );
+    }
+
+private:
     virtual float get_width(float along_radius) const  {
         if (along_radius < 20) return 20;
         return 300;
@@ -62,20 +53,7 @@ Heli::Heli(const HeliParams &params, irr::scene::ISceneManager* smgr,
         m_node->getMaterial(i).AmbientColor.set(255, 255, 255, 255);
     }
 
-    // Main rotor blur.
-    irr::scene::IMeshSceneNode* blur_node = smgr->addSphereSceneNode(
-            375,  // Radius.
-            256,
-            m_node,
-            -1,
-            irrvec3(-35, 180, 0),  // Position.
-            irrvec3(0, 0, 0),  // Rotation
-            irrvec3(1, 0.03, 1)  // Scale - make it flat.
-    );
-    blur_node->setMaterialFlag(irr::video::EMF_LIGHTING, false);
-    blur_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
-    blur_node->getMaterial(0).MaterialType = irr::video::EMT_TRANSPARENT_VERTEX_ALPHA;
-    smgr->getMeshManipulator()->apply(MainRotorBlur(), blur_node->getMesh());
+    m_main_rotor_blur = std::make_shared<MainRotorBlur>(smgr, m_node);
 
     m_pos = params.init_pos;
     m_v = irrvec3(0, 0, 0);

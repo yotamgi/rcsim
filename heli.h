@@ -63,6 +63,8 @@ private:
 	irr::scene::IMeshSceneNode* m_node;
     SmoothRandFloat torbulant_rand;
     std::shared_ptr<RotorBlur> m_main_rotor_blur;
+    std::shared_ptr<RotorBlur> m_flybar_blur;
+    std::shared_ptr<RotorBlur> m_tail_prop_blur;
 
     // From params.
     double m_swash_sensitivity;

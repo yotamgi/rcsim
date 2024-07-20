@@ -37,6 +37,58 @@ private:
 };
 
 
+class FlybarBlur : public RotorBlur {
+public:
+    FlybarBlur(irr::scene::ISceneManager *smgr, irr::scene::IMeshSceneNode *parent) {
+        init_ui(
+            smgr,
+            62,  // radius.
+            irrvec3(-45, 200, 0),  // position.
+            irrvec3(0, 0, 0),  // rotation.
+            0.03,  // thichkess.
+            parent  // parent_node
+        );
+    }
+
+private:
+    virtual float get_width(float along_radius) const  {
+        if (along_radius > 57)
+            return 70;
+        else if (along_radius < 30)
+            return 70;
+        else return 50;
+    }
+    virtual irr::video::SColor get_color(float along_radious) const {
+        return irr::video::SColor(255, 128, 128, 128);
+    }
+};
+
+
+class TailRotorBlur : public RotorBlur {
+public:
+    TailRotorBlur(irr::scene::ISceneManager *smgr, irr::scene::IMeshSceneNode *parent) {
+        init_ui(
+            smgr,
+            66,  // radius.
+            irrvec3(-462, 154, -14),  // position.
+            irrvec3(90, 0, 0),  // rotation.
+            0.03,  // thichkess.
+            parent  // parent_node
+        );
+    }
+
+private:
+    virtual float get_width(float along_radius) const  {
+        return 40;
+    }
+    virtual irr::video::SColor get_color(float along_radious) const {
+        if (along_radious > 53 && along_radious < 64)
+            return irr::video::SColor(255, 255, 255, 255);
+        return irr::video::SColor(255, 0, 0, 0);
+    }
+};
+
+
 Heli::Heli(const HeliParams &params, irr::scene::ISceneManager* smgr,
 	     irr::video::IVideoDriver* driver):
          torbulant_rand(3., 1)
@@ -54,6 +106,8 @@ Heli::Heli(const HeliParams &params, irr::scene::ISceneManager* smgr,
     }
 
     m_main_rotor_blur = std::make_shared<MainRotorBlur>(smgr, m_node);
+    m_flybar_blur = std::make_shared<FlybarBlur>(smgr, m_node);
+    m_tail_prop_blur = std::make_shared<TailRotorBlur>(smgr, m_node);
 
     m_pos = params.init_pos;
     m_v = irrvec3(0, 0, 0);

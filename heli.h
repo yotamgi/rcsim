@@ -47,7 +47,7 @@ public:
     void set_velocity(const irrvec3 new_v) { m_v = new_v; }
 
 protected:
-    virtual void update_ui() = 0;
+    virtual void update_ui(float time_delta) = 0;
 
     irrvec3 m_v;
     irrvec3 m_pos;
@@ -68,13 +68,18 @@ class BellHeli : public BaseHeli {
 public:
     BellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* driver);
 private:
-    virtual void update_ui();
+    virtual void update_ui(float time_delta);
 
     irr::core::matrix4 m_shape_rotation;
-	irr::scene::IMeshSceneNode* m_node;
+	irr::scene::IMeshSceneNode* m_body_node;
+	irr::scene::IMeshSceneNode* m_rotor_node;
+	irr::scene::IMeshSceneNode* m_tail_rotor_node;
     std::shared_ptr<RotorBlur> m_main_rotor_blur;
     std::shared_ptr<RotorBlur> m_flybar_blur;
     std::shared_ptr<RotorBlur> m_tail_prop_blur;
+
+    float m_main_rotor_angle;
+    float m_tail_rotor_angle;
 };
 
 

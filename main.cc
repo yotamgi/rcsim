@@ -260,6 +260,7 @@ int main()
         lift = lift > 1 ? 1 : lift;
         lift = lift < -1 ? -1 : lift;
         servo_data.lift = lift;
+        servo_data.throttle = 1;
         
         heli.update(time_delta, irrvec3(0, 0, -1), servo_data);
         

@@ -22,17 +22,30 @@ BaseHeli::BaseHeli(const HeliParams &params):
     m_max_lift = params.max_lift;
     m_drag_vec = params.drag;
     m_torbulant_airspeed = params.torbulant_airspeed;
+    m_main_rotor_vel = 0;
+    m_main_rotor_acc = params.main_rotor_acc;
+    m_main_rotor_max_vel = params.main_rotor_max_vel;
 }
 
 void BaseHeli::update(double time_delta, 
                   const irrvec3 &wind_speed,
                   const ServoData &servo_data)
 {
+    // Update main rotor velocity.
+    float target_rotor_vel = m_main_rotor_max_vel * servo_data.throttle;
+    if (target_rotor_vel - m_main_rotor_vel < m_main_rotor_acc) {
+        m_main_rotor_vel += time_delta * (target_rotor_vel - m_main_rotor_vel);
+    } else {
+        m_main_rotor_vel += time_delta * m_main_rotor_acc;
+    }
+    std::cout << "main_rotor: " << m_main_rotor_vel << std::endl;
+    float main_rotor_effectiveness = m_main_rotor_vel / m_main_rotor_max_vel;
+
     // Update angular velocity according to servos.
     irrvec3 angular_v(
-        servo_data.pitch * m_swash_sensitivity,
-        servo_data.yaw * m_yaw_sensitivity,
-        servo_data.roll * m_swash_sensitivity
+        servo_data.pitch * m_swash_sensitivity * main_rotor_effectiveness,
+        servo_data.yaw * m_yaw_sensitivity * main_rotor_effectiveness,
+        servo_data.roll * m_swash_sensitivity * main_rotor_effectiveness
     );
     
     irr::core::matrix4 d_rotation;
@@ -45,14 +58,16 @@ void BaseHeli::update(double time_delta,
     // Lift is up in the heli axis;
     irrvec3 heli_up(0, 1, 0);
     m_rotation.rotateVect(heli_up);
-    irrvec3 lift = heli_up * servo_data.lift * m_max_lift;
+    irrvec3 lift = heli_up * servo_data.lift * m_max_lift * main_rotor_effectiveness;
     std::cout << "Lift: (" << lift.X << ", " << lift.Y << ", " << lift.Z << ")" << std::endl;
 
     // Aerodynamic force.
+    irrvec3 drag_vec = m_drag_vec;
+    drag_vec.Y /= main_rotor_effectiveness > 0.1? 1 : 10;
     irrvec3 airspeed = m_v - wind_speed;
     irr::core::matrix4 world_to_heli = m_rotation.getTransposed();
     world_to_heli.rotateVect(airspeed);  // In heli coord system.
-    irrvec3 aerodynamic_drag = m_drag_vec * airspeed;
+    irrvec3 aerodynamic_drag = drag_vec * airspeed;
     m_rotation.rotateVect(aerodynamic_drag);  // Back in world coord system.
     std::cout << "airspeed: (" << airspeed.X << ", " << airspeed.Y << ", " << airspeed.Z << ")" << std::endl;
     std::cout << "Aerodynamic drag: (" << aerodynamic_drag.X << ", " << aerodynamic_drag.Y << ", " << aerodynamic_drag.Z << ")" << std::endl;
@@ -162,7 +177,9 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .mass = 0.5,
     .max_lift = 0.5 * 10 * 5,
     .drag = irrvec3(0.5, 4, 0.1),
-    .torbulant_airspeed = 7,
+    .torbulant_airspeed = 5,
+    .main_rotor_max_vel = 5,
+    .main_rotor_acc = 1,
 };
 
 
@@ -235,7 +252,7 @@ void BellHeli::update_ui(float time_delta) {
     // Set the main rotor rotation.
     irr::core::matrix4 main_rotor_rotation;
     main_rotor_rotation.setRotationDegrees(irrvec3(0, m_main_rotor_angle, 0));
-    m_main_rotor_angle += 500 * time_delta;
+    m_main_rotor_angle += m_main_rotor_vel * 360 * time_delta;
     irrvec3 main_rotor_offset(0, 0, 0.225);
     (m_rotation).rotateVect(main_rotor_offset);
     m_rotor_node->setPosition(m_pos - main_rotor_offset);
@@ -244,7 +261,7 @@ void BellHeli::update_ui(float time_delta) {
     // Set the tail rotor rotation.
     irr::core::matrix4 tail_rotor_rotation;
     tail_rotor_rotation.setRotationDegrees(irrvec3(0, 0, m_tail_rotor_angle));
-    m_tail_rotor_angle += 500 * time_delta;
+    m_tail_rotor_angle += 3 * m_main_rotor_vel * 360 * time_delta;
     irrvec3 tail_rotor_offset(0, -0.77, 2.31);
     (m_rotation).rotateVect(tail_rotor_offset);
     m_tail_rotor_node->setPosition(m_pos - tail_rotor_offset);

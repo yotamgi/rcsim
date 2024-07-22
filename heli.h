@@ -14,12 +14,16 @@ typedef irr::core::vector3df irrvec3;
 struct HeliParams {
     irrvec3 init_pos;
     irrvec3 init_rotation;
+
     double swash_sensitivity;  //  [degree / sec]
     double yaw_sensitivity;  //  [degree / sec]
     double mass;  //  [Kg]
     double max_lift;  //  [N]
     irrvec3 drag;  // [N / (M / SEC)]
     float torbulant_airspeed;  // [M / SEC]
+
+    float main_rotor_max_vel;  // [Rotations / SEC]
+    float main_rotor_acc;  // [(Rotations / SEC) / SEC] 
 };
 
 /**
@@ -30,6 +34,7 @@ struct ServoData {
     double pitch;
     double yaw;
     double lift;
+    double throttle;
 };
 
 
@@ -53,6 +58,7 @@ protected:
     irrvec3 m_pos;
     irr::core::matrix4 m_rotation;
     SmoothRandFloat torbulant_rand;
+    float m_main_rotor_vel;
 
     // From params.
     double m_swash_sensitivity;
@@ -61,6 +67,8 @@ protected:
     double m_max_lift;
     double m_torbulant_airspeed;
     irrvec3 m_drag_vec;
+    float m_main_rotor_acc;
+    float m_main_rotor_max_vel;
 };
 
 

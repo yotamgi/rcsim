@@ -147,7 +147,7 @@ int main()
 
     // Light configuration.
 	smgr->setAmbientLight(video::SColorf(0.5, 0.5, 0.5));
-    smgr->addLightSceneNode(0, core::vector3df(200,200,200),
+    smgr->addLightSceneNode(0, core::vector3df(-200, 100, -200),
 		video::SColorf(0.3, 0.3, 0.3),2000);
     smgr->setShadowColor(video::SColor(80,0,0,0));
 
@@ -220,6 +220,7 @@ int main()
         now = tv.tv_sec*1000. +  tv.tv_usec/1000.;
         time_delta = (now - then) / 1000.;
         then = now;
+        time_delta = time_delta > 0.1 ? 0.1 : time_delta;
 
         driver->beginScene(true, true, video::SColor(255,200,200,200));
         smgr->drawAll();

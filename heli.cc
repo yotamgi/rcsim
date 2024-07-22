@@ -105,7 +105,7 @@ public:
 private:
     virtual float get_width(float along_radius) const  {
         if (along_radius < 0.2) return 0.2;
-        return 3.;
+        return 1.;
     }
     virtual irr::video::SColor get_color(float along_radious) const {
         if (along_radious < 0.2) return irr::video::SColor(255, 128, 128, 128);
@@ -170,12 +170,12 @@ private:
 
 
 const struct HeliParams BELL_AERODYNAMICS = {
-    .init_pos = irrvec3(0, 3, 0),
+    .init_pos = irrvec3(0, 0.25, 0),
     .init_rotation = irrvec3(0, 0, 0),
     .swash_sensitivity = 150.,
     .yaw_sensitivity = 150.,
-    .mass = 0.5,
-    .max_lift = 0.5 * 10 * 5,
+    .mass = 1.5,
+    .max_lift = 1.5 * 10 * 3,
     .drag = irrvec3(0.5, 4, 0.1),
     .torbulant_airspeed = 5,
     .main_rotor_max_vel = 5,

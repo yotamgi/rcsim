@@ -74,8 +74,8 @@ void BaseHeli::update(double time_delta,
     float torbulant_coeff = m_torbulant_airspeed - norm(airspeed);
     torbulant_coeff = torbulant_coeff > 1 ? 1 : torbulant_coeff;
     torbulant_coeff = torbulant_coeff < 0 ? 0 : torbulant_coeff;
-    torbulant_coeff *= torbulant_rand.update(time_delta);
-    float lift_torbulant_effect = 1 - torbulant_coeff / 2;
+    torbulant_coeff *= 0.5 + 0.5*torbulant_rand.update(time_delta);
+    float lift_torbulant_effect = 1 - torbulant_coeff * 0.5;
     std::cout << "Lift torbulant effect: " << lift_torbulant_effect << std::endl;
     lift *= lift_torbulant_effect;
 

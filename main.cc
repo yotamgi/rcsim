@@ -238,8 +238,7 @@ int main()
             device->setWindowCaption(str.c_str());
             lastFPS = fps;
         }
-        std::cout << "location " << heli.get_position().Y << std::endl;
-        
+
         ///////////////////////////////////////
         // Update the plane according to the keys
         //////////////

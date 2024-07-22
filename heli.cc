@@ -69,8 +69,6 @@ void BaseHeli::update(double time_delta,
     world_to_heli.rotateVect(airspeed);  // In heli coord system.
     irrvec3 aerodynamic_drag = drag_vec * airspeed;
     m_rotation.rotateVect(aerodynamic_drag);  // Back in world coord system.
-    std::cout << "airspeed: (" << airspeed.X << ", " << airspeed.Y << ", " << airspeed.Z << ")" << std::endl;
-    std::cout << "Aerodynamic drag: (" << aerodynamic_drag.X << ", " << aerodynamic_drag.Y << ", " << aerodynamic_drag.Z << ")" << std::endl;
 
     // Account for torbulation in low airspeed.
     float torbulant_coeff = m_torbulant_airspeed - norm(airspeed);

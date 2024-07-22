@@ -236,6 +236,8 @@ BellHeli::BellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* dr
     m_main_rotor_blur = std::make_shared<MainRotorBlur>(smgr, m_body_node);
     m_flybar_blur = std::make_shared<FlybarBlur>(smgr, m_body_node);
     m_tail_prop_blur = std::make_shared<TailRotorBlur>(smgr, m_body_node);
+    m_main_rotor_angle = 0;
+    m_tail_rotor_angle = 0;
 
     update_ui(0);
 }

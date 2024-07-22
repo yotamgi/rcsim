@@ -50,10 +50,16 @@ public:
     // This is used to check whether a key is being held down
     virtual bool IsKeyDown(irr::EKEY_CODE keyCode) const;
 
+    ServoData get_servo_data(float time_delta);
+
 private:
+    float m_lift;
 
     // We use this array to store the current state of each key
     bool KeyIsDown[irr::KEY_KEY_CODES_COUNT];
+
+    SEvent::SJoystickEvent JoystickState;
+    bool m_joystick_active;
 };
 
 bool EventReceiver::OnEvent(const irr::SEvent& event) {
@@ -61,7 +67,58 @@ bool EventReceiver::OnEvent(const irr::SEvent& event) {
 	if (event.EventType == irr::EET_KEY_INPUT_EVENT)
 		KeyIsDown[event.KeyInput.Key] = event.KeyInput.PressedDown;
 
+    // The state of each connected joystick is sent to us
+    // once every run() of the Irrlicht device.  Store the
+    // state of the first joystick, ignoring other joysticks.
+    // This is currently only supported on Windows and Linux.
+    if (event.EventType == irr::EET_JOYSTICK_INPUT_EVENT
+        && event.JoystickEvent.Joystick == 0)
+    {
+        JoystickState = event.JoystickEvent;
+        m_joystick_active = true;
+    }
+
+
 	return false;
+}
+
+ServoData EventReceiver::get_servo_data(float time_delta) {
+    ServoData servo_data;
+
+    if (m_joystick_active) {
+        servo_data.pitch = -(float)JoystickState.Axis[1] / 32768;
+        servo_data.roll = -(float)JoystickState.Axis[0] / 32768;
+        servo_data.yaw = (float)JoystickState.Axis[4] / 32768;
+        servo_data.lift = -(float)JoystickState.Axis[2] / 32768;
+        servo_data.throttle = 1;
+        std::cout << "Servo 0 " << JoystickState.Axis[0] << std::endl;
+        std::cout << "Servo 1 " << JoystickState.Axis[1] << std::endl;
+        std::cout << "Servo 2 " << JoystickState.Axis[2] << std::endl;
+        std::cout << "Servo 3 " << JoystickState.Axis[3] << std::endl;
+        std::cout << "Servo 4 " << JoystickState.Axis[4] << std::endl;
+        std::cout << "Servo 5 " << JoystickState.Axis[5] << std::endl;
+        return servo_data;
+    }
+
+    if (IsKeyDown(KEY_UP)) servo_data.pitch = 1.;
+    else if (IsKeyDown(KEY_DOWN)) servo_data.pitch = -1;
+    else servo_data.pitch = 0.;
+
+    if (IsKeyDown(KEY_LEFT))  servo_data.roll = 1.;
+    else if (IsKeyDown(KEY_RIGHT)) servo_data.roll = -1;
+    else servo_data.roll = 0;
+
+    if (IsKeyDown(KEY_KEY_D))  servo_data.yaw = 1.;
+    else if (IsKeyDown(KEY_KEY_A)) servo_data.yaw = -1;
+    else servo_data.yaw = 0;
+
+    if (IsKeyDown(KEY_KEY_W))  m_lift += time_delta;
+    else if (IsKeyDown(KEY_KEY_S)) m_lift -= time_delta;
+    m_lift = m_lift > 1 ? 1 : m_lift;
+    m_lift = m_lift < -1 ? -1 : m_lift;
+    servo_data.lift = m_lift;
+    servo_data.throttle = 1;
+    return servo_data;
 }
 
 bool EventReceiver::IsKeyDown(irr::EKEY_CODE keyCode) const {
@@ -72,6 +129,8 @@ EventReceiver::EventReceiver()
 {
 	for (u32 i=0; i<irr::KEY_KEY_CODES_COUNT; ++i)
 		KeyIsDown[i] = false;
+    m_lift = 0;
+    m_joystick_active = false;
 }
 
 /*
@@ -206,11 +265,14 @@ int main()
 	(or whatever keycode closes a window).
 	*/
 	int lastFPS = -1;
-    float lift = 0;
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	double then = tv.tv_sec*1000. + tv.tv_usec/1000.;
     double time_delta;
+
+
+    irr::core::array<SJoystickInfo> joystickInfo;
+    device->activateJoysticks(joystickInfo);
 
 	while(device->run())
 	{
@@ -242,25 +304,7 @@ int main()
         ///////////////////////////////////////
         // Update the plane according to the keys
         //////////////
-        ServoData servo_data;
-        if (receiver.IsKeyDown(KEY_UP)) servo_data.pitch = 1.;
-        else if (receiver.IsKeyDown(KEY_DOWN)) servo_data.pitch = -1;
-        else servo_data.pitch = 0.;
-
-        if (receiver.IsKeyDown(KEY_LEFT))  servo_data.roll = 1.;
-        else if (receiver.IsKeyDown(KEY_RIGHT)) servo_data.roll = -1;
-        else servo_data.roll = 0;
-
-        if (receiver.IsKeyDown(KEY_KEY_D))  servo_data.yaw = 1.;
-        else if (receiver.IsKeyDown(KEY_KEY_A)) servo_data.yaw = -1;
-        else servo_data.yaw = 0;
-
-        if (receiver.IsKeyDown(KEY_KEY_W))  lift += time_delta;
-        else if (receiver.IsKeyDown(KEY_KEY_S)) lift -= time_delta;
-        lift = lift > 1 ? 1 : lift;
-        lift = lift < -1 ? -1 : lift;
-        servo_data.lift = lift;
-        servo_data.throttle = 1;
+        ServoData servo_data = receiver.get_servo_data(time_delta);
         
         heli.update(time_delta, irrvec3(0, 0, -1), servo_data);
         

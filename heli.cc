@@ -170,8 +170,8 @@ private:
 const struct HeliParams BELL_AERODYNAMICS = {
     .init_pos = irrvec3(0, 0.25, 0),
     .init_rotation = irrvec3(0, 0, 0),
-    .swash_sensitivity = 150.,
-    .yaw_sensitivity = 150.,
+    .swash_sensitivity = 200.,
+    .yaw_sensitivity = 200.,
     .mass = 1.5,
     .max_lift = 1.5 * 10 * 3,
     .drag = irrvec3(0.5, 4, 0.1),

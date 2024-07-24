@@ -232,7 +232,7 @@ int main()
 	IMeshSceneNode* node = smgr->addMeshSceneNode(mesh);
 
     node->setPosition(core::vector3df(0, 0, 0));
-    node->setScale(core::vector3df(10, 10, 10));
+    node->setScale(core::vector3df(5, 5, 5));
     node->setMaterialFlag(EMF_LIGHTING, true);
     node->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
     node->setDebugDataVisible(scene::EDS_OFF);
@@ -255,7 +255,7 @@ int main()
 		driver->getTexture("media/skybox/irrlicht2_bk.jpg"));
 
 	irr::scene::ICameraSceneNode* camera_node = device->getSceneManager()->addCameraSceneNode();
-    irrvec3 camera_pos(0, 3, -10);
+    irrvec3 camera_pos(0, 1.5, -5);
     camera_node->setPosition(camera_pos);
 
 	/*
@@ -310,8 +310,8 @@ int main()
         
         camera_node->setTarget(heli.get_position());
 
-        if (heli.get_position().Y < 0.25) {
-            heli.set_position(irrvec3(heli.get_position().X, 0.25, heli.get_position().Z));
+        if (heli.get_position().Y < 0.125) {
+            heli.set_position(irrvec3(heli.get_position().X, 0.125, heli.get_position().Z));
             heli.set_velocity(irrvec3(heli.get_velocity().X, 0, heli.get_velocity().Z));
         }
 	}

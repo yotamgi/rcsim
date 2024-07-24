@@ -142,6 +142,27 @@ bool EventReceiver::IsKeyDown(irr::EKEY_CODE keyCode) const {
 	return KeyIsDown[keyCode];
 }
 
+void add_banana(irr::scene::ISceneManager *smgr, 
+                irr::video::IVideoDriver *driver,
+                const core::vector3df &position,
+                const core::vector3df &rotation) 
+{
+	IMesh* banana_mesh = smgr->getMesh("media/banana/source/banana.obj");
+	IMeshSceneNode* banana_node = smgr->addMeshSceneNode(banana_mesh);
+
+    banana_node->setPosition(position);
+    banana_node->setRotation(rotation);
+    banana_node->setScale(core::vector3df(1, 1, 1)/3);
+    banana_node->setMaterialFlag(EMF_LIGHTING, true);
+    banana_node->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
+    banana_node->setDebugDataVisible(scene::EDS_OFF);
+    banana_node->setMaterialTexture(0, driver->getTexture("media/banana/textures/rgb.jpeg"));
+    for (unsigned int i=0; i < banana_node->getMaterialCount(); i++) {
+        banana_node->getMaterial(i).AmbientColor.set(255, 255, 255, 255);
+    }
+    banana_node->addShadowVolumeSceneNode();
+}
+
 /*
 This is the main method. We can now use main() on every platform.
 */
@@ -249,6 +270,10 @@ int main()
     for (unsigned int i=0; i < node->getMaterialCount(); i++) {
         node->getMaterial(i).AmbientColor.set(255, 255, 255, 255);
     }
+    
+    add_banana(smgr, driver, core::vector3df(-0.5, 0.05, 0.2), core::vector3df(90, 73, 0));
+    add_banana(smgr, driver, core::vector3df(0.9, 0.05, 0.3), core::vector3df(90, 40, 0));
+    add_banana(smgr, driver, core::vector3df(0.4, 0.05, 0.0), core::vector3df(90, 0, 0));
 
 
     // Init the Heli object.
@@ -264,7 +289,7 @@ int main()
 		driver->getTexture("media/skybox/irrlicht2_bk.jpg"));
 
 	irr::scene::ICameraSceneNode* camera_node = device->getSceneManager()->addCameraSceneNode();
-    irrvec3 camera_pos(0, 1.5, -5);
+    irrvec3 camera_pos(0, 1.5, -3);
     camera_node->setPosition(camera_pos);
 
 	/*

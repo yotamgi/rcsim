@@ -53,14 +53,27 @@ public:
     ServoData get_servo_data(float time_delta);
 
 private:
-    float m_lift;
+
+    void update_value(double &value, irr::EKEY_CODE key_up, irr::EKEY_CODE key_down, float change_amount);
 
     // We use this array to store the current state of each key
     bool KeyIsDown[irr::KEY_KEY_CODES_COUNT];
 
     SEvent::SJoystickEvent JoystickState;
     bool m_joystick_active;
+    ServoData m_servo_data;
 };
+
+EventReceiver::EventReceiver()
+{
+	for (u32 i=0; i<irr::KEY_KEY_CODES_COUNT; ++i)
+		KeyIsDown[i] = false;
+    m_joystick_active = false;
+    m_servo_data.pitch = 0;
+    m_servo_data.lift = 0;
+    m_servo_data.roll = 0;
+    m_servo_data.yaw = 0;
+}
 
 bool EventReceiver::OnEvent(const irr::SEvent& event) {
 	// Remember whether each key is down or up
@@ -78,59 +91,55 @@ bool EventReceiver::OnEvent(const irr::SEvent& event) {
         m_joystick_active = true;
     }
 
-
 	return false;
 }
 
-ServoData EventReceiver::get_servo_data(float time_delta) {
-    ServoData servo_data;
+void EventReceiver::update_value(double &value, irr::EKEY_CODE key_up, irr::EKEY_CODE key_down, float change_amount) {
+    if (IsKeyDown(key_up)) value += change_amount;
+    else if (IsKeyDown(key_down)) value -= change_amount;
+    else {
+        if (value < 0.1) value = 0;
+        else {
+            value += change_amount * ((float)(value < 0)*2 - 1);
+        }
+    }
 
+    value = value > 1 ? 1 : value;
+    value = value < -1 ? -1 : value;
+}
+
+ServoData EventReceiver::get_servo_data(float time_delta) {
     if (m_joystick_active) {
-        servo_data.pitch = -(float)JoystickState.Axis[1] / 32768;
-        servo_data.roll = -(float)JoystickState.Axis[0] / 32768;
-        servo_data.yaw = (float)JoystickState.Axis[4] / 32768;
-        servo_data.lift = -(float)JoystickState.Axis[2] / 32768;
-        servo_data.throttle = 1;
+        m_servo_data.pitch = -(float)JoystickState.Axis[1] / 32768;
+        m_servo_data.roll = -(float)JoystickState.Axis[0] / 32768;
+        m_servo_data.yaw = (float)JoystickState.Axis[4] / 32768;
+        m_servo_data.lift = -(float)JoystickState.Axis[2] / 32768;
+        m_servo_data.throttle = 1;
         std::cout << "Servo 0 " << JoystickState.Axis[0] << std::endl;
         std::cout << "Servo 1 " << JoystickState.Axis[1] << std::endl;
         std::cout << "Servo 2 " << JoystickState.Axis[2] << std::endl;
         std::cout << "Servo 3 " << JoystickState.Axis[3] << std::endl;
         std::cout << "Servo 4 " << JoystickState.Axis[4] << std::endl;
         std::cout << "Servo 5 " << JoystickState.Axis[5] << std::endl;
-        return servo_data;
+        return m_servo_data;
     }
 
-    if (IsKeyDown(KEY_UP)) servo_data.pitch = 1.;
-    else if (IsKeyDown(KEY_DOWN)) servo_data.pitch = -1;
-    else servo_data.pitch = 0.;
+    float change_amount = time_delta * 4;
+    update_value(m_servo_data.pitch, KEY_UP, KEY_DOWN, change_amount);
+    update_value(m_servo_data.roll, KEY_LEFT, KEY_RIGHT, change_amount);
+    update_value(m_servo_data.yaw, KEY_KEY_D, KEY_KEY_A, change_amount);
 
-    if (IsKeyDown(KEY_LEFT))  servo_data.roll = 1.;
-    else if (IsKeyDown(KEY_RIGHT)) servo_data.roll = -1;
-    else servo_data.roll = 0;
+    if (IsKeyDown(KEY_KEY_W))  m_servo_data.lift += time_delta;
+    else if (IsKeyDown(KEY_KEY_S)) m_servo_data.lift -= time_delta;
 
-    if (IsKeyDown(KEY_KEY_D))  servo_data.yaw = 1.;
-    else if (IsKeyDown(KEY_KEY_A)) servo_data.yaw = -1;
-    else servo_data.yaw = 0;
-
-    if (IsKeyDown(KEY_KEY_W))  m_lift += time_delta;
-    else if (IsKeyDown(KEY_KEY_S)) m_lift -= time_delta;
-    m_lift = m_lift > 1 ? 1 : m_lift;
-    m_lift = m_lift < -1 ? -1 : m_lift;
-    servo_data.lift = m_lift;
-    servo_data.throttle = 1;
-    return servo_data;
+    m_servo_data.lift = m_servo_data.lift > 1 ? 1 : m_servo_data.lift;
+    m_servo_data.lift = m_servo_data.lift < -1 ? -1 : m_servo_data.lift;
+    m_servo_data.throttle = 0.75;
+    return m_servo_data;
 }
 
 bool EventReceiver::IsKeyDown(irr::EKEY_CODE keyCode) const {
 	return KeyIsDown[keyCode];
-}
-
-EventReceiver::EventReceiver()
-{
-	for (u32 i=0; i<irr::KEY_KEY_CODES_COUNT; ++i)
-		KeyIsDown[i] = false;
-    m_lift = 0;
-    m_joystick_active = false;
 }
 
 /*

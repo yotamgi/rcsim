@@ -11,20 +11,26 @@ float norm(irrvec3 vec) {
 
 
 BaseHeli::BaseHeli(const HeliParams &params):
-         torbulant_rand(3., 1)
+         torbulant_rand(3., 1),
+         m_params(params)
 {
-    m_pos = params.init_pos;
+    m_pos = m_params.init_pos;
     m_v = irrvec3(0, 0, 0);
-    m_rotation.setRotationDegrees(params.init_rotation);
-    m_swash_sensitivity = params.swash_sensitivity;
-    m_yaw_sensitivity = params.yaw_sensitivity;
-    m_mass = params.mass;
-    m_max_lift = params.max_lift;
-    m_drag_vec = params.drag;
-    m_torbulant_airspeed = params.torbulant_airspeed;
+    m_rotation.setRotationDegrees(m_params.init_rotation);
     m_main_rotor_vel = 0;
-    m_main_rotor_acc = params.main_rotor_acc;
-    m_main_rotor_max_vel = params.main_rotor_max_vel;
+}
+
+void BaseHeli::update_moments(float time_delta, const ServoData &servo_data) {
+    float main_rotor_effectiveness = m_main_rotor_vel / m_params.main_rotor_max_vel;
+    m_angularv = irrvec3(
+        servo_data.pitch * m_params.swash_sensitivity * main_rotor_effectiveness,
+        servo_data.yaw * m_params.yaw_sensitivity * main_rotor_effectiveness,
+        servo_data.roll * m_params.swash_sensitivity * main_rotor_effectiveness
+    );
+
+    irr::core::matrix4 d_rotation;
+    d_rotation.setRotationDegrees(m_angularv * time_delta);
+    m_rotation *= d_rotation;
 }
 
 void BaseHeli::update(double time_delta, 
@@ -32,25 +38,17 @@ void BaseHeli::update(double time_delta,
                   const ServoData &servo_data)
 {
     // Update main rotor velocity.
-    float target_rotor_vel = m_main_rotor_max_vel * servo_data.throttle;
-    if (target_rotor_vel - m_main_rotor_vel < m_main_rotor_acc) {
+    float target_rotor_vel = m_params.main_rotor_max_vel * servo_data.throttle;
+    if (target_rotor_vel - m_main_rotor_vel < m_params.main_rotor_acc) {
         m_main_rotor_vel += time_delta * (target_rotor_vel - m_main_rotor_vel);
     } else {
-        m_main_rotor_vel += time_delta * m_main_rotor_acc;
+        m_main_rotor_vel += time_delta * m_params.main_rotor_acc;
     }
     std::cout << "main_rotor: " << m_main_rotor_vel << std::endl;
-    float main_rotor_effectiveness = m_main_rotor_vel / m_main_rotor_max_vel;
+    float main_rotor_effectiveness = m_main_rotor_vel / m_params.main_rotor_max_vel;
 
     // Update angular velocity according to servos.
-    irrvec3 angular_v(
-        servo_data.pitch * m_swash_sensitivity * main_rotor_effectiveness,
-        servo_data.yaw * m_yaw_sensitivity * main_rotor_effectiveness,
-        servo_data.roll * m_swash_sensitivity * main_rotor_effectiveness
-    );
-    
-    irr::core::matrix4 d_rotation;
-    d_rotation.setRotationDegrees(angular_v * time_delta);
-    m_rotation *= d_rotation;
+    update_moments(time_delta, servo_data);
 
     // Gravity is easy - always down.
     irrvec3 gravity(0, -GRAVITY_CONSTANT, 0);
@@ -58,11 +56,11 @@ void BaseHeli::update(double time_delta,
     // Lift is up in the heli axis;
     irrvec3 heli_up(0, 1, 0);
     m_rotation.rotateVect(heli_up);
-    irrvec3 lift = heli_up * servo_data.lift * m_max_lift * main_rotor_effectiveness;
+    irrvec3 lift = heli_up * servo_data.lift * m_params.max_lift * main_rotor_effectiveness;
     std::cout << "Lift: (" << lift.X << ", " << lift.Y << ", " << lift.Z << ")" << std::endl;
 
     // Aerodynamic force.
-    irrvec3 drag_vec = m_drag_vec;
+    irrvec3 drag_vec = m_params.drag;
     drag_vec.Y /= main_rotor_effectiveness > 0.1? 1 : 10;
     irrvec3 airspeed = m_v - wind_speed;
     irr::core::matrix4 world_to_heli = m_rotation.getTransposed();
@@ -71,7 +69,7 @@ void BaseHeli::update(double time_delta,
     m_rotation.rotateVect(aerodynamic_drag);  // Back in world coord system.
 
     // Account for torbulation in low airspeed.
-    float torbulant_coeff = m_torbulant_airspeed - norm(airspeed);
+    float torbulant_coeff = m_params.torbulant_airspeed - norm(airspeed);
     torbulant_coeff = torbulant_coeff > 1 ? 1 : torbulant_coeff;
     torbulant_coeff = torbulant_coeff < 0 ? 0 : torbulant_coeff;
     torbulant_coeff *= 0.5 + 0.5*torbulant_rand.update(time_delta);
@@ -80,7 +78,7 @@ void BaseHeli::update(double time_delta,
     lift *= lift_torbulant_effect;
 
     irrvec3 total_force = gravity + lift - aerodynamic_drag;
-    irrvec3 acc = total_force / m_mass;
+    irrvec3 acc = total_force / m_params.mass;
     m_v += time_delta * acc;
     m_pos += time_delta * m_v;
 

@@ -53,22 +53,16 @@ public:
 
 protected:
     virtual void update_ui(float time_delta) = 0;
+    void update_moments(float time_delta, const ServoData &servo_data);
 
     irrvec3 m_v;
     irrvec3 m_pos;
+    irrvec3 m_angularv;
     irr::core::matrix4 m_rotation;
     SmoothRandFloat torbulant_rand;
     float m_main_rotor_vel;
 
-    // From params.
-    double m_swash_sensitivity;
-    double m_yaw_sensitivity;
-    double m_mass;
-    double m_max_lift;
-    double m_torbulant_airspeed;
-    irrvec3 m_drag_vec;
-    float m_main_rotor_acc;
-    float m_main_rotor_max_vel;
+    HeliParams m_params;
 };
 
 

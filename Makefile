@@ -9,7 +9,10 @@ all: rcsim
 run: rcsim
 	./rcsim
 
-OBJS = smooth_rand.o heli.o main.o rotor_blur.o
+OBJS = smooth_rand.o heli.o main.o rotor_blur.o arrow.o
+
+arrow.o: arrow.cc
+	$(CXX) -c $(CXXFLAGS) arrow.cc -o arrow.o
 
 rotor_blur.o: rotor_blur.cc
 	$(CXX) -c $(CXXFLAGS) rotor_blur.cc -o rotor_blur.o

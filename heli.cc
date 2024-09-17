@@ -2,6 +2,9 @@
 #include "smooth_rand.h"
 #include <iostream>
 #include <cmath>
+#include <iomanip>
+
+using irr::core::PI;
 
 double GRAVITY_CONSTANT = 9.8;
 
@@ -20,35 +23,120 @@ BaseHeli::BaseHeli(const HeliParams &params):
     m_main_rotor_vel = 0;
 }
 
-void BaseHeli::update_moments(float time_delta, const ServoData &servo_data) {
-    float main_rotor_effectiveness = m_main_rotor_vel / m_params.main_rotor_max_vel;
-    m_angularv = irrvec3(
-        servo_data.pitch * m_params.swash_sensitivity * main_rotor_effectiveness,
-        servo_data.yaw * m_params.yaw_sensitivity * main_rotor_effectiveness,
-        servo_data.roll * m_params.swash_sensitivity * main_rotor_effectiveness
-    );
 
-    irr::core::matrix4 d_rotation;
-    d_rotation.setRotationDegrees(m_angularv * time_delta);
-    m_rotation *= d_rotation;
+void print_matrix(const std::string str, const irr::core::matrix4 &mat) {
+    std::cout << std::fixed << std::setprecision(3) << std::setw(5) << std::setfill(' ');
+    std::cout << "Matrix " << str << ":" << std::endl;
+    std::cout << mat(0, 0) << ", ";
+    std::cout << mat(0, 1) << ", ";
+    std::cout << mat(0, 2) << std::endl;
+
+    std::cout << mat(1, 0) << ", ";
+    std::cout << mat(1, 1) << ", ";
+    std::cout << mat(1, 2) << std::endl;
+
+    std::cout << mat(2, 0) << ", ";
+    std::cout << mat(2, 1) << ", ";
+    std::cout << mat(2, 2) << std::endl;
 }
 
-void BaseHeli::update(double time_delta, 
-                  const irrvec3 &wind_speed,
-                  const ServoData &servo_data)
+static void print_vec(const std::string str, const irrvec3 &vec) {
+    std::cout << "Vec " << str << ": (";
+    std::cout << vec.X << ", ";
+    std::cout << vec.Y << ", ";
+    std::cout << vec.Z << ")" << std::endl;;
+}
+
+static float clip_servo(float servo_data) {
+    return std::max(-1.0f, std::min(servo_data, 1.0f));
+}
+
+
+irrvec3 BaseHeli::get_torques_in_body(float time_delta,
+                                      const irrvec3 &wind_speed,
+                                      const ServoData &servo_data)
+{
+    float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
+
+    // Calculate the servos torque.
+    // Note that the roll and pitch are switched due to the gyro 90 deg effect.
+    irrvec3 servo_torque(
+        -clip_servo(servo_data.roll) * m_params.swash_torque,
+        clip_servo(servo_data.yaw) * m_params.yaw_torque,
+        clip_servo(servo_data.pitch) * m_params.swash_torque
+    );
+    servo_torque *= main_rotor_effectiveness;
+
+    // Apply tail-drag moments
+    irrvec3 heli_right(m_rotation(0, 0), m_rotation(0, 1), m_rotation(0, 2));
+    irrvec3 airspeed = - m_v - wind_speed;
+    float tail_wind = heli_right.dotProduct(airspeed);
+    tail_wind += m_yaw_angularv * m_params.tail_length;
+    float tail_drag_moment_y = -tail_wind * m_params.tail_drag * m_params.tail_length;
+
+    irrvec3 total_torque = servo_torque;
+    total_torque.Y += tail_drag_moment_y;
+
+    return total_torque;
+}
+
+void BaseHeli::update_moments(float time_delta,
+                              const irrvec3 &wind_speed,
+                              const ServoData &servo_data)
+{
+    // Update angular velocity according to torques.
+    irrvec3 torques = get_torques_in_body(time_delta, wind_speed, servo_data);
+    print_vec("Torques", torques);
+
+    // Update rotor angular momentum by the swash torques.
+    irrvec3 swash_torques(torques.X, 0, torques.Z);
+    m_rotation.rotateVect(swash_torques);
+    m_angular_momentum += time_delta * swash_torques;
+    irrvec3 rot_y = m_angular_momentum;
+    rot_y.normalize();
+
+    // Only at the first frame, the angular_momentum is 0 and it screws up everything.
+    // This is a dirty workaround this.
+    if (rot_y.X == 0 && rot_y.Y == 0 && rot_y.Z == 0) {
+        rot_y = irrvec3(0, 1, 0);
+    }
+
+    // Make sure that the rotor doesn't change its angular velocity around Y axis.
+    float rotor_omega = 2 * PI * m_main_rotor_vel / 360 + 0.01;
+    m_angular_momentum = rot_y * m_params.rotor_moment_of_inertia * rotor_omega;
+
+    // Update the yaw rotation.
+    m_yaw_angularv += time_delta * torques.Y / m_params.body_moment_of_inertia.Y;
+    irrvec3 rot_z(m_rotation(2, 0), m_rotation(2, 1), m_rotation(2, 2));
+    rot_z += rot_y.crossProduct(rot_z) * m_yaw_angularv * time_delta;
+    rot_z.normalize();
+
+    // Update back the rotation matrix;
+    irrvec3 rot_x = rot_y.crossProduct(rot_z);
+    rot_z = rot_x.crossProduct(rot_y);
+    m_rotation(0, 0) = rot_x.X; m_rotation(0, 1) = rot_x.Y; m_rotation(0, 2) = rot_x.Z;
+    m_rotation(1, 0) = rot_y.X; m_rotation(1, 1) = rot_y.Y; m_rotation(1, 2) = rot_y.Z;
+    m_rotation(2, 0) = rot_z.X; m_rotation(2, 1) = rot_z.Y; m_rotation(2, 2) = rot_z.Z;
+}
+
+void BaseHeli::update(double time_delta,
+                      const irrvec3 &wind_speed,
+                      const ServoData &servo_data)
 {
     // Update main rotor velocity.
     float target_rotor_vel = m_params.main_rotor_max_vel * servo_data.throttle;
-    if (target_rotor_vel - m_main_rotor_vel < m_params.main_rotor_acc) {
-        m_main_rotor_vel += time_delta * (target_rotor_vel - m_main_rotor_vel);
+    float main_rotor_vel = m_main_rotor_vel / 360;
+    if (target_rotor_vel - main_rotor_vel < m_params.main_rotor_acc) {
+        main_rotor_vel += time_delta * (target_rotor_vel - main_rotor_vel);
     } else {
-        m_main_rotor_vel += time_delta * m_params.main_rotor_acc;
+        main_rotor_vel += time_delta * m_params.main_rotor_acc;
     }
-    std::cout << "main_rotor: " << m_main_rotor_vel << std::endl;
-    float main_rotor_effectiveness = m_main_rotor_vel / m_params.main_rotor_max_vel;
+    m_main_rotor_vel = main_rotor_vel * 360;
+    std::cout << "Main_rotor: " << m_main_rotor_vel << std::endl;
+    float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
 
     // Update angular velocity according to servos.
-    update_moments(time_delta, servo_data);
+    update_moments(time_delta, wind_speed, servo_data);
 
     // Gravity is easy - always down.
     irrvec3 gravity(0, -GRAVITY_CONSTANT, 0);
@@ -168,14 +256,27 @@ private:
 const struct HeliParams BELL_AERODYNAMICS = {
     .init_pos = irrvec3(0, 0.25, 0),
     .init_rotation = irrvec3(0, 0, 0),
-    .swash_sensitivity = 200.,
-    .yaw_sensitivity = 200.,
-    .mass = 1.5,
-    .max_lift = 1.5 * 10 * 2,
+    .mass = 2.,
+    .max_lift = 2. * 10 * 2,  // = mass * 2
     .drag = irrvec3(0.25, 2, 0.05),
     .torbulant_airspeed = 5,
-    .main_rotor_max_vel = 5,
-    .main_rotor_acc = 1,
+    .main_rotor_max_vel = 40,
+    .main_rotor_acc = 10,
+
+    .tail_length = 0.6,
+    .tail_drag = 1.,
+
+    .swash_torque = 2. * 10,  // = lift/2
+    .yaw_torque = 20,
+    .rotor_moment_of_inertia = 1./12 * 0.3 * 1, //  = Rod: 1/12 * M * L^2
+    .body_moment_of_inertia = irrvec3(
+        // pitch: 3 masses - one in the rotor, one is the body and one is the tail
+        (0.2 * 0.5*0.5) + (0.5 * 0.05*0.05 + 0.2 * 1),
+        // yaw: 2 masses - one in the tail and one close.
+        (0.1 * 0.6*0.6) + (0.5 * 0.1*0.1),
+        // roll: 2 masses - one in the rotor and one is the body
+        (0.2 * 0.5*0.5) + (0.5 * 0.05*0.05)
+    )
 };
 
 
@@ -250,7 +351,7 @@ void BellHeli::update_ui(float time_delta) {
     // Set the main rotor rotation.
     irr::core::matrix4 main_rotor_rotation;
     main_rotor_rotation.setRotationDegrees(irrvec3(0, m_main_rotor_angle, 0));
-    m_main_rotor_angle += m_main_rotor_vel * 360 * time_delta;
+    m_main_rotor_angle += m_main_rotor_vel * time_delta / 4;
     irrvec3 main_rotor_offset(0, 0, 0.225/2);
     (m_rotation).rotateVect(main_rotor_offset);
     m_rotor_node->setPosition(m_pos - main_rotor_offset);
@@ -259,7 +360,7 @@ void BellHeli::update_ui(float time_delta) {
     // Set the tail rotor rotation.
     irr::core::matrix4 tail_rotor_rotation;
     tail_rotor_rotation.setRotationDegrees(irrvec3(0, 0, m_tail_rotor_angle));
-    m_tail_rotor_angle += 3 * m_main_rotor_vel * 360 * time_delta;
+    m_tail_rotor_angle += 3 * m_main_rotor_vel * time_delta;
     irrvec3 tail_rotor_offset(0, -0.77/2, 2.31/2);
     (m_rotation).rotateVect(tail_rotor_offset);
     m_tail_rotor_node->setPosition(m_pos - tail_rotor_offset);

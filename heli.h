@@ -15,15 +15,21 @@ struct HeliParams {
     irrvec3 init_pos;
     irrvec3 init_rotation;
 
-    double swash_sensitivity;  //  [degree / sec]
-    double yaw_sensitivity;  //  [degree / sec]
     double mass;  //  [Kg]
     double max_lift;  //  [N]
     irrvec3 drag;  // [N / (M / SEC)]
     float torbulant_airspeed;  // [M / SEC]
 
     float main_rotor_max_vel;  // [Rotations / SEC]
-    float main_rotor_acc;  // [(Rotations / SEC) / SEC] 
+    double main_rotor_acc;  // [Rotations / SEC / SEC]
+
+    float tail_length;  // [Meters]
+    float tail_drag;  // Tail drag to apply yaw torque on airspeed [Newton / [M / SEC]]
+
+    double swash_torque;  //  The swash moment strength [N * M]
+    double yaw_torque;  //  The yaw moment strength [N * M]
+    float rotor_moment_of_inertia;  // [Kg * M] around rotor rotating axis.
+    irrvec3 body_moment_of_inertia;  //  Moment of inertia [Kg * M] coefficients around center of Mass.
 };
 
 /**
@@ -43,21 +49,28 @@ public:
 
     BaseHeli(const HeliParams &params);
 
-    void update(double time_delta, 
+    void update(double time_delta,
                 const irrvec3 &wind_speed,
                 const ServoData &servo_data);
     irrvec3 get_position() const {return m_pos;}
     void set_position(const irrvec3 new_pos) { m_pos = new_pos; }
     irrvec3 get_velocity() const {return m_v;}
     void set_velocity(const irrvec3 new_v) { m_v = new_v; }
+    float get_yaw_angularv() const {return m_yaw_angularv; }
 
 protected:
     virtual void update_ui(float time_delta) = 0;
-    void update_moments(float time_delta, const ServoData &servo_data);
+    irrvec3 get_torques_in_body(float time_delta,
+                                const irrvec3 &wind_speed,
+                                const ServoData &servo_data);
+    void update_moments(float time_delta,
+                        const irrvec3 &wind_speed,
+                        const ServoData &servo_data);
 
     irrvec3 m_v;
     irrvec3 m_pos;
-    irrvec3 m_angularv;
+    irrvec3 m_angular_momentum;
+    float m_yaw_angularv;
     irr::core::matrix4 m_rotation;
     SmoothRandFloat torbulant_rand;
     float m_main_rotor_vel;

@@ -320,7 +320,7 @@ int main()
         now = tv.tv_sec*1000. +  tv.tv_usec/1000.;
         time_delta = (now - then) / 1000.;
         then = now;
-        time_delta = time_delta > 0.1 ? 0.1 : time_delta;
+        time_delta = time_delta > 0.03 ? 0.03 : time_delta;
 
         driver->beginScene(true, true, video::SColor(255,200,200,200));
         smgr->drawAll();

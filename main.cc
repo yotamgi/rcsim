@@ -98,7 +98,7 @@ void EventReceiver::update_value(double &value, irr::EKEY_CODE key_up, irr::EKEY
     if (IsKeyDown(key_up)) value += change_amount;
     else if (IsKeyDown(key_down)) value -= change_amount;
     else {
-        if (value < 0.1) value = 0;
+        if (std::abs(value) < 0.1) value = 0;
         else {
             value += change_amount * ((float)(value < 0)*2 - 1);
         }

@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <iostream>
 #include "heli.h"
+#include "controller.h"
 
 /*
 In the Irrlicht Engine, everything can be found in the namespace 'irr'. So if
@@ -279,6 +280,9 @@ int main()
     // Init the Heli object.
     BellHeli heli(smgr, driver);
 
+    // Init the controller.
+    TailGyroController controller(&heli);
+
     // Add skybox
     smgr->addSkyBoxSceneNode(
 		driver->getTexture("media/skybox/irrlicht2_up.jpg"),
@@ -339,6 +343,7 @@ int main()
         // Update the plane according to the keys
         //////////////
         ServoData servo_data = receiver.get_servo_data(time_delta);
+        servo_data = controller.updateServoData(servo_data, time_delta);
         
         heli.update(time_delta, irrvec3(0, 0, -1), servo_data);
         

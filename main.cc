@@ -116,12 +116,6 @@ ServoData EventReceiver::get_servo_data(float time_delta) {
         m_servo_data.yaw = (float)JoystickState.Axis[4] / 32768;
         m_servo_data.lift = -(float)JoystickState.Axis[2] / 32768;
         m_servo_data.throttle = 1;
-        std::cout << "Servo 0 " << JoystickState.Axis[0] << std::endl;
-        std::cout << "Servo 1 " << JoystickState.Axis[1] << std::endl;
-        std::cout << "Servo 2 " << JoystickState.Axis[2] << std::endl;
-        std::cout << "Servo 3 " << JoystickState.Axis[3] << std::endl;
-        std::cout << "Servo 4 " << JoystickState.Axis[4] << std::endl;
-        std::cout << "Servo 5 " << JoystickState.Axis[5] << std::endl;
         return m_servo_data;
     }
 

@@ -30,6 +30,11 @@ struct HeliParams {
     double yaw_torque;  //  The yaw moment strength [N * M]
     float rotor_moment_of_inertia;  // [Kg * M] around rotor rotating axis.
     irrvec3 body_moment_of_inertia;  //  Moment of inertia [Kg * M] coefficients around center of Mass.
+
+    float rigidness;  // [rad / [torque]] A number describing torque applied to keep the heli
+                      //                   rotor connected
+    float anti_wobliness;  // [[torque] / [M/Sec]] A number describing the helicopter deformation
+                           // friction, e.g. the eneregy loss due to non-rigid movements.
 };
 
 /**
@@ -56,24 +61,28 @@ public:
     void set_position(const irrvec3 new_pos) { m_pos = new_pos; }
     irrvec3 get_velocity() const {return m_v;}
     void set_velocity(const irrvec3 new_v) { m_v = new_v; }
-    float get_yaw_angularv() const {return m_yaw_angularv; }
+    irrvec3 get_gyro_angularv() const {return m_body_angularv_in_body_coords; }
 
 protected:
     virtual void update_ui(float time_delta) = 0;
-    irrvec3 get_torques_in_body(float time_delta,
-                                const irrvec3 &wind_speed,
-                                const ServoData &servo_data);
+    void update_body_moments(float time_delta,
+                             const irrvec3 &moment_in_world);
+    void update_rotor_moments(float time_delta,
+                              const irrvec3 &moment_in_world);
     void update_moments(float time_delta,
                         const irrvec3 &wind_speed,
                         const ServoData &servo_data);
 
     irrvec3 m_v;
     irrvec3 m_pos;
-    irrvec3 m_angular_momentum;
-    float m_yaw_angularv;
-    irr::core::matrix4 m_rotation;
     SmoothRandFloat torbulant_rand;
     float m_main_rotor_vel;
+
+    // Body and rotor orientation properties.
+    irrvec3 m_rotor_angular_momentum;
+    irr::core::matrix4 m_rotor_rotation;
+    irr::core::matrix4 m_body_rotation;
+    irrvec3 m_body_angularv_in_body_coords;
 
     HeliParams m_params;
 };

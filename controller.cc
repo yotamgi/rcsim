@@ -3,7 +3,7 @@
 
 
 ServoData TailGyroController::updateServoData(const ServoData& servo_data, float time_delta) {
-    m_heli_yaw += m_heli->get_yaw_angularv() * time_delta;
+    m_heli_yaw += m_heli->get_gyro_angularv().Y * time_delta;
     m_wanted_yaw += servo_data.yaw * time_delta * 6;
     float error = (m_wanted_yaw - m_heli_yaw);
     float derror = (error - m_prev_error) / time_delta;

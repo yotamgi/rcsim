@@ -137,10 +137,10 @@ bool EventReceiver::IsKeyDown(irr::EKEY_CODE keyCode) const {
 	return KeyIsDown[keyCode];
 }
 
-void add_banana(irr::scene::ISceneManager *smgr, 
+void add_banana(irr::scene::ISceneManager *smgr,
                 irr::video::IVideoDriver *driver,
                 const core::vector3df &position,
-                const core::vector3df &rotation) 
+                const core::vector3df &rotation)
 {
 	IMesh* banana_mesh = smgr->getMesh("media/banana/source/banana.obj");
 	IMeshSceneNode* banana_node = smgr->addMeshSceneNode(banana_mesh);
@@ -265,7 +265,7 @@ int main()
     for (unsigned int i=0; i < node->getMaterialCount(); i++) {
         node->getMaterial(i).AmbientColor.set(255, 255, 255, 255);
     }
-    
+
     add_banana(smgr, driver, core::vector3df(-0.5, 0.05, 0.2), core::vector3df(90, 73, 0));
     add_banana(smgr, driver, core::vector3df(0.9, 0.05, 0.3), core::vector3df(90, 40, 0));
     add_banana(smgr, driver, core::vector3df(0.4, 0.05, 0.0), core::vector3df(90, 0, 0));

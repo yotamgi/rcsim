@@ -235,7 +235,7 @@ public:
         init_ui(
             smgr,
             3.75,  // radius.
-            irrvec3(-0.45, 1.8, 0),  // position.
+            irrvec3(-0.0, 1.8/4, 0),  // position.
             irrvec3(0, 0, 0),  // rotation.
             0.03,  // thichkess.
             parent  // parent_node
@@ -262,7 +262,7 @@ public:
         init_ui(
             smgr,
             0.62,  // radius.
-            irrvec3(-0.45, 2, 0),  // position.
+            irrvec3(0, 0.57, 0),  // position.
             irrvec3(0, 0, 0),  // rotation.
             0.03,  // thichkess.
             parent  // parent_node
@@ -334,18 +334,18 @@ const struct HeliParams BELL_AERODYNAMICS = {
         (0.2 * 0.5*0.5) + (0.5 * 0.05*0.05)
     ),
 
-    .rigidness = 15,
-    .anti_wobliness = 1.
+    .rigidness = 100,
+    .anti_wobliness = 1.2
 };
 
 
 BellHeli::BellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* driver):
-    BaseHeli(BELL_AERODYNAMICS)
+    BaseHeli(BELL_AERODYNAMICS), m_arrow(smgr)
 {
     // Create the body mesh.
 	irr::scene::IMesh* heli_mesh = smgr->getMesh("media/Bell/source/bell_body.obj");
 	m_body_node = smgr->addMeshSceneNode(heli_mesh);
-    m_body_node->setScale(irrvec3(0.25, 0.25, 0.25));
+    m_body_node->setScale(irrvec3(1./4, 1./4, 1./4));
     m_body_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
     m_body_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
     m_body_node->setDebugDataVisible(irr::scene::EDS_OFF);
@@ -358,11 +358,10 @@ BellHeli::BellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* dr
     // Create the main rotor mesh.
 	irr::scene::IMesh* main_rotor_mesh = smgr->getMesh("media/Bell/source/bell_main_rotor.obj");
     irr::core::matrix4 main_rotor_translation;
-    main_rotor_translation.setTranslation(irrvec3(0.45, 0, 0));
+    main_rotor_translation.setTranslation(irrvec3(0.45, -1.4, 0));
     smgr->getMeshManipulator()->apply(
         irr::scene::SVertexPositionTransformManipulator(main_rotor_translation), main_rotor_mesh);
-	m_rotor_node = smgr->addMeshSceneNode(main_rotor_mesh);
-    m_rotor_node->setScale(irrvec3(0.5/2, 0.5/2, 0.5/2));
+	m_rotor_node = smgr->addMeshSceneNode(main_rotor_mesh, m_body_node);
     m_rotor_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
     m_rotor_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
     m_rotor_node->setDebugDataVisible(irr::scene::EDS_OFF);
@@ -378,8 +377,7 @@ BellHeli::BellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* dr
     tail_rotor_translation.setTranslation(irrvec3(4.62, -1.54, 0));
     smgr->getMeshManipulator()->apply(
         irr::scene::SVertexPositionTransformManipulator(tail_rotor_translation), tail_rotor_mesh);
-	m_tail_rotor_node = smgr->addMeshSceneNode(tail_rotor_mesh);
-    m_tail_rotor_node->setScale(irrvec3(0.5, 0.5, 0.5)/2);
+	m_tail_rotor_node = smgr->addMeshSceneNode(tail_rotor_mesh, m_body_node);
     m_tail_rotor_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
     m_tail_rotor_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
     m_tail_rotor_node->setDebugDataVisible(irr::scene::EDS_OFF);
@@ -391,8 +389,8 @@ BellHeli::BellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* dr
 
     m_shape_rotation.setRotationDegrees(irrvec3(0, -90, 0));
 
-    m_main_rotor_blur = std::make_shared<MainRotorBlur>(smgr, m_body_node);
-    m_flybar_blur = std::make_shared<FlybarBlur>(smgr, m_body_node);
+    m_main_rotor_blur = std::make_shared<MainRotorBlur>(smgr, m_rotor_node);
+    m_flybar_blur = std::make_shared<FlybarBlur>(smgr, m_rotor_node);
     m_tail_prop_blur = std::make_shared<TailRotorBlur>(smgr, m_body_node);
     m_main_rotor_angle = 0;
     m_tail_rotor_angle = 0;
@@ -404,25 +402,24 @@ void BellHeli::update_ui(float time_delta) {
     m_body_node->setPosition(m_pos);
     m_tail_rotor_node->setPosition(m_pos);
 
-    m_body_node->setRotation((m_rotor_rotation * m_shape_rotation).getRotationDegrees());
+    m_body_node->setRotation((m_body_rotation * m_shape_rotation).getRotationDegrees());
     m_tail_rotor_node->setRotation((m_rotor_rotation * m_shape_rotation).getRotationDegrees());
 
     // Set the main rotor rotation.
     irr::core::matrix4 main_rotor_rotation;
     main_rotor_rotation.setRotationDegrees(irrvec3(0, m_main_rotor_angle, 0));
     m_main_rotor_angle += m_main_rotor_vel * time_delta / 4;
-    irrvec3 main_rotor_offset(0, 0, 0.225/2);
-    (m_rotor_rotation).rotateVect(main_rotor_offset);
-    m_rotor_node->setPosition(m_pos - main_rotor_offset);
-    m_rotor_node->setRotation((m_rotor_rotation * m_shape_rotation * main_rotor_rotation).getRotationDegrees());
+    irrvec3 main_rotor_offset(0.45, -1.4, 0);
+    m_rotor_node->setPosition(-main_rotor_offset);
+    irr::core::matrix4 rotor_rotation_in_body_coords = m_body_rotation.getTransposed() * m_rotor_rotation;
+    m_rotor_node->setRotation((rotor_rotation_in_body_coords * main_rotor_rotation).getRotationDegrees());
 
     // Set the tail rotor rotation.
     irr::core::matrix4 tail_rotor_rotation;
     tail_rotor_rotation.setRotationDegrees(irrvec3(0, 0, m_tail_rotor_angle));
     m_tail_rotor_angle += 3 * m_main_rotor_vel * time_delta;
-    irrvec3 tail_rotor_offset(0, -0.77/2, 2.31/2);
-    (m_rotor_rotation).rotateVect(tail_rotor_offset);
-    m_tail_rotor_node->setPosition(m_pos - tail_rotor_offset);
-    m_tail_rotor_node->setRotation((m_rotor_rotation * m_shape_rotation * tail_rotor_rotation).getRotationDegrees());
+    irrvec3 tail_rotor_offset(2.31*2, -0.77*2, 0);
+    m_tail_rotor_node->setPosition(-tail_rotor_offset);
+    m_tail_rotor_node->setRotation((tail_rotor_rotation).getRotationDegrees());
 }
 

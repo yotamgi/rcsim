@@ -5,6 +5,7 @@
 #include <iostream>
 #include "heli.h"
 #include "controller.h"
+#include "controls_view.h"
 
 /*
 In the Irrlicht Engine, everything can be found in the namespace 'irr'. So if
@@ -276,6 +277,7 @@ int main()
 
     // Init the controller.
     TailGyroController controller(&heli);
+    ControlsView controls_view(driver);
 
     // Add skybox
     smgr->addSkyBoxSceneNode(
@@ -316,9 +318,6 @@ int main()
         then = now;
         time_delta = time_delta > 0.03 ? 0.03 : time_delta;
 
-        driver->beginScene(true, true, video::SColor(255,200,200,200));
-        smgr->drawAll();
-        driver->endScene();
 
         int fps = driver->getFPS();
 
@@ -337,16 +336,21 @@ int main()
         // Update the plane according to the keys
         //////////////
         ServoData servo_data = receiver.get_servo_data(time_delta);
-        servo_data = controller.updateServoData(servo_data, time_delta);
-        
-        heli.update(time_delta, irrvec3(0, 0, -1), servo_data);
-        
+        ServoData servo_data_after_controller = controller.updateServoData(servo_data, time_delta);
+
+        heli.update(time_delta, irrvec3(0, 0, 0), servo_data_after_controller);
+
         camera_node->setTarget(heli.get_position());
 
         if (heli.get_position().Y < 0.125) {
             heli.set_position(irrvec3(heli.get_position().X, 0.125, heli.get_position().Z));
             heli.set_velocity(irrvec3(heli.get_velocity().X, 0, heli.get_velocity().Z));
         }
+
+        driver->beginScene(true, true, video::SColor(255,200,200,200));
+        smgr->drawAll();
+        controls_view.update_ui(servo_data, servo_data_after_controller);
+        driver->endScene();
 	}
 
 	/*

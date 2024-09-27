@@ -83,6 +83,7 @@ protected:
     irr::core::matrix4 m_rotor_rotation;
     irr::core::matrix4 m_body_rotation;
     irrvec3 m_body_angularv_in_body_coords;
+    irrvec3 m_prev_reaction_in_body;
 
     HeliParams m_params;
 };

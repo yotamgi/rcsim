@@ -120,7 +120,7 @@ ServoData EventReceiver::get_servo_data(float time_delta) {
         return m_servo_data;
     }
 
-    float change_amount = time_delta * 2;
+    float change_amount = time_delta * 4;
     update_value(m_servo_data.pitch, KEY_UP, KEY_DOWN, change_amount);
     update_value(m_servo_data.roll, KEY_LEFT, KEY_RIGHT, change_amount);
     update_value(m_servo_data.yaw, KEY_KEY_D, KEY_KEY_A, change_amount);

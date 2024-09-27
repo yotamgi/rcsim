@@ -90,7 +90,6 @@ void BaseHeli::update_body_moments(float time_delta, const irrvec3 &moment_in_wo
             - m_body_angularv_in_body_coords.crossProduct(
                     m_params.body_moment_of_inertia * m_body_angularv_in_body_coords
             )
-           - m_body_angularv_in_body_coords * m_params.anti_wobliness
     )  / m_params.body_moment_of_inertia;
 
     // Get the angularv in world coordinates.
@@ -166,7 +165,18 @@ void BaseHeli::update_moments(float time_delta,
     irrvec3 rotor_up(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
     irrvec3 body_reaction_moment_in_world = rotor_up.crossProduct(body_up) * m_params.rigidness;
     print_vec("Body reaction", body_reaction_moment_in_world);
+
+    irrvec3 body_reaction_moment;
+    m_rotor_rotation.getTransposed().rotateVect(body_reaction_moment, body_reaction_moment_in_world);
+    print_vec("Body reaction", body_reaction_moment);
     print_vec("Swash torque", swash_torque_in_rotor_coords);
+
+    // Anti-wobliness moment.
+    irrvec3 dbody_reaction_moment = (body_reaction_moment - m_prev_reaction_in_body) / time_delta;
+    m_prev_reaction_in_body = body_reaction_moment;
+    irrvec3 anti_wobliness_in_world;
+    m_rotor_rotation.rotateVect(anti_wobliness_in_world, dbody_reaction_moment);
+    body_reaction_moment_in_world += anti_wobliness_in_world * m_params.anti_wobliness;
 
     // Update rotations.
     irrvec3 total_body_torques_in_world = total_tail_moment_in_world - body_reaction_moment_in_world;
@@ -326,16 +336,16 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .yaw_torque = 20,
     .rotor_moment_of_inertia = 1./12 * 0.3 * 1, //  = Rod: 1/12 * M * L^2
     .body_moment_of_inertia = irrvec3(
-        // pitch: 3 masses - one in the rotor, one is the body and one is the tail
-        (0.2 * 0.5*0.5) + (0.5 * 0.05*0.05 + 0.2 * 1),
+        // pitch: 2 masses - one in the rotor and one in the body.
+        (0.2 * 0.5*0.5) + 1.5 * 0.15*0.15,
         // yaw: 2 masses - one in the tail and one close.
         (0.1 * 0.6*0.6) + (0.5 * 0.1*0.1),
-        // roll: 2 masses - one in the rotor and one is the body
-        (0.2 * 0.5*0.5) + (0.5 * 0.05*0.05)
+        // roll: 1 masses - the body.
+        (1.5 * 0.1*0.1)
     ),
 
-    .rigidness = 100,
-    .anti_wobliness = 1.2
+    .rigidness = 10,
+    .anti_wobliness = 1./5
 };
 
 

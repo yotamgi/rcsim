@@ -101,8 +101,11 @@ void BaseHeli::update_body_moments(float time_delta, const irrvec3 &moment_in_wo
 void BaseHeli::update_rotor_moments(float time_delta, const irrvec3 &moment_in_world)
 {
     // Update rotor angular momentum by the torques.
-    m_rotor_angular_momentum += time_delta * moment_in_world;
-    irrvec3 rot_y = m_rotor_angular_momentum;
+    m_rotor_angular_momentum_in_world += time_delta * moment_in_world;
+
+    // Update back the rotor rotation matrix:
+    // The Y vector is taken to point towards the angular momentun.
+    irrvec3 rot_y = m_rotor_angular_momentum_in_world;
     rot_y.normalize();
 
     // Only at the first frame, the angular_momentum is 0 and it screws up everything.
@@ -111,12 +114,10 @@ void BaseHeli::update_rotor_moments(float time_delta, const irrvec3 &moment_in_w
         rot_y = irrvec3(0, 1, 0);
     }
 
-    // Make sure that the rotor doesn't change its angular velocity around Y axis.
-    float rotor_omega = 2 * PI * m_main_rotor_vel / 360 + 0.01;
-    m_rotor_angular_momentum = rot_y * m_params.rotor_moment_of_inertia * rotor_omega;
-
-    // Update back the rotor rotation matrix;
+    // The Z (pointing towards tail) is taken from the body.
     irrvec3 rot_z(m_body_rotation(2, 0), m_body_rotation(2, 1), m_body_rotation(2, 2));
+
+    // The rest are updated.
     irrvec3 rot_x = rot_y.crossProduct(rot_z);
     rot_z = rot_x.crossProduct(rot_y);
     m_rotor_rotation(0, 0) = rot_x.X; m_rotor_rotation(0, 1) = rot_x.Y; m_rotor_rotation(0, 2) = rot_x.Z;
@@ -131,6 +132,20 @@ void BaseHeli::update_moments(float time_delta,
 {
     // Update angular velocity according to torques.
     float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
+
+    // Calculate the engine moment
+    float target_rotor_omega = m_params.main_rotor_max_vel * servo_data.throttle * 2 * PI;
+    float main_rotor_omega = norm(m_rotor_angular_momentum_in_world) / m_params.rotor_moment_of_inertia;
+    float main_rotor_torque;
+    if (target_rotor_omega - main_rotor_omega < (m_params.main_rotor_acc * 2 * PI)) {
+        main_rotor_torque = (target_rotor_omega - main_rotor_omega) * m_params.rotor_moment_of_inertia;
+    } else {
+        main_rotor_torque = m_params.main_rotor_acc * 2 * PI * m_params.rotor_moment_of_inertia;
+    }
+    m_main_rotor_vel = main_rotor_omega / (2 * PI) * 360;
+    std::cout << "Main_rotor: " << m_main_rotor_vel / 360 << " [RPS]" << std::endl;
+    irrvec3 rotor_y(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
+    irrvec3 engine_torque_in_world = main_rotor_torque * rotor_y;
 
     // Calculate the servos torque.
     // Note that the roll and pitch are switched due to the gyro 90 deg effect.
@@ -179,8 +194,12 @@ void BaseHeli::update_moments(float time_delta,
     body_reaction_moment_in_world += anti_wobliness_in_world * m_params.anti_wobliness;
 
     // Update rotations.
-    irrvec3 total_body_torques_in_world = total_tail_moment_in_world - body_reaction_moment_in_world;
-    irrvec3 total_rotor_torques_in_world = swash_torque_in_world + body_reaction_moment_in_world;
+    irrvec3 total_body_torques_in_world = total_tail_moment_in_world 
+                                        - engine_torque_in_world
+                                        - body_reaction_moment_in_world;
+    irrvec3 total_rotor_torques_in_world = swash_torque_in_world
+                                            + engine_torque_in_world
+                                            + body_reaction_moment_in_world;
     update_body_moments(time_delta, total_body_torques_in_world);
     update_rotor_moments(time_delta, total_rotor_torques_in_world);
 }
@@ -189,16 +208,6 @@ void BaseHeli::update(double time_delta,
                       const irrvec3 &wind_speed,
                       const ServoData &servo_data)
 {
-    // Update main rotor velocity.
-    float target_rotor_vel = m_params.main_rotor_max_vel * servo_data.throttle;
-    float main_rotor_vel = m_main_rotor_vel / 360;
-    if (target_rotor_vel - main_rotor_vel < m_params.main_rotor_acc) {
-        main_rotor_vel += time_delta * (target_rotor_vel - main_rotor_vel);
-    } else {
-        main_rotor_vel += time_delta * m_params.main_rotor_acc;
-    }
-    m_main_rotor_vel = main_rotor_vel * 360;
-    std::cout << "Main_rotor: " << m_main_rotor_vel << std::endl;
     float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
 
     // Update angular velocity according to servos.

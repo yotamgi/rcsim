@@ -12,14 +12,18 @@ protected:
 };
 
 
-class TailGyroController : public Controller {
+class GyroController : public Controller {
 public:
-    TailGyroController(const BaseHeli *heli):Controller(heli),m_heli_yaw(0),m_wanted_yaw(0),m_prev_error(0) {}
+    GyroController(const BaseHeli *heli):Controller(heli),m_six_axis(true) {}
     virtual ServoData updateServoData(const ServoData& servo_data, float time_delta);
+
+    void set_six_axis(bool set) { m_six_axis = set; }
 private:
-    float m_heli_yaw;
-    float m_wanted_yaw;
-    float m_prev_error;
+    irr::core::vector3df m_heli_angles;
+    irr::core::vector3df m_wanted_angles;
+    irr::core::vector3df m_prev_error;
+
+    bool m_six_axis;
 };
 
 #endif // __CONTROLLER_H__

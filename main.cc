@@ -276,7 +276,7 @@ int main()
     BellHeli heli(smgr, driver);
 
     // Init the controller.
-    TailGyroController controller(&heli);
+    GyroController controller(&heli);
     ControlsView controls_view(driver);
 
     // Add skybox

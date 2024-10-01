@@ -15,7 +15,12 @@ float norm(irrvec3 vec) {
 
 BaseHeli::BaseHeli(const HeliParams &params):
          torbulant_rand(3., 1),
-         m_params(params)
+         m_params(params),
+         m_pitch_servo(4),
+         m_roll_servo(4),
+         m_yaw_servo(8),
+         m_lift_servo(4),
+         m_throttle_servo(0.5)
 {
     m_pos = m_params.init_pos;
     m_v = irrvec3(0, 0, 0);
@@ -23,6 +28,22 @@ BaseHeli::BaseHeli(const HeliParams &params):
     m_main_rotor_vel = 0;
 }
 
+float BaseHeli::ServoFilter::update(float value, float time_delta) {
+    float step = time_delta * m_max_rps;
+    if (step > std::abs(value - m_current_status)) {
+        m_current_status = value;
+    }
+
+    float delta = value - m_current_status;
+    if (delta < 0) {
+        m_current_status -= step;
+    } else if (delta > 0) {
+        m_current_status += step;
+    }
+    m_current_status =  std::max(-1.0f, std::min(m_current_status, 1.0f));
+
+    return m_current_status;
+}
 
 void print_matrix(const std::string str, const irr::core::matrix4 &mat) {
     std::cout << std::fixed << std::setprecision(3) << std::setw(5) << std::setfill(' ');
@@ -74,11 +95,6 @@ void update_rotation_matrix(irr::core::matrix4 &matrix, const irrvec3 angularv) 
 }
 
 
-static float clip_servo(float servo_data) {
-    return std::max(-1.0f, std::min(servo_data, 1.0f));
-}
-
-
 void BaseHeli::update_body_moments(float time_delta, const irrvec3 &moment_in_world)
 {
     irrvec3 moment_in_body;
@@ -127,14 +143,13 @@ void BaseHeli::update_rotor_moments(float time_delta, const irrvec3 &moment_in_w
 
 
 void BaseHeli::update_moments(float time_delta,
-                              const irrvec3 &wind_speed,
-                              const ServoData &servo_data)
+                              const irrvec3 &wind_speed)
 {
     // Update angular velocity according to torques.
     float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
 
     // Calculate the engine moment
-    float target_rotor_omega = m_params.main_rotor_max_vel * servo_data.throttle * 2 * PI;
+    float target_rotor_omega = m_params.main_rotor_max_vel * m_throttle_servo.get() * 2 * PI;
     float main_rotor_omega = norm(m_rotor_angular_momentum_in_world) / m_params.rotor_moment_of_inertia;
     float main_rotor_torque;
     if (target_rotor_omega - main_rotor_omega < (m_params.main_rotor_acc * 2 * PI)) {
@@ -150,12 +165,12 @@ void BaseHeli::update_moments(float time_delta,
     // Calculate the servos torque.
     // Note that the roll and pitch are switched due to the gyro 90 deg effect.
     irrvec3 swash_torque_in_rotor_coords(
-        -clip_servo(servo_data.roll) * m_params.swash_torque,
+        -m_roll_servo.get() * m_params.swash_torque,
         0,
-        clip_servo(servo_data.pitch) * m_params.swash_torque
+        m_pitch_servo.get() * m_params.swash_torque
     );
     irrvec3 yaw_torque_in_rotor_coords(
-        0, clip_servo(servo_data.yaw) * m_params.yaw_torque, 0
+        0, m_yaw_servo.get() * m_params.yaw_torque, 0
     );
     swash_torque_in_rotor_coords *= main_rotor_effectiveness;
     yaw_torque_in_rotor_coords *= main_rotor_effectiveness;
@@ -210,8 +225,14 @@ void BaseHeli::update(double time_delta,
 {
     float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
 
+    m_pitch_servo.update(servo_data.pitch, time_delta);
+    m_roll_servo.update(servo_data.roll, time_delta);
+    m_yaw_servo.update(servo_data.yaw, time_delta);
+    m_lift_servo.update(servo_data.lift, time_delta);
+    m_throttle_servo.update(servo_data.throttle, time_delta);
+
     // Update angular velocity according to servos.
-    update_moments(time_delta, wind_speed, servo_data);
+    update_moments(time_delta, wind_speed);
 
     // Gravity is easy - always down.
     irrvec3 gravity(0, -GRAVITY_CONSTANT, 0);
@@ -220,7 +241,7 @@ void BaseHeli::update(double time_delta,
     irrvec3 heli_up(0, 1, 0);
     m_rotor_rotation.rotateVect(heli_up);
     irrvec3 lift = heli_up * servo_data.lift * m_params.max_lift * main_rotor_effectiveness;
-    std::cout << "Lift: (" << lift.X << ", " << lift.Y << ", " << lift.Z << ")" << std::endl;
+    std::cout << "Lift: " << norm(lift) << std::endl;
 
     // Aerodynamic force.
     irrvec3 drag_vec = m_params.drag;

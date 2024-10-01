@@ -70,8 +70,17 @@ protected:
     void update_rotor_moments(float time_delta,
                               const irrvec3 &moment_in_world);
     void update_moments(float time_delta,
-                        const irrvec3 &wind_speed,
-                        const ServoData &servo_data);
+                        const irrvec3 &wind_speed);
+
+    class ServoFilter {
+    public:
+        ServoFilter(float max_rps):m_max_rps(max_rps),m_current_status(0) {}
+        float update(float value, float time_delta);
+        float get() const { return m_current_status; }
+    private:
+        float m_max_rps;
+        float m_current_status;
+    };
 
     irrvec3 m_v;
     irrvec3 m_pos;
@@ -86,6 +95,13 @@ protected:
     irrvec3 m_prev_reaction_in_body;
 
     HeliParams m_params;
+
+    // Servos
+    ServoFilter m_pitch_servo;
+    ServoFilter m_roll_servo;
+    ServoFilter m_yaw_servo;
+    ServoFilter m_lift_servo;
+    ServoFilter m_throttle_servo;
 };
 
 

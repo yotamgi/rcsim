@@ -152,15 +152,19 @@ void BaseHeli::update_moments(float time_delta,
     float target_rotor_omega = m_params.main_rotor_max_vel * m_throttle_servo.get() * 2 * PI;
     float main_rotor_omega = norm(m_rotor_angular_momentum_in_world) / m_params.rotor_moment_of_inertia;
     float main_rotor_torque;
-    if (target_rotor_omega - main_rotor_omega < (m_params.main_rotor_acc * 2 * PI)) {
-        main_rotor_torque = (target_rotor_omega - main_rotor_omega) * m_params.rotor_moment_of_inertia;
+    float omega_ratio = main_rotor_omega / target_rotor_omega;
+    if (omega_ratio < 0.9) {
+        main_rotor_torque = m_params.main_rotor_torque;
     } else {
-        main_rotor_torque = m_params.main_rotor_acc * 2 * PI * m_params.rotor_moment_of_inertia;
+        main_rotor_torque = (1 - (omega_ratio - 0.9) * 10) * m_params.main_rotor_torque;
     }
     m_main_rotor_vel = main_rotor_omega / (2 * PI) * 360;
     std::cout << "Main_rotor: " << m_main_rotor_vel / 360 << " [RPS]" << std::endl;
     irrvec3 rotor_y(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
     irrvec3 engine_torque_in_world = main_rotor_torque * rotor_y;
+
+    // Calculate the rotor drag force, trying to slow down the rotor.
+    irrvec3 rotor_drag_torque_in_world = -m_lift_force * m_params.main_rotor_length / 3 * rotor_y;
 
     // Calculate the servos torque.
     // Note that the roll and pitch are switched due to the gyro 90 deg effect.
@@ -214,7 +218,8 @@ void BaseHeli::update_moments(float time_delta,
                                         - body_reaction_moment_in_world;
     irrvec3 total_rotor_torques_in_world = swash_torque_in_world
                                             + engine_torque_in_world
-                                            + body_reaction_moment_in_world;
+                                            + body_reaction_moment_in_world
+                                            + rotor_drag_torque_in_world;
     update_body_moments(time_delta, total_body_torques_in_world);
     update_rotor_moments(time_delta, total_rotor_torques_in_world);
 }
@@ -267,6 +272,7 @@ void BaseHeli::update(double time_delta,
     m_pos += time_delta * m_v;
 
     update_ui(time_delta);
+    m_lift_force = norm(lift);
 }
 
 class MainRotorBlur : public RotorBlur {
@@ -356,14 +362,15 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .max_lift = 2. * 10 * 2,  // = mass * 2
     .drag = irrvec3(0.25, 2, 0.05),
     .torbulant_airspeed = 5,
-    .main_rotor_max_vel = 40,
-    .main_rotor_acc = 10,
+    .main_rotor_max_vel = 55,
+    .main_rotor_torque = 5.,
+    .main_rotor_length = 1.,
 
     .tail_length = 0.6,
     .tail_drag = 1.,
 
-    .swash_torque = 2. * 10,  // = lift/2
-    .yaw_torque = 20,
+    .swash_torque = 4. * 10,  // = lift
+    .yaw_torque = 50,
     .rotor_moment_of_inertia = 1./12 * 0.3 * 1, //  = Rod: 1/12 * M * L^2
     .body_moment_of_inertia = irrvec3(
         // pitch: 2 masses - one in the rotor and one in the body.
@@ -375,7 +382,7 @@ const struct HeliParams BELL_AERODYNAMICS = {
     ),
 
     .rigidness = 10,
-    .anti_wobliness = 1./5
+    .anti_wobliness = 1./10
 };
 
 

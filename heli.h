@@ -21,9 +21,10 @@ struct HeliParams {
     float torbulant_airspeed;  // [M / SEC]
 
     float main_rotor_max_vel;  // [Rotations / SEC]
-    double main_rotor_acc;  // [Rotations / SEC / SEC]
+    float main_rotor_torque;  //  [N * M^2]
+    float main_rotor_length;  // [M]
 
-    float tail_length;  // [Meters]
+    float tail_length;  // [M]
     float tail_drag;  // Tail drag to apply yaw torque on airspeed [Newton / [M / SEC]]
 
     double swash_torque;  //  The swash moment strength [N * M]
@@ -88,11 +89,15 @@ protected:
     float m_main_rotor_vel;
 
     // Body and rotor orientation properties.
-    irrvec3 m_rotor_angular_momentum;
+    irrvec3 m_rotor_angular_momentum_in_world;
     irr::core::matrix4 m_rotor_rotation;
     irr::core::matrix4 m_body_rotation;
     irrvec3 m_body_angularv_in_body_coords;
     irrvec3 m_prev_reaction_in_body;
+
+    // To avoid recalculation, some forces are stored:
+    float m_lift_force;
+    float m_tail_rotor_force;
 
     HeliParams m_params;
 

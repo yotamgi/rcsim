@@ -61,7 +61,7 @@ void print_matrix(const std::string str, const irr::core::matrix4 &mat) {
     std::cout << mat(2, 2) << std::endl;
 }
 
-static void print_vec(const std::string str, const irrvec3 &vec) {
+void print_vec(const std::string str, const irrvec3 &vec) {
     std::cout << "Vec " << str << ": (";
     std::cout << vec.X << ", ";
     std::cout << vec.Y << ", ";
@@ -159,7 +159,6 @@ void BaseHeli::update_moments(float time_delta,
         main_rotor_torque = (1 - (omega_ratio - 0.9) * 10) * m_params.main_rotor_torque;
     }
     m_main_rotor_vel = main_rotor_omega / (2 * PI) * 360;
-    std::cout << "Main_rotor: " << m_main_rotor_vel / 360 << " [RPS]" << std::endl;
     irrvec3 rotor_y(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
     irrvec3 engine_torque_in_world = main_rotor_torque * rotor_y;
 
@@ -198,12 +197,9 @@ void BaseHeli::update_moments(float time_delta,
     irrvec3 body_up(m_body_rotation(1, 0), m_body_rotation(1, 1), m_body_rotation(1, 2));
     irrvec3 rotor_up(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
     irrvec3 body_reaction_moment_in_world = rotor_up.crossProduct(body_up) * m_params.rigidness;
-    print_vec("Body reaction", body_reaction_moment_in_world);
 
     irrvec3 body_reaction_moment;
     m_rotor_rotation.getTransposed().rotateVect(body_reaction_moment, body_reaction_moment_in_world);
-    print_vec("Body reaction", body_reaction_moment);
-    print_vec("Swash torque", swash_torque_in_rotor_coords);
 
     // Anti-wobliness moment.
     irrvec3 dbody_reaction_moment = (body_reaction_moment - m_prev_reaction_in_body) / time_delta;
@@ -246,7 +242,6 @@ void BaseHeli::update(double time_delta,
     irrvec3 heli_up(0, 1, 0);
     m_rotor_rotation.rotateVect(heli_up);
     irrvec3 lift = heli_up * servo_data.lift * m_params.max_lift * main_rotor_effectiveness;
-    std::cout << "Lift: " << norm(lift) << std::endl;
 
     // Aerodynamic force.
     irrvec3 drag_vec = m_params.drag;
@@ -263,7 +258,6 @@ void BaseHeli::update(double time_delta,
     torbulant_coeff = torbulant_coeff < 0 ? 0 : torbulant_coeff;
     torbulant_coeff *= 0.5 + 0.5*torbulant_rand.update(time_delta);
     float lift_torbulant_effect = 1 - torbulant_coeff * 0.5;
-    std::cout << "Lift torbulant effect: " << lift_torbulant_effect << std::endl;
     lift *= lift_torbulant_effect;
 
     irrvec3 total_force = gravity + lift - aerodynamic_drag;

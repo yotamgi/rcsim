@@ -381,7 +381,7 @@ const struct HeliParams BELL_AERODYNAMICS = {
 
 
 BellHeli::BellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* driver):
-    BaseHeli(BELL_AERODYNAMICS), m_arrow(smgr)
+    BaseHeli(BELL_AERODYNAMICS)
 {
     // Create the body mesh.
 	irr::scene::IMesh* heli_mesh = smgr->getMesh("media/Bell/source/bell_body.obj");

@@ -182,6 +182,7 @@ void BaseHeli::update_moments(float time_delta,
     );
     swash_torque_in_rotor_coords *= main_rotor_effectiveness;
     yaw_torque_in_rotor_coords *= main_rotor_effectiveness;
+    m_tail_rotor_force = yaw_torque_in_rotor_coords.Y / m_params.tail_length;
     irrvec3 swash_torque_in_world;
     m_rotor_rotation.rotateVect(swash_torque_in_world, swash_torque_in_rotor_coords);
 
@@ -244,9 +245,12 @@ void BaseHeli::update(double time_delta,
     irrvec3 gravity(0, -GRAVITY_CONSTANT, 0);
 
     // Lift is up in the heli axis;
-    irrvec3 heli_up(0, 1, 0);
-    m_rotor_rotation.rotateVect(heli_up);
+    irrvec3 heli_up(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
     irrvec3 lift = heli_up * servo_data.lift * m_params.max_lift * main_rotor_effectiveness;
+
+    // Tail rotor thrust also adds forces.
+    irrvec3 heli_right(m_rotor_rotation(0, 0), m_rotor_rotation(0, 1), m_rotor_rotation(0, 2));
+    irrvec3 tail_thrust = heli_right * m_tail_rotor_force;
 
     // Aerodynamic force.
     irrvec3 drag_vec = m_params.drag;
@@ -265,7 +269,7 @@ void BaseHeli::update(double time_delta,
     float lift_torbulant_effect = 1 - torbulant_coeff * 0.5;
     lift *= lift_torbulant_effect;
 
-    irrvec3 total_force = gravity + lift - aerodynamic_drag;
+    irrvec3 total_force = gravity + lift - aerodynamic_drag + tail_thrust;
     irrvec3 acc = total_force / m_params.mass;
     m_v += time_delta * acc;
     m_pos += time_delta * m_v;

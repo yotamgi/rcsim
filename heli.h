@@ -23,6 +23,7 @@ struct HeliParams {
     float main_rotor_max_vel;  // [Rotations / SEC]
     float main_rotor_torque;  //  [N * M^2]
     float main_rotor_length;  // [M]
+    float main_rotor_max_angle_of_attack;  // [degrees]
 
     float tail_length;  // [M]
     float tail_drag;  // Tail drag to apply yaw torque on airspeed [Newton / [M / SEC]]

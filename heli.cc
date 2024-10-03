@@ -163,7 +163,12 @@ void BaseHeli::update_moments(float time_delta,
     irrvec3 engine_torque_in_world = main_rotor_torque * rotor_y;
 
     // Calculate the rotor drag force, trying to slow down the rotor.
-    irrvec3 rotor_drag_torque_in_world = -m_lift_force * m_params.main_rotor_length / 3 * rotor_y;
+    float angle_of_attack = m_params.main_rotor_max_angle_of_attack * m_lift_servo.get() / 360 * 2 * PI;
+    irrvec3 rotor_drag_torque_in_world =
+            -m_lift_force
+            * m_params.main_rotor_length / 3  // Geometric coeffcient from rotor lift to drag torque.
+            * std::tan(angle_of_attack)  // Ratio between wing's lift and drag.
+            * rotor_y;  // Directed upwards.
 
     // Calculate the servos torque.
     // Note that the roll and pitch are switched due to the gyro 90 deg effect.
@@ -353,12 +358,13 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .init_pos = irrvec3(0, 0.25, 0),
     .init_rotation = irrvec3(0, 0, 0),
     .mass = 2.,
-    .max_lift = 2. * 10 * 2,  // = mass * 2
+    .max_lift = 2. * 10 * 2.5,  // = mass * 2.5
     .drag = irrvec3(0.25, 2, 0.05),
     .torbulant_airspeed = 5,
     .main_rotor_max_vel = 55,
-    .main_rotor_torque = 5.,
+    .main_rotor_torque = 2.,
     .main_rotor_length = 1.,
+    .main_rotor_max_angle_of_attack = 12.,
 
     .tail_length = 0.6,
     .tail_drag = 1.,

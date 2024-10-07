@@ -269,7 +269,7 @@ void BaseHeli::update(double time_delta,
     float lift_torbulant_effect = 1 - torbulant_coeff * 0.5;
     lift *= lift_torbulant_effect;
 
-    irrvec3 total_force = gravity + lift - aerodynamic_drag + tail_thrust;
+    irrvec3 total_force = gravity + lift - aerodynamic_drag + tail_thrust + m_external_force;
     irrvec3 acc = total_force / m_params.mass;
     m_v += time_delta * acc;
     m_pos += time_delta * m_v;
@@ -277,6 +277,31 @@ void BaseHeli::update(double time_delta,
     update_ui(time_delta);
     m_lift_force = norm(lift);
 }
+
+static irrvec3 rotate(irr::core::matrix4 matrix, irrvec3 vec) {
+    matrix.rotateVect(vec);
+    return vec;
+}
+
+
+void BaseHeli::add_force(unsigned int touchpoint_index, const irrvec3 &force) {
+    m_external_force += force;
+}
+
+
+std::vector<BaseHeli::TouchPoint> BaseHeli::get_touchpoints_in_world() {
+    std::vector<BaseHeli::TouchPoint> touchpoints_in_world;
+    for (auto touchpoint_in_body : m_params.touchpoints_in_heli) {
+        BaseHeli::TouchPoint tp;
+        tp.pos_in_world = m_pos + rotate(m_body_rotation, touchpoint_in_body);
+        tp.vel_in_world = m_v + rotate(m_body_rotation,
+                    m_body_angularv_in_body_coords.crossProduct(touchpoint_in_body));
+        touchpoints_in_world.push_back(tp);
+    }
+    return touchpoints_in_world;
+}
+
+
 
 class MainRotorBlur : public RotorBlur {
 public:
@@ -359,7 +384,7 @@ private:
 
 
 const struct HeliParams BELL_AERODYNAMICS = {
-    .init_pos = irrvec3(0, 0.25, 0),
+    .init_pos = irrvec3(0, 0.125 + -0.019, 0),
     .init_rotation = irrvec3(0, 0, 0),
     .mass = 2.,
     .max_lift = 2. * 10 * 2.5,  // = mass * 2.5
@@ -386,7 +411,15 @@ const struct HeliParams BELL_AERODYNAMICS = {
     ),
 
     .rigidness = 10,
-    .anti_wobliness = 1./10
+    .anti_wobliness = 1./10,
+
+    .touchpoints_in_heli = std::vector<irrvec3>({
+       irrvec3( 0.19, -0.125,  0.17),
+       irrvec3(-0.19, -0.125,  0.17),
+       irrvec3(-0.19, -0.125, -0.17), // The back should be z=-0.28.
+       irrvec3( 0.19, -0.125, -0.17),
+       irrvec3(0, 0.05, -1.12)
+    })
 };
 
 

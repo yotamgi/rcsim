@@ -6,6 +6,7 @@
 #include <string>
 #include <irrlicht/irrlicht.h>
 #include <memory>
+#include <vector>
 
 
 typedef irr::core::vector3df irrvec3;
@@ -37,6 +38,7 @@ struct HeliParams {
                       //                   rotor connected
     float anti_wobliness;  // [[torque] / [M/Sec]] A number describing the helicopter deformation
                            // friction, e.g. the eneregy loss due to non-rigid movements.
+    std::vector<irrvec3> touchpoints_in_heli;
 };
 
 /**
@@ -65,6 +67,16 @@ public:
     void set_velocity(const irrvec3 new_v) { m_v = new_v; }
     irrvec3 get_gyro_angularv() const {return m_body_angularv_in_body_coords; }
 
+    void add_force(unsigned int touchpoints_index, const irrvec3 &force);
+    void reset_force() { m_external_force = irrvec3();  m_external_torque = irrvec3(); }
+
+    struct TouchPoint {
+        irrvec3 pos_in_world;
+        irrvec3 vel_in_world;
+    };
+
+    std::vector<TouchPoint> get_touchpoints_in_world();
+
 protected:
     virtual void update_ui(float time_delta) = 0;
     void update_body_moments(float time_delta,
@@ -88,6 +100,8 @@ protected:
     irrvec3 m_pos;
     SmoothRandFloat torbulant_rand;
     float m_main_rotor_vel;
+    irrvec3 m_external_torque;
+    irrvec3 m_external_force;
 
     // Body and rotor orientation properties.
     irrvec3 m_rotor_angular_momentum_in_world;
@@ -114,6 +128,7 @@ protected:
 class BellHeli : public BaseHeli {
 public:
     BellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* driver);
+
 private:
     virtual void update_ui(float time_delta);
 

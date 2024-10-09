@@ -116,6 +116,7 @@ void BaseHeli::update_body_moments(float time_delta, const irrvec3 &moment_in_wo
 
 void BaseHeli::update_rotor_moments(float time_delta, const irrvec3 &moment_in_world)
 {
+    float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
     // Update rotor angular momentum by the torques.
     m_rotor_angular_momentum_in_world += time_delta * moment_in_world;
 
@@ -136,9 +137,19 @@ void BaseHeli::update_rotor_moments(float time_delta, const irrvec3 &moment_in_w
     // The rest are updated.
     irrvec3 rot_x = rot_y.crossProduct(rot_z);
     rot_z = rot_x.crossProduct(rot_y);
-    m_rotor_rotation(0, 0) = rot_x.X; m_rotor_rotation(0, 1) = rot_x.Y; m_rotor_rotation(0, 2) = rot_x.Z;
-    m_rotor_rotation(1, 0) = rot_y.X; m_rotor_rotation(1, 1) = rot_y.Y; m_rotor_rotation(1, 2) = rot_y.Z;
-    m_rotor_rotation(2, 0) = rot_z.X; m_rotor_rotation(2, 1) = rot_z.Y; m_rotor_rotation(2, 2) = rot_z.Z;
+
+    // Tackle numerical instability in low RPMs - since in low RPMs the torques 
+    // on the rotor can change its orientation quite a bit, this causes a lot
+    // of numerical instability.
+    if (main_rotor_effectiveness < 0.2) {
+        m_rotor_rotation = m_body_rotation;
+        rot_y.X = m_rotor_rotation(1, 0); rot_y.Y = m_rotor_rotation(1, 1); rot_y.Z = m_rotor_rotation(1, 2);
+        m_rotor_angular_momentum_in_world = norm(m_rotor_angular_momentum_in_world) * rot_y;
+    } else {
+        m_rotor_rotation(0, 0) = rot_x.X; m_rotor_rotation(0, 1) = rot_x.Y; m_rotor_rotation(0, 2) = rot_x.Z;
+        m_rotor_rotation(1, 0) = rot_y.X; m_rotor_rotation(1, 1) = rot_y.Y; m_rotor_rotation(1, 2) = rot_y.Z;
+        m_rotor_rotation(2, 0) = rot_z.X; m_rotor_rotation(2, 1) = rot_z.Y; m_rotor_rotation(2, 2) = rot_z.Z;
+    }
 }
 
 

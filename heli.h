@@ -39,6 +39,10 @@ struct HeliParams {
     float anti_wobliness;  // [[torque] / [M/Sec]] A number describing the helicopter deformation
                            // friction, e.g. the eneregy loss due to non-rigid movements.
     std::vector<irrvec3> touchpoints_in_heli;
+
+    float external_torque_limit;  // [torque] Maximum external torque allowed on the helicopter.
+                                  //          High value here may cause numerical instability when
+                                  //          the heli touches the ground.
 };
 
 /**

@@ -225,10 +225,17 @@ void BaseHeli::update_moments(float time_delta,
     m_rotor_rotation.rotateVect(anti_wobliness_in_world, dbody_reaction_moment);
     body_reaction_moment_in_world += anti_wobliness_in_world * m_params.anti_wobliness;
 
+    // Limit the external torque.
+    irrvec3 external_torque = m_external_torque;
+    if (norm(external_torque) > m_params.external_torque_limit) {
+        external_torque /= norm(external_torque)/m_params.external_torque_limit;
+    }
+
     // Update rotations.
     irrvec3 total_body_torques_in_world = total_tail_moment_in_world 
                                         - engine_torque_in_world
-                                        - body_reaction_moment_in_world;
+                                        - body_reaction_moment_in_world
+                                        + external_torque;
     irrvec3 total_rotor_torques_in_world = swash_torque_in_world
                                             + engine_torque_in_world
                                             + body_reaction_moment_in_world
@@ -297,6 +304,8 @@ static irrvec3 rotate(irr::core::matrix4 matrix, irrvec3 vec) {
 
 void BaseHeli::add_force(unsigned int touchpoint_index, const irrvec3 &force) {
     m_external_force += force;
+    m_external_torque += rotate(m_body_rotation,
+            m_params.touchpoints_in_heli[touchpoint_index]).crossProduct(force);
 }
 
 
@@ -395,14 +404,14 @@ private:
 
 
 const struct HeliParams BELL_AERODYNAMICS = {
-    .init_pos = irrvec3(0, 0.125 + -0.019, 0),
+    .init_pos = irrvec3(0, 0.13 + -0.019, 0),
     .init_rotation = irrvec3(0, 0, 0),
     .mass = 2.,
     .max_lift = 2. * 10 * 2.5,  // = mass * 2.5
     .drag = irrvec3(0.25, 2, 0.05),
     .torbulant_airspeed = 5,
     .main_rotor_max_vel = 55,
-    .main_rotor_torque = 2.,
+    .main_rotor_torque = 1.,
     .main_rotor_length = 1.,
     .main_rotor_max_angle_of_attack = 12.,
 
@@ -425,12 +434,14 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .anti_wobliness = 1./10,
 
     .touchpoints_in_heli = std::vector<irrvec3>({
-       irrvec3( 0.19, -0.125,  0.17),
-       irrvec3(-0.19, -0.125,  0.17),
-       irrvec3(-0.19, -0.125, -0.17), // The back should be z=-0.28.
-       irrvec3( 0.19, -0.125, -0.17),
-       irrvec3(0, 0.05, -1.12)
-    })
+     irrvec3( 0.19, -0.128,  0.17),
+     irrvec3(-0.19, -0.128,  0.17),
+     irrvec3(-0.19, -0.128, -0.28),
+     irrvec3( 0.19, -0.128, -0.28),
+     irrvec3(0, 0.05, -1.12)
+    }),
+
+    .external_torque_limit = 1.1
 };
 
 

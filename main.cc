@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <iostream>
 #include "heli.h"
-#include "controller.h"
+#include "flight_controller.h"
 #include "controls_view.h"
 
 /*
@@ -276,7 +276,7 @@ int main()
     BellHeli heli(smgr, driver);
 
     // Init the controller.
-    GyroController controller(&heli);
+    GyroFlightController controller(&heli);
     ControlsView controls_view(driver);
 
     // Add skybox

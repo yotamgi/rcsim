@@ -9,13 +9,13 @@ all: rcsim
 run: rcsim
 	./rcsim
 
-OBJS = smooth_rand.o heli.o main.o rotor_blur.o arrow.o controller.o controls_view.o
+OBJS = smooth_rand.o heli.o main.o rotor_blur.o arrow.o flight_controller.o controls_view.o
 
 controls_view.o: controls_view.cc
 	$(CXX) -c $(CXXFLAGS) controls_view.cc -o controls_view.o
 
-controller.o: controller.cc
-	$(CXX) -c $(CXXFLAGS) controller.cc -o controller.o
+flight_controller.o: flight_controller.cc
+	$(CXX) -c $(CXXFLAGS) flight_controller.cc -o flight_controller.o
 
 arrow.o: arrow.cc
 	$(CXX) -c $(CXXFLAGS) arrow.cc -o arrow.o

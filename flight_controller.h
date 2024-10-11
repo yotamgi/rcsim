@@ -3,18 +3,18 @@
 
 #include "heli.h"
 
-class Controller {
+class FlightController {
 public:
-    Controller(const BaseHeli *heli):m_heli(heli) {}
+    FlightController(const BaseHeli *heli):m_heli(heli) {}
     virtual ServoData updateServoData(const ServoData& servo_data, float time_delta) = 0;
 protected:
     const BaseHeli *m_heli;
 };
 
 
-class GyroController : public Controller {
+class GyroFlightController : public FlightController {
 public:
-    GyroController(const BaseHeli *heli):Controller(heli),m_six_axis(true) {}
+    GyroFlightController(const BaseHeli *heli):FlightController(heli),m_six_axis(true) {}
     virtual ServoData updateServoData(const ServoData& servo_data, float time_delta);
 
     void set_six_axis(bool set) { m_six_axis = set; }

@@ -6,7 +6,7 @@
 class FlightController {
 public:
     FlightController(const BaseHeli *heli):m_heli(heli) {}
-    virtual ServoData updateServoData(const ServoData& servo_data, float time_delta) = 0;
+    virtual ServoData translate(const ServoData& servo_data, float time_delta) = 0;
 protected:
     const BaseHeli *m_heli;
 };
@@ -15,7 +15,7 @@ protected:
 class GyroFlightController : public FlightController {
 public:
     GyroFlightController(const BaseHeli *heli):FlightController(heli),m_six_axis(true) {}
-    virtual ServoData updateServoData(const ServoData& servo_data, float time_delta);
+    virtual ServoData translate(const ServoData& servo_data, float time_delta);
 
     void set_six_axis(bool set) { m_six_axis = set; }
 private:

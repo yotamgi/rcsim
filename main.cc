@@ -336,7 +336,7 @@ int main()
         // Update the plane according to the keys
         //////////////
         ServoData servo_data = receiver.get_servo_data(time_delta);
-        ServoData servo_data_after_controller = controller.updateServoData(servo_data, time_delta);
+        ServoData servo_data_after_controller = controller.translate(servo_data, time_delta);
 
         heli.update(time_delta, irrvec3(0, 0, 0), servo_data_after_controller);
 

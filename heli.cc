@@ -16,11 +16,11 @@ float norm(irrvec3 vec) {
 BaseHeli::BaseHeli(const HeliParams &params):
          torbulant_rand(3., 1),
          m_params(params),
-         m_pitch_servo(4),
-         m_roll_servo(4),
-         m_yaw_servo(8),
-         m_lift_servo(4),
-         m_throttle_servo(0.5)
+         m_pitch_servo(4, 0),
+         m_roll_servo(4, 0),
+         m_yaw_servo(8, 0),
+         m_lift_servo(4, 0),
+         m_throttle_servo(0.5, -0.9)
 {
     m_pos = m_params.init_pos;
     m_v = irrvec3(0, 0, 0);

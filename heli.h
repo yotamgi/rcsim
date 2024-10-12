@@ -92,7 +92,7 @@ protected:
 
     class ServoFilter {
     public:
-        ServoFilter(float max_rps):m_max_rps(max_rps),m_current_status(0) {}
+        ServoFilter(float max_rps, float init_value):m_max_rps(max_rps),m_current_status(init_value) {}
         float update(float value, float time_delta);
         float get() const { return m_current_status; }
     private:

@@ -7,7 +7,7 @@
 #include <vector>
 
 
-const int CURVE_CACHE_SIZE = 300;
+const int CURVE_CACHE_SIZE = 250;
 
 
 struct ControlsInput {

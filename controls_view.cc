@@ -7,7 +7,7 @@
 const int CONTROLS_SIZE = 140;
 const int YAW_VIEW_HEIGHT = 30;
 const int PIN_SIZE = 12;
-const int LOCATION_X = 50;
+const int LOCATION_X = 20;
 const int LOCATION_Y = 50;
 const int YAW_VIEW_LOCATION_Y = LOCATION_Y + CONTROLS_SIZE + 20;
 const int YAW_VIEW_LOCATION_X = LOCATION_X;
@@ -15,12 +15,12 @@ const int LIFT_VIEW_WIDTH = 30;
 const int LIFT_VIEW_LOCATION_Y = LOCATION_Y;
 const int LIFT_VIEW_LOCATION_X = LOCATION_X - LIFT_VIEW_WIDTH - 10;
 
-const int CURVES_IMAGE_LOCATION_X = 50;
-const int CURVES_IMAGE_LOCATION_Y = 300;
-const int CURVES_IMAGE_HEIGHT = 200;
-const int CURVES_IMAGE_WIDTH = 300;
-const int CURVES_GRID_SIZE = 50;
-const int CURVE_THICKNESS = 3;
+const int CURVES_IMAGE_LOCATION_X = 200;
+const int CURVES_IMAGE_LOCATION_Y = 45;
+const int CURVES_IMAGE_HEIGHT = 140;
+const int CURVES_IMAGE_WIDTH = 250;
+const int CURVES_GRID_SIZE = 25;
+const int CURVE_THICKNESS = 2.5;
 
 
 static float curve_x_to_value(int x) {
@@ -169,7 +169,7 @@ ControlsView::ControlsView(
             for (int y=0; y<CURVES_IMAGE_HEIGHT; y++) {
                 // The grid:
                 if (((x % CURVES_GRID_SIZE == 0) || (y % CURVES_GRID_SIZE == 0)) && (x != 0) && (y != 0)) {
-                    curves_image->setPixel(x, y, irr::video::SColor(0x60, 0, 0, 0));
+                    curves_image->setPixel(x, y, irr::video::SColor(0x40, 0, 0, 0));
                 }
                 else {
                     curves_image->setPixel(x, y, irr::video::SColor(0x20, 0, 0, 0));
@@ -186,7 +186,7 @@ ControlsView::ControlsView(
         );
 
         std::stringstream ss;
-        ss << "curve_inages_" << curve_index;
+        ss << "curve_images_" << curve_index;
         m_curves_images.push_back(driver->addTexture(ss.str().c_str(), curves_image));
     }
 
@@ -197,7 +197,7 @@ ControlsView::ControlsView(
             3, CURVES_IMAGE_HEIGHT));
     for (int x=0; x<3; x++) {
         for (int y=0; y<CURVES_IMAGE_HEIGHT; y++) {
-            curves_vertical_line->setPixel(x, y, irr::video::SColor(0xb0, 0, 0, 0));
+            curves_vertical_line->setPixel(x, y, irr::video::SColor(0x80, 0, 0, 0));
         }
     }
     m_curves_vertical_line = driver->addTexture(irr::io::path("curves_vertical_line"), curves_vertical_line);

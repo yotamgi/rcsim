@@ -1,5 +1,8 @@
-#include "controls_view.h"
+#include "controls.h"
 #include <cmath>
+
+#include <iostream>
+#include <sstream>
 
 const int CONTROLS_SIZE = 140;
 const int YAW_VIEW_HEIGHT = 30;
@@ -12,10 +15,64 @@ const int LIFT_VIEW_WIDTH = 30;
 const int LIFT_VIEW_LOCATION_Y = LOCATION_Y;
 const int LIFT_VIEW_LOCATION_X = LOCATION_X - LIFT_VIEW_WIDTH - 10;
 
+const int CURVES_IMAGE_LOCATION_X = 50;
+const int CURVES_IMAGE_LOCATION_Y = 300;
+const int CURVES_IMAGE_HEIGHT = 200;
+const int CURVES_IMAGE_WIDTH = 300;
+const int CURVES_GRID_SIZE = 50;
+const int CURVE_THICKNESS = 3;
 
-ControlsView::ControlsView(irr::video::IVideoDriver *driver) {
 
-    // Create the controls image.
+static float curve_x_to_value(int x) {
+    return (float(x) / CURVES_IMAGE_WIDTH) * 2. - 1.;
+}
+static float curve_value_to_y(float value) {
+    return float(CURVES_IMAGE_HEIGHT) * ((value + 1.) / 2.);
+}
+
+
+static void plot_curve(const ControllerCurve &curve, 
+                       irr::video::IImage *image,
+                       const irr::video::SColor &color,
+                       int image_width = CURVES_IMAGE_WIDTH,
+                       int image_height = CURVES_IMAGE_HEIGHT)
+{
+    float curve_y_value;
+
+    for (int x=0; x<image_width; x++) {
+        float in_value = curve_x_to_value(x);
+        float new_curve_y_value = curve_value_to_y(-curve.translate(in_value));
+        float grad = (x == 0) ? 0 : (new_curve_y_value - curve_y_value);
+        curve_y_value = new_curve_y_value;
+
+        float grad_angle = irr::core::PI/2 - std::atan(grad);
+        float thickness_squared = std::pow(CURVE_THICKNESS / std::sin(grad_angle), 3);
+
+        for (int y=0; y<image_height; y++) {
+            float distance = std::abs(float(y) - curve_y_value);
+
+            float value = (thickness_squared - std::pow(distance, 3)) / thickness_squared;
+            value = (value > 0) ? value : 0;
+            irr::video::SColor prev_color = image->getPixel(x, y);
+            int new_alpha = std::max(prev_color.getAlpha(), (unsigned int)(value*color.getAlpha()));
+            int new_red = value * color.getRed() + (1-value) * prev_color.getRed();
+            int new_green = value * color.getGreen() + (1-value) * prev_color.getGreen();
+            int new_blue = value * color.getBlue() + (1-value) * prev_color.getBlue();
+            image->setPixel(x, y, irr::video::SColor(new_alpha, new_red, new_green, new_blue));
+        }
+    }
+}
+
+
+ControlsView::ControlsView(
+            irr::video::IVideoDriver *driver,
+            std::vector<ControllerCurve> throttle_curves,
+            std::vector<ControllerCurve> lift_curves):
+    m_throttle_curves(throttle_curves),
+    m_lift_curves(lift_curves)
+{
+
+    // Create the pitch-roll controls image.
     irr::video::IImage * controls_image = driver->createImage(
             irr::video::ECF_A8R8G8B8,
             irr::core::dimension2d<unsigned int>(CONTROLS_SIZE, CONTROLS_SIZE)
@@ -70,37 +127,6 @@ ControlsView::ControlsView(irr::video::IVideoDriver *driver) {
 
     m_yaw_image = driver->addTexture(irr::io::path("yaw_image"), yaw_image);
 
-    // Create the lift control image.
-    irr::video::IImage * lift_image = driver->createImage(
-            irr::video::ECF_A8R8G8B8,
-            irr::core::dimension2d<unsigned int>(LIFT_VIEW_WIDTH, CONTROLS_SIZE)
-    );
-
-    for (int x=0; x<LIFT_VIEW_WIDTH; x++) {
-        for (int y=0; y<CONTROLS_SIZE; y++) {
-            int half_x = LIFT_VIEW_WIDTH / 2;
-            int half_y = CONTROLS_SIZE / 2;
-            int y_fade = 0.25 * CONTROLS_SIZE;
-            // Draw the axes;
-            if ((x > half_x-1 && x < half_x+1) || (y > half_y-1 && y < half_y+1)) {
-                lift_image->setPixel(x, y, irr::video::SColor(0xff, 0, 0, 0));
-            }
-            // Draw the gradient;
-            else {
-                float distance = float(std::abs(x - half_x)) / half_x;
-                float intensity = 1-distance;
-                if (y < y_fade) {
-                    intensity *= 1 - std::pow(float(y_fade - y) / y_fade, 2);
-                } else if (y > CONTROLS_SIZE - y_fade) {
-                    intensity *= 1 - std::pow(float(y - (CONTROLS_SIZE - y_fade)) / y_fade, 2);
-                }
-                lift_image->setPixel(x, y, irr::video::SColor(150*intensity, 0xA0, 0, 0));
-            }
-        }
-    }
-
-    m_lift_image = driver->addTexture(irr::io::path("lift_image"), lift_image);
-
     // Create the pin image;
     irr::video::IImage *pin_image = driver->createImage(
             irr::video::ECF_A8R8G8B8, irr::core::dimension2d<unsigned int>(PIN_SIZE, PIN_SIZE));
@@ -132,10 +158,59 @@ ControlsView::ControlsView(irr::video::IVideoDriver *driver) {
     m_second_pin_image = driver->addTexture(irr::io::path("second_pin_image"), second_pin_image);
 
     m_driver = driver;
+
+    // Create the throttle-lift curves canvas.
+    for (size_t curve_index = 0; curve_index < m_throttle_curves.size(); curve_index++) {
+        irr::video::IImage *curves_image = driver->createImage(
+                irr::video::ECF_A8R8G8B8, irr::core::dimension2d<unsigned int>(
+                CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT));
+
+        for (int x=0; x<CURVES_IMAGE_WIDTH; x++) {
+            for (int y=0; y<CURVES_IMAGE_HEIGHT; y++) {
+                // The grid:
+                if (((x % CURVES_GRID_SIZE == 0) || (y % CURVES_GRID_SIZE == 0)) && (x != 0) && (y != 0)) {
+                    curves_image->setPixel(x, y, irr::video::SColor(0x60, 0, 0, 0));
+                }
+                else {
+                    curves_image->setPixel(x, y, irr::video::SColor(0x20, 0, 0, 0));
+                }
+            }
+        }
+        plot_curve(m_throttle_curves[curve_index], 
+                   curves_image,
+                   irr::video::SColor(0xb0, 0x8c, 0x2a, 0xde)
+        );
+        plot_curve(m_lift_curves[curve_index],
+                   curves_image,
+                   irr::video::SColor(0xb0, 0x42, 0x9e, 0xff)
+        );
+
+        std::stringstream ss;
+        ss << "curve_inages_" << curve_index;
+        m_curves_images.push_back(driver->addTexture(ss.str().c_str(), curves_image));
+    }
+
+
+    // Create the curves vertical line.
+    irr::video::IImage *curves_vertical_line = driver->createImage(
+            irr::video::ECF_A8R8G8B8, irr::core::dimension2d<unsigned int>(
+            3, CURVES_IMAGE_HEIGHT));
+    for (int x=0; x<3; x++) {
+        for (int y=0; y<CURVES_IMAGE_HEIGHT; y++) {
+            curves_vertical_line->setPixel(x, y, irr::video::SColor(0xb0, 0, 0, 0));
+        }
+    }
+    m_curves_vertical_line = driver->addTexture(irr::io::path("curves_vertical_line"), curves_vertical_line);
+
+    m_driver = driver;
 }
 
-void ControlsView::update_ui(const ServoData &before_controller, const ServoData &after_controller) {
-
+void ControlsView::update_ui(
+            const ControlsInput &user_input,
+            const ServoData &before_controller,
+            const ServoData &after_controller,
+            int active_curve_index)
+{
     // Draw the pitch-roll control view.
     int before_pin_x = LOCATION_X + CONTROLS_SIZE/2 + before_controller.roll*CONTROLS_SIZE/2 - PIN_SIZE/2;
     int before_pin_y = LOCATION_Y + CONTROLS_SIZE/2 + before_controller.pitch*CONTROLS_SIZE/2 - PIN_SIZE/2;
@@ -197,37 +272,48 @@ void ControlsView::update_ui(const ServoData &before_controller, const ServoData
             irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE),
             NULL, NULL, true);
 
-    // Draw the lift controls view.
-    int lift_before_pin_x = LIFT_VIEW_LOCATION_X + LIFT_VIEW_WIDTH/2 - PIN_SIZE/2;
-    int lift_before_pin_y = LIFT_VIEW_LOCATION_Y + CONTROLS_SIZE/2 - before_controller.lift*CONTROLS_SIZE/2 - PIN_SIZE/2;
-    int lift_after_pin_x = LIFT_VIEW_LOCATION_X + LIFT_VIEW_WIDTH/2 - PIN_SIZE;
-    int lift_after_pin_y = LIFT_VIEW_LOCATION_Y + CONTROLS_SIZE/2 - after_controller.lift*CONTROLS_SIZE/2 - PIN_SIZE/2;
-
+    // Draw the lift/throttle curves.
     m_driver->draw2DImage(
-            m_lift_image,
-            irr::core::position2d<int>(LIFT_VIEW_LOCATION_X, LIFT_VIEW_LOCATION_Y),
-            irr::core::rect<int>(0, 0, LIFT_VIEW_WIDTH, CONTROLS_SIZE),
+            m_curves_images[active_curve_index],
+            irr::core::position2d<int>(CURVES_IMAGE_LOCATION_X, CURVES_IMAGE_LOCATION_Y),
+            irr::core::rect<int>(0, 0, CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT),
             NULL, 
             irr::video::SColor(255, 255, 255, 255),
             true);
 
-    
+    int vertical_line_x_offset = float(CURVES_IMAGE_WIDTH) * (user_input.throttle_stick + 1) / 2;
     m_driver->draw2DImage(
-            m_pin_image,
-            irr::core::rect<int>(lift_after_pin_x,
-                                 lift_after_pin_y,
-                                 lift_after_pin_x+PIN_SIZE*2,
-                                 lift_after_pin_y+PIN_SIZE),
+            m_curves_vertical_line,
+            irr::core::rect<int>(CURVES_IMAGE_LOCATION_X + vertical_line_x_offset,
+                                 CURVES_IMAGE_LOCATION_Y,
+                                 CURVES_IMAGE_LOCATION_X + vertical_line_x_offset + 3,
+                                 CURVES_IMAGE_LOCATION_Y + CURVES_IMAGE_HEIGHT),
             irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE),
             NULL, NULL, true);
 
+    float pin_size = 1.2 * PIN_SIZE;
+    int throttle_pin_x = vertical_line_x_offset - pin_size / 2;
+    int throttle_pin_y = float(CURVES_IMAGE_HEIGHT)
+                * (-after_controller.throttle + 1) / 2
+                - pin_size / 2;
     m_driver->draw2DImage(
-            m_second_pin_image,
-            irr::core::rect<int>(lift_before_pin_x,
-                                 lift_before_pin_y,
-                                 lift_before_pin_x+PIN_SIZE,
-                                 lift_before_pin_y+PIN_SIZE),
+            m_pin_image,
+            irr::core::rect<int>(throttle_pin_x + CURVES_IMAGE_LOCATION_X,
+                                 throttle_pin_y + CURVES_IMAGE_LOCATION_Y,
+                                 throttle_pin_x + CURVES_IMAGE_LOCATION_X + pin_size,
+                                 throttle_pin_y + CURVES_IMAGE_LOCATION_Y + pin_size),
             irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE),
             NULL, NULL, true);
-            
+
+    int lift_pin_y = float(CURVES_IMAGE_HEIGHT)
+                * (-after_controller.lift + 1) / 2
+                - pin_size / 2;
+    m_driver->draw2DImage(
+            m_pin_image,
+            irr::core::rect<int>(throttle_pin_x + CURVES_IMAGE_LOCATION_X,
+                                 lift_pin_y + CURVES_IMAGE_LOCATION_Y,
+                                 throttle_pin_x + CURVES_IMAGE_LOCATION_X + pin_size,
+                                 lift_pin_y + CURVES_IMAGE_LOCATION_Y + pin_size),
+            irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE),
+            NULL, NULL, true);
 }

@@ -5,7 +5,7 @@
 #include <iostream>
 #include "heli.h"
 #include "flight_controller.h"
-#include "controls_view.h"
+#include "controls.h"
 
 /*
 In the Irrlicht Engine, everything can be found in the namespace 'irr'. So if
@@ -52,18 +52,18 @@ public:
     // This is used to check whether a key is being held down
     virtual bool IsKeyDown(irr::EKEY_CODE keyCode) const;
 
-    ServoData get_servo_data(float time_delta);
+    ControlsInput get_servo_data(float time_delta);
 
 private:
 
-    void update_value(double &value, irr::EKEY_CODE key_up, irr::EKEY_CODE key_down, float change_amount);
+    void update_value(float &value, irr::EKEY_CODE key_up, irr::EKEY_CODE key_down, float change_amount);
 
     // We use this array to store the current state of each key
     bool KeyIsDown[irr::KEY_KEY_CODES_COUNT];
 
     SEvent::SJoystickEvent JoystickState;
     bool m_joystick_active;
-    ServoData m_servo_data;
+    ControlsInput m_controls_input;
 };
 
 EventReceiver::EventReceiver()
@@ -71,10 +71,10 @@ EventReceiver::EventReceiver()
 	for (u32 i=0; i<irr::KEY_KEY_CODES_COUNT; ++i)
 		KeyIsDown[i] = false;
     m_joystick_active = false;
-    m_servo_data.pitch = 0;
-    m_servo_data.lift = 0;
-    m_servo_data.roll = 0;
-    m_servo_data.yaw = 0;
+    m_controls_input.pitch_stick = 0;
+    m_controls_input.roll_stick = 0;
+    m_controls_input.yaw_stick = 0;
+    m_controls_input.throttle_stick = -1;
 }
 
 bool EventReceiver::OnEvent(const irr::SEvent& event) {
@@ -96,7 +96,7 @@ bool EventReceiver::OnEvent(const irr::SEvent& event) {
 	return false;
 }
 
-void EventReceiver::update_value(double &value, irr::EKEY_CODE key_up, irr::EKEY_CODE key_down, float change_amount) {
+void EventReceiver::update_value(float &value, irr::EKEY_CODE key_up, irr::EKEY_CODE key_down, float change_amount) {
     if (IsKeyDown(key_up)) value += change_amount;
     else if (IsKeyDown(key_down)) value -= change_amount;
     else {
@@ -110,28 +110,28 @@ void EventReceiver::update_value(double &value, irr::EKEY_CODE key_up, irr::EKEY
     value = value < -1 ? -1 : value;
 }
 
-ServoData EventReceiver::get_servo_data(float time_delta) {
+ControlsInput EventReceiver::get_servo_data(float time_delta) {
     if (m_joystick_active) {
-        m_servo_data.pitch = -(float)JoystickState.Axis[1] / 32768;
-        m_servo_data.roll = -(float)JoystickState.Axis[0] / 32768;
-        m_servo_data.yaw = (float)JoystickState.Axis[4] / 32768;
-        m_servo_data.lift = -(float)JoystickState.Axis[2] / 32768;
-        m_servo_data.throttle = 1;
-        return m_servo_data;
+        m_controls_input.pitch_stick = -(float)JoystickState.Axis[1] / 32768;
+        m_controls_input.roll_stick = -(float)JoystickState.Axis[0] / 32768;
+        m_controls_input.yaw_stick = (float)JoystickState.Axis[4] / 32768;
+        m_controls_input.throttle_stick = -(float)JoystickState.Axis[2] / 32768;
+        return m_controls_input;
     }
 
     float change_amount = time_delta * 4;
-    update_value(m_servo_data.pitch, KEY_UP, KEY_DOWN, change_amount);
-    update_value(m_servo_data.roll, KEY_LEFT, KEY_RIGHT, change_amount);
-    update_value(m_servo_data.yaw, KEY_KEY_D, KEY_KEY_A, change_amount);
+    update_value(m_controls_input.pitch_stick, KEY_UP, KEY_DOWN, change_amount);
+    update_value(m_controls_input.roll_stick, KEY_LEFT, KEY_RIGHT, change_amount);
+    update_value(m_controls_input.yaw_stick, KEY_KEY_D, KEY_KEY_A, change_amount);
 
-    if (IsKeyDown(KEY_KEY_W))  m_servo_data.lift += time_delta;
-    else if (IsKeyDown(KEY_KEY_S)) m_servo_data.lift -= time_delta;
+    if (IsKeyDown(KEY_KEY_W))  m_controls_input.throttle_stick += time_delta;
+    else if (IsKeyDown(KEY_KEY_S)) m_controls_input.throttle_stick -= time_delta;
 
-    m_servo_data.lift = m_servo_data.lift > 1 ? 1 : m_servo_data.lift;
-    m_servo_data.lift = m_servo_data.lift < -1 ? -1 : m_servo_data.lift;
-    m_servo_data.throttle = 0.75;
-    return m_servo_data;
+    m_controls_input.throttle_stick = m_controls_input.throttle_stick > 1 ? 
+            1 : m_controls_input.throttle_stick;
+    m_controls_input.throttle_stick = m_controls_input.throttle_stick < -1 ?
+            -1 : m_controls_input.throttle_stick;
+    return m_controls_input;
 }
 
 bool EventReceiver::IsKeyDown(irr::EKEY_CODE keyCode) const {
@@ -271,13 +271,41 @@ int main()
     add_banana(smgr, driver, core::vector3df(0.9, 0.05, 0.3), core::vector3df(90, 40, 0));
     add_banana(smgr, driver, core::vector3df(0.4, 0.05, 0.0), core::vector3df(90, 0, 0));
 
-
-    // Init the Heli object.
+    // The helicopter setup.
     BellHeli heli(smgr, driver);
-
-    // Init the controller.
-    GyroFlightController controller(&heli);
-    ControlsView controls_view(driver);
+    GyroFlightController flight_controller(&heli);
+    Controls controls(
+            &flight_controller,
+            // Throttle curves:
+            {
+                // Normal mode:
+                ControllerCurve({
+                    ControllerCurve::Point(-1, -1),
+                    ControllerCurve::Point(-0.5, 0.2),
+                    ControllerCurve::Point(1, 0.2),
+                }),
+                // Idle-up mode:
+                ControllerCurve({
+                    ControllerCurve::Point(-1, 0.75),
+                    ControllerCurve::Point( 1, 0.75),
+                }),
+            },
+            // Blades pitch curves: 
+            {
+                // Normal mode:
+                ControllerCurve({
+                    ControllerCurve::Point(-1, -0.1),
+                    ControllerCurve::Point(-0.5, -0.0),
+                    ControllerCurve::Point( 1, 1.),
+                }),
+                // Idle-up mode:
+                ControllerCurve({
+                    ControllerCurve::Point(-1, -1),
+                    ControllerCurve::Point( 1, 1),
+                }),
+            },
+            driver
+    );
 
     // Add skybox
     smgr->addSkyBoxSceneNode(
@@ -319,8 +347,8 @@ int main()
         time_delta = time_delta > 0.03 ? 0.03 : time_delta;
 
 
+        // Show FPS.
         int fps = driver->getFPS();
-
         if (lastFPS != fps)
         {
             core::stringw str = L"Irrlicht Engine - Quake 3 Map example [";
@@ -332,16 +360,15 @@ int main()
             lastFPS = fps;
         }
 
-        ///////////////////////////////////////
-        // Update the plane according to the keys
-        //////////////
-        ServoData servo_data = receiver.get_servo_data(time_delta);
-        ServoData servo_data_after_controller = controller.translate(servo_data, time_delta);
+        // Update the helicopter.
+        ControlsInput controls_input = receiver.get_servo_data(time_delta);
+        heli.update(
+                time_delta,
+                irrvec3(0, 0, 0),
+                controls.get_servo_data(controls_input, time_delta)
+        );
 
-        heli.update(time_delta, irrvec3(0, 0, 0), servo_data_after_controller);
-
-        camera_node->setTarget(heli.get_position());
-
+        // Apply external force on the helicopter touch points.
         heli.reset_force();
         std::vector<BaseHeli::TouchPoint> touchpoints = heli.get_touchpoints_in_world();
         for (unsigned int i=0; i<touchpoints.size(); i++) {
@@ -354,9 +381,11 @@ int main()
             }
         }
 
+        // Draw.
+        camera_node->setTarget(heli.get_position());
         driver->beginScene(true, true, video::SColor(255,200,200,200));
         smgr->drawAll();
-        controls_view.update_ui(servo_data, servo_data_after_controller);
+        controls.update_ui();
         driver->endScene();
 	}
 

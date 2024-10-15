@@ -6,6 +6,7 @@
 #include "heli.h"
 #include "flight_controller.h"
 #include "controls.h"
+#include "dashboard.h"
 
 /*
 In the Irrlicht Engine, everything can be found in the namespace 'irr'. So if
@@ -303,9 +304,9 @@ int main()
                     ControllerCurve::Point(-1, -1),
                     ControllerCurve::Point( 1, 1),
                 }),
-            },
-            driver
+            }
     );
+    Dashboard dashboard(driver, controls.get_throttle_curves(), controls.get_lift_curves());
 
     // Add skybox
     smgr->addSkyBoxSceneNode(
@@ -385,7 +386,7 @@ int main()
         camera_node->setTarget(heli.get_position());
         driver->beginScene(true, true, video::SColor(255,200,200,200));
         smgr->drawAll();
-        controls.update_ui();
+        dashboard.update_ui(controls.get_telemetry());
         driver->endScene();
 	}
 

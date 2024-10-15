@@ -1,4 +1,4 @@
-#include "controls.h"
+#include "dashboard.h"
 #include <cmath>
 
 #include <iostream>
@@ -64,7 +64,7 @@ static void plot_curve(const ControllerCurve &curve,
 }
 
 
-ControlsView::ControlsView(
+Dashboard::Dashboard(
             irr::video::IVideoDriver *driver,
             std::vector<ControllerCurve> throttle_curves,
             std::vector<ControllerCurve> lift_curves):
@@ -205,12 +205,13 @@ ControlsView::ControlsView(
     m_driver = driver;
 }
 
-void ControlsView::update_ui(
-            const ControlsInput &user_input,
-            const ServoData &before_controller,
-            const ServoData &after_controller,
-            int active_curve_index)
+void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry)
 {
+    ControlsInput user_input = controls_telemetry.user_input;
+    ServoData before_controller = controls_telemetry.before_controller;
+    ServoData after_controller = controls_telemetry.after_controller;
+    int active_curve_index = controls_telemetry.active_curve_index;
+
     // Draw the pitch-roll control view.
     int before_pin_x = LOCATION_X + CONTROLS_SIZE/2 + before_controller.roll*CONTROLS_SIZE/2 - PIN_SIZE/2;
     int before_pin_y = LOCATION_Y + CONTROLS_SIZE/2 + before_controller.pitch*CONTROLS_SIZE/2 - PIN_SIZE/2;

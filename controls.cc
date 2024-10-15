@@ -44,13 +44,10 @@ float ControllerCurve::translate(float level) const {
 
 Controls::Controls(FlightController *flight_controller,
              std::vector<ControllerCurve> throttle_curves,
-             std::vector<ControllerCurve> lift_curves,
-             irr::video::IVideoDriver *driver):
-             m_flight_controller(flight_controller),
-             m_throttle_curves(throttle_curves),
-             m_lift_curves(lift_curves),
-             m_driver(driver),
-             m_controls_view(driver, throttle_curves, lift_curves)
+             std::vector<ControllerCurve> lift_curves):
+         m_flight_controller(flight_controller),
+         m_throttle_curves(throttle_curves),
+         m_lift_curves(lift_curves)
 {
     m_active_curve = 0;
 }
@@ -71,11 +68,12 @@ ServoData Controls::get_servo_data(const ControlsInput &input, float time_delta)
     return m_after_flight_controller;
 }
 
-void Controls::update_ui() {
-    m_controls_view.update_ui(
-            m_user_input,
-            m_before_flight_controller,
-            m_after_flight_controller,
-            m_active_curve
-    );
+
+Controls::Telemetry Controls::get_telemetry() {
+    Telemetry telemetry;
+    telemetry.user_input = m_user_input;
+    telemetry.before_controller = m_before_flight_controller;
+    telemetry.after_controller = m_after_flight_controller;
+    telemetry.active_curve_index = m_active_curve;
+    return telemetry;
 }

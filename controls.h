@@ -3,7 +3,6 @@
 
 #include "flight_controller.h"
 #include "heli.h"
-#include <irrlicht/irrlicht.h>
 #include <vector>
 
 
@@ -36,45 +35,24 @@ private:
 };
 
 
-class ControlsView {
-public:
-    ControlsView(
-            irr::video::IVideoDriver *driver,
-            std::vector<ControllerCurve> throttle_curves,
-            std::vector<ControllerCurve> lift_curves
-    );
-
-    void update_ui(
-            const ControlsInput &user_input,
-            const ServoData &before_controller,
-            const ServoData &after_controller,
-            int active_curve_index
-    );
-
-private:
-    irr::video::ITexture *m_controls_image;
-    irr::video::ITexture *m_pin_image;
-    irr::video::ITexture *m_second_pin_image;
-    irr::video::ITexture *m_yaw_image;
-    std::vector<irr::video::ITexture *> m_curves_images;
-    irr::video::ITexture *m_curves_vertical_line;
-    irr::video::IVideoDriver* m_driver;
-
-    std::vector<ControllerCurve> m_throttle_curves;
-    std::vector<ControllerCurve>  m_lift_curves;
-};
-
-
 class Controls {
 public:
     Controls(FlightController *flight_controller,
              std::vector<ControllerCurve> throttle_curves,
-             std::vector<ControllerCurve> lift,
-             irr::video::IVideoDriver *driver);
+             std::vector<ControllerCurve> lift);
 
     ServoData get_servo_data(const ControlsInput &input, float time_delta);
 
-    void update_ui();
+    struct Telemetry {
+        ControlsInput user_input;
+        ServoData before_controller;
+        ServoData after_controller;
+        int active_curve_index;
+    };
+    Telemetry get_telemetry();
+
+    std::vector<ControllerCurve> get_throttle_curves() { return m_throttle_curves; }
+    std::vector<ControllerCurve> get_lift_curves() { return m_lift_curves; }
 
 private:
     FlightController *m_flight_controller;
@@ -82,14 +60,10 @@ private:
     std::vector<ControllerCurve> m_lift_curves;
     int m_active_curve;
 
-    // Saved for UI.
+    // Saved for Telemetry.
     ControlsInput m_user_input;
     ServoData m_before_flight_controller;
     ServoData m_after_flight_controller;
-
-    // UI stuff.
-    irr::video::IVideoDriver *m_driver;
-    ControlsView m_controls_view;
 };
 
 

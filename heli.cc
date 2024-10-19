@@ -424,7 +424,7 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .drag = irrvec3(0.25, 2, 0.05),
     .torbulant_airspeed = 5,
     .main_rotor_max_vel = 55,
-    .main_rotor_torque = 1.,
+    .main_rotor_torque = 1.6,
     .main_rotor_length = 1.,
     .main_rotor_max_angle_of_attack = 12.,
 

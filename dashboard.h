@@ -36,6 +36,8 @@ private:
     irr::video::ITexture *m_main_rotor_indicator_target_hand_image;
     irr::video::IVideoDriver* m_driver;
 
+    irr::video::ITexture *m_dashboard_background;
+
     std::vector<ControllerCurve> m_throttle_curves;
     std::vector<ControllerCurve>  m_lift_curves;
     float m_main_rotor_max_rps;

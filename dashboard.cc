@@ -4,30 +4,29 @@
 #include <iostream>
 #include <sstream>
 
-const int CONTROLS_SIZE = 140;
-const int YAW_VIEW_HEIGHT = 30;
-const int PIN_SIZE = 12;
-const int LOCATION_X = 20;
-const int LOCATION_Y = 50;
-const int YAW_VIEW_LOCATION_Y = LOCATION_Y + CONTROLS_SIZE + 20;
-const int YAW_VIEW_LOCATION_X = LOCATION_X;
-const int LIFT_VIEW_WIDTH = 30;
-const int LIFT_VIEW_LOCATION_Y = LOCATION_Y;
-const int LIFT_VIEW_LOCATION_X = LOCATION_X - LIFT_VIEW_WIDTH - 10;
+const int BACKGROUND_HEIGHT = 220;
 
-const int CURVES_IMAGE_LOCATION_X = 200;
-const int CURVES_IMAGE_LOCATION_Y = 45;
-const int CURVES_IMAGE_HEIGHT = 140;
-const int CURVES_IMAGE_WIDTH = 250;
+const int CONTROLS_SIZE = 160;
+const int YAW_VIEW_HEIGHT = 25;
+const int PIN_SIZE = 15;
+const float CONTROLS_POS_X = 0.15;
+const int CONTROLS_POS_Y = 200;
+const int YAW_VIEW_POS_Y = CONTROLS_POS_Y - CONTROLS_SIZE - 2;
+const float YAW_VIEW_POS_X = CONTROLS_POS_X;
+
+const float CURVES_IMAGE_POS_X = 0.7;
+const int CURVES_IMAGE_POS_Y = 180;
+const int CURVES_IMAGE_HEIGHT = 150;
+const int CURVES_IMAGE_WIDTH = 275;
 const int CURVES_GRID_SIZE = 25;
-const int CURVE_THICKNESS = 2.5;
+const int CURVE_THICKNESS = 3.5;
 
-const int MAIN_ROTOR_INDICATOR_X = 50;
-const int MAIN_ROTOR_INDICATOR_Y = 1000;
-const int MAIN_ROTOR_INDICATOR_SIZE_X = 300;
-const int MAIN_ROTOR_INDICATOR_SIZE_Y = 170;
-const int MAIN_ROTOR_INDICATOR_HAND_SIZE_X = 39;
-const int MAIN_ROTOR_INDICATOR_HAND_SIZE_Y = 140;
+const float MAIN_ROTOR_INDICATOR_X = 0.4;
+const int MAIN_ROTOR_INDICATOR_Y = 200;
+const int MAIN_ROTOR_INDICATOR_WIDTH = 300;
+const int MAIN_ROTOR_INDICATOR_HEIGHT = 170;
+const int MAIN_ROTOR_INDICATOR_HAND_WIDTH = 39;
+const int MAIN_ROTOR_INDICATOR_HAND_HEIGHT = 140;
 
 
 static float curve_x_to_value(int x) {
@@ -172,6 +171,18 @@ Dashboard::Dashboard(
     m_main_rotor_max_rps(main_rotor_max_rps)
 {
 
+    // Create the dashboard background
+    irr::video::IImage * background_image = driver->createImage(
+            irr::video::ECF_A8R8G8B8,
+            irr::core::dimension2d<unsigned int>(10, 10)
+    );
+    for (int x=0; x<10; x++) {
+        for (int y=0; y<10; y++) {
+            background_image->setPixel(x, y, irr::video::SColor(0x30, 0, 0, 0));
+        }
+    }
+    m_dashboard_background = driver->addTexture(irr::io::path("dashboard_background"), background_image);
+
     // Create the pitch-roll controls image.
     irr::video::IImage * controls_image = driver->createImage(
             irr::video::ECF_A8R8G8B8,
@@ -311,6 +322,18 @@ Dashboard::Dashboard(
 }
 
 
+static int pos_y(irr::video::IVideoDriver *driver, int pos_y) {
+    return driver->getScreenSize().Height - pos_y;
+}
+
+static int pos_x_ratio(irr::video::IVideoDriver *driver, float pos_x_ratio) {
+    std::cout << "POX_X " << driver->getScreenSize().Width  << " * " <<  pos_x_ratio << std::endl;;
+    return driver->getScreenSize().Width * pos_x_ratio;
+}
+
+#define POS_Y(y) pos_y(m_driver, (y))
+#define POS_X(x) pos_x_ratio(m_driver, (x))
+
 void Dashboard::update_ui(
         const Controls::Telemetry &controls_telemetry,
         const BaseHeli::Telemetry &heli_telemetry)
@@ -320,15 +343,25 @@ void Dashboard::update_ui(
     ServoData after_controller = controls_telemetry.after_controller;
     int active_curve_index = controls_telemetry.active_curve_index;
 
+    // Draw the background
+    m_driver->draw2DImage(
+            m_dashboard_background,
+            irr::core::rect<int>(POS_X(0),
+                                 POS_Y(BACKGROUND_HEIGHT),
+                                 POS_X(1),
+                                 POS_Y(0)),
+            irr::core::rect<int>(0, 0, 10, 10),
+            NULL, NULL, true);
+
     // Draw the pitch-roll control view.
-    int before_pin_x = LOCATION_X + CONTROLS_SIZE/2 + before_controller.roll*CONTROLS_SIZE/2 - PIN_SIZE/2;
-    int before_pin_y = LOCATION_Y + CONTROLS_SIZE/2 + before_controller.pitch*CONTROLS_SIZE/2 - PIN_SIZE/2;
-    int after_pin_x = LOCATION_X + CONTROLS_SIZE/2 + after_controller.roll*CONTROLS_SIZE/2 - PIN_SIZE/2;
-    int after_pin_y = LOCATION_Y + CONTROLS_SIZE/2 + after_controller.pitch*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    int before_pin_x = POS_X(CONTROLS_POS_X) + CONTROLS_SIZE/2 + before_controller.roll*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    int before_pin_y = POS_Y(CONTROLS_POS_Y) + CONTROLS_SIZE/2 + before_controller.pitch*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    int after_pin_x = POS_X(CONTROLS_POS_X) + CONTROLS_SIZE/2 + after_controller.roll*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    int after_pin_y = POS_Y(CONTROLS_POS_Y) + CONTROLS_SIZE/2 + after_controller.pitch*CONTROLS_SIZE/2 - PIN_SIZE/2;
 
     m_driver->draw2DImage(
             m_controls_image,
-            irr::core::position2d<int>(LOCATION_X, LOCATION_Y),
+            irr::core::position2d<int>(POS_X(CONTROLS_POS_X), POS_Y(CONTROLS_POS_Y)),
             irr::core::rect<int>(0, 0, CONTROLS_SIZE, CONTROLS_SIZE),
             NULL, 
             irr::video::SColor(255, 255, 255, 255),
@@ -351,13 +384,13 @@ void Dashboard::update_ui(
             true);
 
     // Draw the yaw controls view.
-    int yaw_before_pin_x = YAW_VIEW_LOCATION_X + CONTROLS_SIZE/2 + before_controller.yaw*CONTROLS_SIZE/2 - PIN_SIZE/2;
-    int yaw_before_pin_y = YAW_VIEW_LOCATION_Y + YAW_VIEW_HEIGHT/2 - PIN_SIZE/2;
-    int yaw_after_pin_x = YAW_VIEW_LOCATION_X + CONTROLS_SIZE/2 + after_controller.yaw*CONTROLS_SIZE/2 - PIN_SIZE/2;
-    int yaw_after_pin_y = YAW_VIEW_LOCATION_Y + YAW_VIEW_HEIGHT/2 - PIN_SIZE;
+    int yaw_before_pin_x = POS_X(YAW_VIEW_POS_X) + CONTROLS_SIZE/2 + before_controller.yaw*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    int yaw_before_pin_y = POS_Y(YAW_VIEW_POS_Y) + YAW_VIEW_HEIGHT/2 - PIN_SIZE/2;
+    int yaw_after_pin_x = POS_X(YAW_VIEW_POS_X) + CONTROLS_SIZE/2 + after_controller.yaw*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    int yaw_after_pin_y = POS_Y(YAW_VIEW_POS_Y) + YAW_VIEW_HEIGHT/2 - PIN_SIZE;
     m_driver->draw2DImage(
             m_yaw_image,
-            irr::core::position2d<int>(YAW_VIEW_LOCATION_X, YAW_VIEW_LOCATION_Y),
+            irr::core::position2d<int>(POS_X(YAW_VIEW_POS_X), POS_Y(YAW_VIEW_POS_Y)),
             irr::core::rect<int>(0, 0, CONTROLS_SIZE, YAW_VIEW_HEIGHT),
             NULL, 
             irr::video::SColor(255, 255, 255, 255),
@@ -384,7 +417,7 @@ void Dashboard::update_ui(
     // Draw the lift/throttle curves.
     m_driver->draw2DImage(
             m_curves_images[active_curve_index],
-            irr::core::position2d<int>(CURVES_IMAGE_LOCATION_X, CURVES_IMAGE_LOCATION_Y),
+            irr::core::position2d<int>(POS_X(CURVES_IMAGE_POS_X), POS_Y(CURVES_IMAGE_POS_Y)),
             irr::core::rect<int>(0, 0, CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT),
             NULL, 
             irr::video::SColor(255, 255, 255, 255),
@@ -393,10 +426,10 @@ void Dashboard::update_ui(
     int vertical_line_x_offset = float(CURVES_IMAGE_WIDTH) * (user_input.throttle_stick + 1) / 2;
     m_driver->draw2DImage(
             m_curves_vertical_line,
-            irr::core::rect<int>(CURVES_IMAGE_LOCATION_X + vertical_line_x_offset,
-                                 CURVES_IMAGE_LOCATION_Y,
-                                 CURVES_IMAGE_LOCATION_X + vertical_line_x_offset + 3,
-                                 CURVES_IMAGE_LOCATION_Y + CURVES_IMAGE_HEIGHT),
+            irr::core::rect<int>(POS_X(CURVES_IMAGE_POS_X) + vertical_line_x_offset,
+                                 POS_Y(CURVES_IMAGE_POS_Y),
+                                 POS_X(CURVES_IMAGE_POS_X) + vertical_line_x_offset + 3,
+                                 POS_Y(CURVES_IMAGE_POS_Y )+ CURVES_IMAGE_HEIGHT),
             irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE),
             NULL, NULL, true);
 
@@ -407,10 +440,10 @@ void Dashboard::update_ui(
                 - pin_size / 2;
     m_driver->draw2DImage(
             m_pin_image,
-            irr::core::rect<int>(throttle_pin_x + CURVES_IMAGE_LOCATION_X,
-                                 throttle_pin_y + CURVES_IMAGE_LOCATION_Y,
-                                 throttle_pin_x + CURVES_IMAGE_LOCATION_X + pin_size,
-                                 throttle_pin_y + CURVES_IMAGE_LOCATION_Y + pin_size),
+            irr::core::rect<int>(throttle_pin_x + POS_X(CURVES_IMAGE_POS_X),
+                                 throttle_pin_y + POS_Y(CURVES_IMAGE_POS_Y),
+                                 throttle_pin_x + POS_X(CURVES_IMAGE_POS_X) + pin_size,
+                                 throttle_pin_y + POS_Y(CURVES_IMAGE_POS_Y )+ pin_size),
             irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE),
             NULL, NULL, true);
 
@@ -419,29 +452,29 @@ void Dashboard::update_ui(
                 - pin_size / 2;
     m_driver->draw2DImage(
             m_pin_image,
-            irr::core::rect<int>(throttle_pin_x + CURVES_IMAGE_LOCATION_X,
-                                 lift_pin_y + CURVES_IMAGE_LOCATION_Y,
-                                 throttle_pin_x + CURVES_IMAGE_LOCATION_X + pin_size,
-                                 lift_pin_y + CURVES_IMAGE_LOCATION_Y + pin_size),
+            irr::core::rect<int>(throttle_pin_x + POS_X(CURVES_IMAGE_POS_X),
+                                 lift_pin_y + POS_Y(CURVES_IMAGE_POS_Y),
+                                 throttle_pin_x + POS_X(CURVES_IMAGE_POS_X) + pin_size,
+                                 lift_pin_y + POS_Y(CURVES_IMAGE_POS_Y) + pin_size),
             irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE),
             NULL, NULL, true);
 
     // Draw the main rotor indicator.
     m_driver->draw2DImage(
             m_main_rotor_indicator_image,
-            irr::core::rect<int>(MAIN_ROTOR_INDICATOR_X,
-                                 MAIN_ROTOR_INDICATOR_Y,
-                                 MAIN_ROTOR_INDICATOR_X + MAIN_ROTOR_INDICATOR_SIZE_X,
-                                 MAIN_ROTOR_INDICATOR_Y + MAIN_ROTOR_INDICATOR_SIZE_Y),
+            irr::core::rect<int>(POS_X(MAIN_ROTOR_INDICATOR_X),
+                                 POS_Y(MAIN_ROTOR_INDICATOR_Y),
+                                 POS_X(MAIN_ROTOR_INDICATOR_X) + MAIN_ROTOR_INDICATOR_WIDTH,
+                                 POS_Y(MAIN_ROTOR_INDICATOR_Y) + MAIN_ROTOR_INDICATOR_HEIGHT),
             irr::core::rect<int>(0, 0, 651, 394),
             NULL, NULL, true);
 
-    int hand_x = MAIN_ROTOR_INDICATOR_X + MAIN_ROTOR_INDICATOR_SIZE_X/2 - MAIN_ROTOR_INDICATOR_HAND_SIZE_X/2;
-    int hand_y = MAIN_ROTOR_INDICATOR_Y + MAIN_ROTOR_INDICATOR_SIZE_Y - MAIN_ROTOR_INDICATOR_HAND_SIZE_Y;
-    int hand_rotation_point_x = hand_x + MAIN_ROTOR_INDICATOR_HAND_SIZE_X * (45.7 / 91);
-    int hand_rotation_point_y = hand_y + MAIN_ROTOR_INDICATOR_HAND_SIZE_Y * (286.6 / 329);
-    float size_x = float(MAIN_ROTOR_INDICATOR_HAND_SIZE_X)/91;
-    float size_y = float(MAIN_ROTOR_INDICATOR_HAND_SIZE_Y)/329;
+    int hand_x = POS_X(MAIN_ROTOR_INDICATOR_X) + MAIN_ROTOR_INDICATOR_WIDTH/2 - MAIN_ROTOR_INDICATOR_HAND_WIDTH/2;
+    int hand_y = POS_Y(MAIN_ROTOR_INDICATOR_Y) + MAIN_ROTOR_INDICATOR_HEIGHT - MAIN_ROTOR_INDICATOR_HAND_HEIGHT;
+    int hand_rotation_point_x = hand_x + MAIN_ROTOR_INDICATOR_HAND_WIDTH * (45.7 / 91);
+    int hand_rotation_point_y = hand_y + MAIN_ROTOR_INDICATOR_HAND_HEIGHT * (286.6 / 329);
+    float size_x = float(MAIN_ROTOR_INDICATOR_HAND_WIDTH)/91;
+    float size_y = float(MAIN_ROTOR_INDICATOR_HAND_HEIGHT)/329;
     draw2DImageWithRotation(
         m_driver,
         /*texture*/ m_main_rotor_indicator_target_hand_image,

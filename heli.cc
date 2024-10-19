@@ -160,8 +160,9 @@ void BaseHeli::update_moments(float time_delta,
     float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
 
     // Calculate the engine moment
-    float throttle_ratio = (m_throttle_servo.get() + 1.1) / 2.1;  // Change from (-1, 1) to (0.05, 1).
-    float target_rotor_omega = m_params.main_rotor_max_vel * throttle_ratio  * 2 * PI;
+    float throttle_ratio = (m_throttle_servo.get() + 1.05) / 2.05;  // Change from (-1, 1) to (0.05, 1).
+    m_main_rotor_target_rps = m_params.main_rotor_max_vel * throttle_ratio;
+    float target_rotor_omega = m_main_rotor_target_rps * 2 * PI;
     float main_rotor_omega = norm(m_rotor_angular_momentum_in_world) / m_params.rotor_moment_of_inertia;
     float main_rotor_torque;
     float omega_ratio = main_rotor_omega / target_rotor_omega;

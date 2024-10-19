@@ -22,12 +22,110 @@ const int CURVES_IMAGE_WIDTH = 250;
 const int CURVES_GRID_SIZE = 25;
 const int CURVE_THICKNESS = 2.5;
 
+const int MAIN_ROTOR_INDICATOR_X = 50;
+const int MAIN_ROTOR_INDICATOR_Y = 1000;
+const int MAIN_ROTOR_INDICATOR_SIZE_X = 300;
+const int MAIN_ROTOR_INDICATOR_SIZE_Y = 170;
+const int MAIN_ROTOR_INDICATOR_HAND_SIZE_X = 39;
+const int MAIN_ROTOR_INDICATOR_HAND_SIZE_Y = 140;
+
 
 static float curve_x_to_value(int x) {
     return (float(x) / CURVES_IMAGE_WIDTH) * 2. - 1.;
 }
 static float curve_value_to_y(float value) {
     return float(CURVES_IMAGE_HEIGHT) * ((value + 1.) / 2.);
+}
+
+
+static void draw2DImageWithRotation(
+        irr::video::IVideoDriver *driver,
+        irr::video::ITexture* texture ,
+        irr::core::rect<irr::s32> sourceRect, 
+        irr::core::position2d<irr::s32> position, 
+        irr::core::position2d<irr::s32> rotationPoint, 
+        irr::f32 rotation, 
+        irr::core::vector2df scale, 
+        irr::video::SColor color) 
+{
+    irr::video::SMaterial material;
+    
+    // Store and clear the projection matrix
+    irr::core::matrix4 oldProjMat = driver->getTransform(irr::video::ETS_PROJECTION);
+    driver->setTransform(irr::video::ETS_PROJECTION,irr::core::matrix4());
+    
+    // Store and clear the view matrix
+    irr::core::matrix4 oldViewMat = driver->getTransform(irr::video::ETS_VIEW);
+    driver->setTransform(irr::video::ETS_VIEW,irr::core::matrix4());
+    
+    // Store and clear the world matrix
+    irr::core::matrix4 oldWorldMat = driver->getTransform(irr::video::ETS_WORLD);
+    driver->setTransform(irr::video::ETS_WORLD, irr::core::matrix4());
+    
+    // Find the positions of corners
+    irr::core::vector2df corner[4];
+    
+    corner[0] = irr::core::vector2df(position.X,position.Y);
+    corner[1] = irr::core::vector2df(position.X+sourceRect.getWidth()*scale.X,position.Y);
+    corner[2] = irr::core::vector2df(position.X,position.Y+sourceRect.getHeight()*scale.Y);
+    corner[3] = irr::core::vector2df(
+         position.X+sourceRect.getWidth()*scale.X,position.Y+sourceRect.getHeight()*scale.Y
+    );
+    
+    // Rotate corners
+    if (rotation != 0.0f) {
+        for (int x = 0; x < 4; x++) {
+            corner[x].rotateBy(rotation,irr::core::vector2df(rotationPoint.X, rotationPoint.Y));
+        }
+    }
+    
+    // Find the uv coordinates of the sourceRect
+    irr::core::vector2df uvCorner[4];
+    uvCorner[0] = irr::core::vector2df(sourceRect.UpperLeftCorner.X,sourceRect.UpperLeftCorner.Y);
+    uvCorner[1] = irr::core::vector2df(sourceRect.LowerRightCorner.X,sourceRect.UpperLeftCorner.Y);
+    uvCorner[2] = irr::core::vector2df(sourceRect.UpperLeftCorner.X,sourceRect.LowerRightCorner.Y);
+    uvCorner[3] = irr::core::vector2df(sourceRect.LowerRightCorner.X,sourceRect.LowerRightCorner.Y);
+    for (int x = 0; x < 4; x++) {
+        float uvX = uvCorner[x].X/(float)texture->getSize().Width;
+        float uvY = uvCorner[x].Y/(float)texture->getSize().Height;
+        uvCorner[x] = irr::core::vector2df(uvX,uvY);
+    }
+    
+    // Vertices for the image
+    irr::video::S3DVertex vertices[4];
+    irr::u16 indices[6] = { 0, 1, 2, 3 ,2 ,1 };
+    
+    // Convert pixels to world coordinates
+    float screenWidth = driver->getScreenSize().Width;
+    float screenHeight = driver->getScreenSize().Height;
+    for (int x = 0; x < 4; x++) {
+       float screenPosX = ((corner[x].X/screenWidth)-0.5f)*2.0f;
+       float screenPosY = ((corner[x].Y/screenHeight)-0.5f)*-2.0f;
+       vertices[x].Pos = irr::core::vector3df(screenPosX,screenPosY,1);
+       vertices[x].TCoords = uvCorner[x];
+       vertices[x].Color = color;
+    }
+    
+    material.Lighting = false;
+    material.ZWriteEnable = false;
+    material.ZBuffer = false;
+    material.TextureLayer[0].Texture = texture;
+    material.MaterialTypeParam = irr::video::pack_textureBlendFunc(
+            irr::video::EBF_SRC_ALPHA,
+            irr::video::EBF_ONE_MINUS_SRC_ALPHA,
+            irr::video::EMFN_MODULATE_1X,
+            irr::video::EAS_TEXTURE | irr::video::EAS_VERTEX_COLOR
+    );
+    
+    material.MaterialType = irr::video::EMT_ONETEXTURE_BLEND;
+    
+    driver->setMaterial(material);
+    driver->drawIndexedTriangleList(&vertices[0],4,&indices[0],2);
+    
+    // Restore projection and view matrices
+    driver->setTransform(irr::video::ETS_PROJECTION,oldProjMat);
+    driver->setTransform(irr::video::ETS_VIEW,oldViewMat);
+    driver->setTransform(irr::video::ETS_WORLD,oldWorldMat);
 }
 
 
@@ -67,9 +165,11 @@ static void plot_curve(const ControllerCurve &curve,
 Dashboard::Dashboard(
             irr::video::IVideoDriver *driver,
             std::vector<ControllerCurve> throttle_curves,
-            std::vector<ControllerCurve> lift_curves):
+            std::vector<ControllerCurve> lift_curves,
+            float main_rotor_max_rps):
     m_throttle_curves(throttle_curves),
-    m_lift_curves(lift_curves)
+    m_lift_curves(lift_curves),
+    m_main_rotor_max_rps(main_rotor_max_rps)
 {
 
     // Create the pitch-roll controls image.
@@ -202,10 +302,18 @@ Dashboard::Dashboard(
     }
     m_curves_vertical_line = driver->addTexture(irr::io::path("curves_vertical_line"), curves_vertical_line);
 
+    // Create the main rotor indicator.
+    m_main_rotor_indicator_image = driver->getTexture("media/speedometer3_meter.png");
+    m_main_rotor_indicator_hand_image = driver->getTexture("media/speedometer3_hand.png");
+    m_main_rotor_indicator_target_hand_image = driver->getTexture("media/speedometer3_hand_yellow.png");
+
     m_driver = driver;
 }
 
-void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry)
+
+void Dashboard::update_ui(
+        const Controls::Telemetry &controls_telemetry,
+        const BaseHeli::Telemetry &heli_telemetry)
 {
     ControlsInput user_input = controls_telemetry.user_input;
     ServoData before_controller = controls_telemetry.before_controller;
@@ -317,4 +425,39 @@ void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry)
                                  lift_pin_y + CURVES_IMAGE_LOCATION_Y + pin_size),
             irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE),
             NULL, NULL, true);
+
+    // Draw the main rotor indicator.
+    m_driver->draw2DImage(
+            m_main_rotor_indicator_image,
+            irr::core::rect<int>(MAIN_ROTOR_INDICATOR_X,
+                                 MAIN_ROTOR_INDICATOR_Y,
+                                 MAIN_ROTOR_INDICATOR_X + MAIN_ROTOR_INDICATOR_SIZE_X,
+                                 MAIN_ROTOR_INDICATOR_Y + MAIN_ROTOR_INDICATOR_SIZE_Y),
+            irr::core::rect<int>(0, 0, 651, 394),
+            NULL, NULL, true);
+
+    int hand_x = MAIN_ROTOR_INDICATOR_X + MAIN_ROTOR_INDICATOR_SIZE_X/2 - MAIN_ROTOR_INDICATOR_HAND_SIZE_X/2;
+    int hand_y = MAIN_ROTOR_INDICATOR_Y + MAIN_ROTOR_INDICATOR_SIZE_Y - MAIN_ROTOR_INDICATOR_HAND_SIZE_Y;
+    int hand_rotation_point_x = hand_x + MAIN_ROTOR_INDICATOR_HAND_SIZE_X * (45.7 / 91);
+    int hand_rotation_point_y = hand_y + MAIN_ROTOR_INDICATOR_HAND_SIZE_Y * (286.6 / 329);
+    float size_x = float(MAIN_ROTOR_INDICATOR_HAND_SIZE_X)/91;
+    float size_y = float(MAIN_ROTOR_INDICATOR_HAND_SIZE_Y)/329;
+    draw2DImageWithRotation(
+        m_driver,
+        /*texture*/ m_main_rotor_indicator_target_hand_image,
+        /*sourceRect*/ irr::core::rect<int>(0, 0, 91, 329), 
+        /*position*/ irr::core::position2d<irr::s32>(hand_x, hand_y),
+        /*rotationPoint*/irr::core::position2d<irr::s32>(hand_rotation_point_x, hand_rotation_point_y),
+        /*rotation*/180.*heli_telemetry.main_rotor_target_rps/m_main_rotor_max_rps - 90., 
+        /*scale*/ irr::core::vector2df(size_x, size_y), 
+        /*color*/ irr::video::SColor(255, 255, 255, 255)) ;
+    draw2DImageWithRotation(
+        m_driver,
+        /*texture*/ m_main_rotor_indicator_hand_image,
+        /*sourceRect*/ irr::core::rect<int>(0, 0, 91, 329), 
+        /*position*/ irr::core::position2d<irr::s32>(hand_x, hand_y),
+        /*rotationPoint*/irr::core::position2d<irr::s32>(hand_rotation_point_x, hand_rotation_point_y),
+        /*rotation*/180.*heli_telemetry.main_rotor_rps/m_main_rotor_max_rps - 90., 
+        /*scale*/ irr::core::vector2df(size_x, size_y), 
+        /*color*/ irr::video::SColor(255, 255, 255, 255)) ;
 }

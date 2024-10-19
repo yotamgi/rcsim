@@ -306,7 +306,11 @@ int main()
                 }),
             }
     );
-    Dashboard dashboard(driver, controls.get_throttle_curves(), controls.get_lift_curves());
+    Dashboard dashboard(driver, 
+		controls.get_throttle_curves(), 
+		controls.get_lift_curves(), 
+		heli.get_params().main_rotor_max_vel
+	);
 
     // Add skybox
     smgr->addSkyBoxSceneNode(
@@ -386,7 +390,7 @@ int main()
         camera_node->setTarget(heli.get_position());
         driver->beginScene(true, true, video::SColor(255,200,200,200));
         smgr->drawAll();
-        dashboard.update_ui(controls.get_telemetry());
+        dashboard.update_ui(controls.get_telemetry(), heli.get_telemetry());
         driver->endScene();
 	}
 

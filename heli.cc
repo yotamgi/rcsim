@@ -327,6 +327,13 @@ std::vector<BaseHeli::TouchPoint> BaseHeli::get_touchpoints_in_world() {
 }
 
 
+BaseHeli::Telemetry BaseHeli::get_telemetry() const {
+    Telemetry telemetry;
+    telemetry.main_rotor_rps = m_main_rotor_vel / 360;
+    telemetry.main_rotor_target_rps = m_main_rotor_target_rps;
+    return telemetry;
+}
+
 
 class MainRotorBlur : public RotorBlur {
 public:

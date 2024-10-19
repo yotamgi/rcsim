@@ -81,6 +81,13 @@ public:
 
     std::vector<TouchPoint> get_touchpoints_in_world();
 
+    struct Telemetry {
+        float main_rotor_rps;
+        float main_rotor_target_rps;
+    };
+    Telemetry get_telemetry() const;
+    HeliParams get_params() const { return m_params; }
+
 protected:
     virtual void update_ui(float time_delta) = 0;
     void update_body_moments(float time_delta,
@@ -117,6 +124,9 @@ protected:
     // To avoid recalculation, some forces are stored:
     float m_lift_force;
     float m_tail_rotor_force;
+    
+    // For telemetry, some parameters are stored;
+    float m_main_rotor_target_rps;
 
     HeliParams m_params;
 

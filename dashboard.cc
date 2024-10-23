@@ -327,7 +327,6 @@ static int pos_y(irr::video::IVideoDriver *driver, int pos_y) {
 }
 
 static int pos_x_ratio(irr::video::IVideoDriver *driver, float pos_x_ratio) {
-    std::cout << "POX_X " << driver->getScreenSize().Width  << " * " <<  pos_x_ratio << std::endl;;
     return driver->getScreenSize().Width * pos_x_ratio;
 }
 

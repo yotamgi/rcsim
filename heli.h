@@ -109,10 +109,13 @@ protected:
 
     irrvec3 m_v;
     irrvec3 m_pos;
-    SmoothRandFloat torbulant_rand;
     float m_main_rotor_vel;
     irrvec3 m_external_torque;
     irrvec3 m_external_force;
+    SmoothRandFloat m_torbulant_rand_front;
+    SmoothRandFloat m_torbulant_rand_back;
+    SmoothRandFloat m_torbulant_rand_left;
+    SmoothRandFloat m_torbulant_rand_right;
 
     // Body and rotor orientation properties.
     irrvec3 m_rotor_angular_momentum_in_world;
@@ -124,6 +127,7 @@ protected:
     // To avoid recalculation, some forces are stored:
     float m_lift_force;
     float m_tail_rotor_force;
+    float m_lift_torbulant_coeff;
     
     // For telemetry, some parameters are stored;
     float m_main_rotor_target_rps;

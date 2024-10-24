@@ -6,7 +6,8 @@
 
 using irr::core::PI;
 
-double GRAVITY_CONSTANT = 9.8;
+const double GRAVITY_CONSTANT = 9.8;
+const double MAX_TORBULANT_EFFECT = 0.25; 
 
 float norm(irrvec3 vec) {
     return std::sqrt(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
@@ -14,7 +15,10 @@ float norm(irrvec3 vec) {
 
 
 BaseHeli::BaseHeli(const HeliParams &params):
-         torbulant_rand(3., 1),
+         m_torbulant_rand_front(3., 1),
+         m_torbulant_rand_back(3., 1),
+         m_torbulant_rand_left(3., 1),
+         m_torbulant_rand_right(3., 1),
          m_params(params),
          m_pitch_servo(4, 0),
          m_roll_servo(4, 0),
@@ -285,9 +289,12 @@ void BaseHeli::update(double time_delta,
     float torbulant_coeff = m_params.torbulant_airspeed - norm(airspeed);
     torbulant_coeff = torbulant_coeff > 1 ? 1 : torbulant_coeff;
     torbulant_coeff = torbulant_coeff < 0 ? 0 : torbulant_coeff;
-    torbulant_coeff *= 0.5 + 0.5*torbulant_rand.update(time_delta);
-    float lift_torbulant_effect = 1 - torbulant_coeff * 0.5;
-    lift *= lift_torbulant_effect;
+    irrvec3 torbulant_base = - MAX_TORBULANT_EFFECT * lift * torbulant_coeff / 4;
+    irrvec3 front_torbulation_force = torbulant_base * m_torbulant_rand_front.update(time_delta);
+    irrvec3 back_torbulation_force = torbulant_base * m_torbulant_rand_back.update(time_delta);
+    irrvec3 left_torbulation_force = torbulant_base * m_torbulant_rand_left.update(time_delta);
+    irrvec3 right_torbulation_force = torbulant_base * m_torbulant_rand_right.update(time_delta);
+    lift += front_torbulation_force + back_torbulation_force + left_torbulation_force + right_torbulation_force;
 
     // Account for ground effects.
     float ground_effect_intensity = (m_pos.Y > 0.5) ? 0 : ((0.5 - m_pos.Y) / 0.5);

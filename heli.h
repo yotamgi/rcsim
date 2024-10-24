@@ -117,6 +117,20 @@ protected:
     SmoothRandFloat m_torbulant_rand_left;
     SmoothRandFloat m_torbulant_rand_right;
 
+    // Torbulat related.
+    irrvec3 torbulant_force(const irrvec3 &pos_in_world,
+                            const irrvec3 &airspeed_in_world,
+                            const irrvec3 &lift_in_world);
+    void update_torbulation(float time_delta,
+                            const irrvec3 &lift_in_world,
+                            const irrvec3 &airspeed_in_world);
+    SmoothRandFloat m_torbulant_rand_front;
+    SmoothRandFloat m_torbulant_rand_back;
+    SmoothRandFloat m_torbulant_rand_left;
+    SmoothRandFloat m_torbulant_rand_right;
+    irrvec3 m_torbulant_force_in_world;
+    irrvec3 m_torbulant_torque_in_world;
+
     // Body and rotor orientation properties.
     irrvec3 m_rotor_angular_momentum_in_world;
     irr::core::matrix4 m_rotor_rotation;
@@ -127,8 +141,7 @@ protected:
     // To avoid recalculation, some forces are stored:
     float m_lift_force;
     float m_tail_rotor_force;
-    float m_lift_torbulant_coeff;
-    
+
     // For telemetry, some parameters are stored;
     float m_main_rotor_target_rps;
 

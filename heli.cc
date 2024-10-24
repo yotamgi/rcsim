@@ -7,7 +7,7 @@
 using irr::core::PI;
 
 const double GRAVITY_CONSTANT = 9.8;
-const double MAX_TORBULANT_EFFECT = 0.25; 
+const double MAX_TORBULANT_EFFECT = 0.6;
 
 float norm(irrvec3 vec) {
     return std::sqrt(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
@@ -15,10 +15,10 @@ float norm(irrvec3 vec) {
 
 
 BaseHeli::BaseHeli(const HeliParams &params):
-         m_torbulant_rand_front(3., 1),
-         m_torbulant_rand_back(3., 1),
-         m_torbulant_rand_left(3., 1),
-         m_torbulant_rand_right(3., 1),
+         m_torbulant_rand_front(3., 0.6),
+         m_torbulant_rand_back(3., 0.6),
+         m_torbulant_rand_left(3., 0.6),
+         m_torbulant_rand_right(3., 0.6),
          m_params(params),
          m_pitch_servo(4, 0),
          m_roll_servo(4, 0),
@@ -30,6 +30,8 @@ BaseHeli::BaseHeli(const HeliParams &params):
     m_v = irrvec3(0, 0, 0);
     m_rotor_rotation.setRotationDegrees(m_params.init_rotation);
     m_main_rotor_vel = 0;
+    m_lift_force = 0.;
+    m_tail_rotor_force = 0.;
 }
 
 float BaseHeli::ServoFilter::update(float value, float time_delta) {
@@ -243,11 +245,62 @@ void BaseHeli::update_moments(float time_delta,
                                         - body_reaction_moment_in_world
                                         + external_torque;
     irrvec3 total_rotor_torques_in_world = swash_torque_in_world
+                                            + m_torbulant_torque_in_world
                                             + engine_torque_in_world
                                             + body_reaction_moment_in_world
                                             + rotor_drag_torque_in_world;
     update_body_moments(time_delta, total_body_torques_in_world);
     update_rotor_moments(time_delta, total_rotor_torques_in_world);
+}
+
+irrvec3 BaseHeli::torbulant_force(
+        const irrvec3 &pos_in_world,
+        const irrvec3 &airspeed_in_world,
+        const irrvec3 &lift_in_world)
+{
+    // Each torbulant point has a target velocity in which the torbulant effect
+    // start effcting. On points that get fresh air should have half of the
+    // of the velocity.
+    float pos_aligned = (pos_in_world / norm(pos_in_world)).dotProduct(
+            airspeed_in_world / (norm(airspeed_in_world) + 0.1));
+    pos_aligned = pos_aligned >  1 ? 1 : pos_aligned;
+    pos_aligned = pos_aligned < -1 ? -1 : pos_aligned;
+
+    // The target velocity changes from 30% on the back to 90% on the top
+    float target_vel = m_params.torbulant_airspeed*0.6;
+    target_vel += pos_aligned * m_params.torbulant_airspeed*0.3;
+
+    float torbulant_coeff = 1 - norm(airspeed_in_world) / target_vel;
+    torbulant_coeff = torbulant_coeff < 0 ? 0 : torbulant_coeff;
+
+    return -MAX_TORBULANT_EFFECT * lift_in_world * torbulant_coeff / 4;
+}
+
+void BaseHeli::update_torbulation(float time_delta,
+                                  const irrvec3 &lift_in_world,
+                                  const irrvec3 &airspeed_in_world) 
+{
+    irrvec3 front = irrvec3(m_rotor_rotation(2, 0), m_rotor_rotation(2, 1), m_rotor_rotation(2, 2))
+                    * m_params.main_rotor_length/2;
+    irrvec3 right = irrvec3(m_rotor_rotation(0, 0), m_rotor_rotation(0, 1), m_rotor_rotation(0, 2))
+                    * m_params.main_rotor_length/2;
+
+    irrvec3 front_torbulation_force = torbulant_force(front, airspeed_in_world, lift_in_world)
+                                      * (0.75 + 0.25*m_torbulant_rand_front.update(time_delta));
+    irrvec3 back_torbulation_force = torbulant_force(-front, airspeed_in_world, lift_in_world)
+                                     * (0.75 + 0.25*m_torbulant_rand_back.update(time_delta));
+    irrvec3 right_torbulation_force = torbulant_force(right, airspeed_in_world, lift_in_world)
+                                     * (0.75 + 0.25*m_torbulant_rand_right.update(time_delta));
+    irrvec3 left_torbulation_force = torbulant_force(-right, airspeed_in_world, lift_in_world)
+                                     * (0.75 + 0.25*m_torbulant_rand_left.update(time_delta));
+    m_torbulant_force_in_world = front_torbulation_force
+                        + back_torbulation_force
+                        + left_torbulation_force
+                        + right_torbulation_force;
+    m_torbulant_torque_in_world = front_torbulation_force.crossProduct(front)
+                        + back_torbulation_force.crossProduct(-front)
+                        + right_torbulation_force.crossProduct(right)
+                        + left_torbulation_force.crossProduct(-right);
 }
 
 void BaseHeli::update(double time_delta,
@@ -279,28 +332,22 @@ void BaseHeli::update(double time_delta,
     // Aerodynamic force.
     irrvec3 drag_vec = m_params.drag;
     drag_vec.Y /= main_rotor_effectiveness > 0.1? 1 : 10;
-    irrvec3 airspeed = m_v - wind_speed;
+    irrvec3 airspeed_in_world = m_v - wind_speed;
     irr::core::matrix4 world_to_heli = m_rotor_rotation.getTransposed();
-    world_to_heli.rotateVect(airspeed);  // In heli coord system.
-    irrvec3 aerodynamic_drag = drag_vec * airspeed;
+    irrvec3 airspeed_in_heli;
+    world_to_heli.rotateVect(airspeed_in_heli, airspeed_in_world);  // In heli coord system.
+    irrvec3 aerodynamic_drag = drag_vec * airspeed_in_heli;
     m_rotor_rotation.rotateVect(aerodynamic_drag);  // Back in world coord system.
 
     // Account for torbulation in low airspeed.
-    float torbulant_coeff = m_params.torbulant_airspeed - norm(airspeed);
-    torbulant_coeff = torbulant_coeff > 1 ? 1 : torbulant_coeff;
-    torbulant_coeff = torbulant_coeff < 0 ? 0 : torbulant_coeff;
-    irrvec3 torbulant_base = - MAX_TORBULANT_EFFECT * lift * torbulant_coeff / 4;
-    irrvec3 front_torbulation_force = torbulant_base * m_torbulant_rand_front.update(time_delta);
-    irrvec3 back_torbulation_force = torbulant_base * m_torbulant_rand_back.update(time_delta);
-    irrvec3 left_torbulation_force = torbulant_base * m_torbulant_rand_left.update(time_delta);
-    irrvec3 right_torbulation_force = torbulant_base * m_torbulant_rand_right.update(time_delta);
-    lift += front_torbulation_force + back_torbulation_force + left_torbulation_force + right_torbulation_force;
+    update_torbulation(time_delta, lift, airspeed_in_world);
 
     // Account for ground effects.
     float ground_effect_intensity = (m_pos.Y > 0.5) ? 0 : ((0.5 - m_pos.Y) / 0.5);
     lift *= (1 + ground_effect_intensity*2);
 
-    irrvec3 total_force = gravity + lift - aerodynamic_drag + tail_thrust + m_external_force;
+    irrvec3 total_force = gravity + lift - aerodynamic_drag - tail_thrust
+            + m_external_force + m_torbulant_force_in_world;
     irrvec3 acc = total_force / m_params.mass;
     m_v += time_delta * acc;
     m_pos += time_delta * m_v;
@@ -429,16 +476,16 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .mass = 2.,
     .max_lift = 2. * 10 * 2.5,  // = mass * 2.5
     .drag = irrvec3(0.25, 2, 0.05),
-    .torbulant_airspeed = 5,
-    .main_rotor_max_vel = 55,
+    .torbulant_airspeed = 7,
+    .main_rotor_max_vel = 50,
     .main_rotor_torque = 1.6,
     .main_rotor_length = 1.,
     .main_rotor_max_angle_of_attack = 12.,
 
     .tail_length = 0.6,
-    .tail_drag = 1.,
+    .tail_drag = 0.1,
 
-    .swash_torque = 4. * 10,  // = lift
+    .swash_torque = 4. * 10,  // ~= lift * 1M
     .yaw_torque = 50,
     .rotor_moment_of_inertia = 1./12 * 0.3 * 1, //  = Rod: 1/12 * M * L^2
     .body_moment_of_inertia = irrvec3(

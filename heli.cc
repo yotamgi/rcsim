@@ -508,7 +508,7 @@ const struct HeliParams BELL_AERODYNAMICS = {
      irrvec3(0, 0.05, -1.12*(5./6.))
     }),
 
-    .external_torque_limit = 2.
+    .external_torque_limit = 1.1
 };
 
 

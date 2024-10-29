@@ -501,11 +501,11 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .anti_wobliness = 1./10,
 
     .touchpoints_in_heli = std::vector<irrvec3>({
-     irrvec3( 0.19, -0.128,  0.17),
-     irrvec3(-0.19, -0.128,  0.17),
-     irrvec3(-0.19, -0.128, -0.28),
-     irrvec3( 0.19, -0.128, -0.28),
-     irrvec3(0, 0.05, -1.12)
+     irrvec3( 0.19*(5./6.), -0.128*(5./6.),  0.17*(5./6.)),
+     irrvec3(-0.19*(5./6.), -0.128*(5./6.),  0.17*(5./6.)),
+     irrvec3(-0.19*(5./6.), -0.128*(5./6.), -0.28*(5./6.)),
+     irrvec3( 0.19*(5./6.), -0.128*(5./6.), -0.28*(5./6.)),
+     irrvec3(0, 0.05, -1.12*(5./6.))
     }),
 
     .external_torque_limit = 2.
@@ -518,7 +518,7 @@ BellHeli::BellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* dr
     // Create the body mesh.
 	irr::scene::IMesh* heli_mesh = smgr->getMesh("media/Bell/source/bell_body.obj");
 	m_body_node = smgr->addMeshSceneNode(heli_mesh);
-    m_body_node->setScale(irrvec3(1./4, 1./4, 1./4));
+    m_body_node->setScale(irrvec3(1./5, 1./5, 1./5));
     m_body_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
     m_body_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
     m_body_node->setDebugDataVisible(irr::scene::EDS_OFF);

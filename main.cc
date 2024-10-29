@@ -259,7 +259,7 @@ int main()
 	IMeshSceneNode* node = smgr->addMeshSceneNode(mesh);
 
     node->setPosition(core::vector3df(0, 0, 0));
-    node->setScale(core::vector3df(5, 5, 5));
+    node->setScale(core::vector3df(4, 4, 4));
     node->setMaterialFlag(EMF_LIGHTING, true);
     node->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
     node->setDebugDataVisible(scene::EDS_OFF);

@@ -343,8 +343,8 @@ void BaseHeli::update(double time_delta,
     update_torbulation(time_delta, lift, airspeed_in_world);
 
     // Account for ground effects.
-    float ground_effect_intensity = (m_pos.Y > 0.5) ? 0 : ((0.5 - m_pos.Y) / 0.5);
-    lift *= (1 + ground_effect_intensity*2);
+    float ground_effect_intensity = (m_pos.Y > 0.3) ? 0 : ((0.3 - m_pos.Y) / 0.3);
+    lift *= (1 + ground_effect_intensity);
 
     irrvec3 total_force = gravity + lift - aerodynamic_drag - tail_thrust
             + m_external_force + m_torbulant_force_in_world;

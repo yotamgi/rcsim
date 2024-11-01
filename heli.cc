@@ -583,7 +583,7 @@ void BellHeli::update_ui(float time_delta) {
     // Set the main rotor rotation.
     irr::core::matrix4 main_rotor_rotation;
     main_rotor_rotation.setRotationDegrees(irrvec3(0, m_main_rotor_angle, 0));
-    m_main_rotor_angle += m_main_rotor_vel * time_delta / 4;
+    m_main_rotor_angle += m_main_rotor_vel * time_delta / 2.1;
     irrvec3 main_rotor_offset(0.45, -1.4, 0);
     m_rotor_node->setPosition(-main_rotor_offset);
     irr::core::matrix4 rotor_rotation_in_body_coords = m_body_rotation.getTransposed() * m_rotor_rotation;

@@ -30,7 +30,7 @@ BaseHeli::BaseHeli(const HeliParams &params):
     m_v = irrvec3(0, 0, 0);
     m_rotor_rotation.setRotationDegrees(m_params.init_rotation);
     m_main_rotor_vel = 0;
-    m_lift_force = 0.;
+    m_total_lift_force = 0.;
     m_tail_rotor_force = 0.;
 }
 
@@ -186,7 +186,7 @@ void BaseHeli::update_moments(float time_delta,
     // Calculate the rotor drag force, trying to slow down the rotor.
     float angle_of_attack = m_params.main_rotor_max_angle_of_attack * m_lift_servo.get() / 360 * 2 * PI;
     irrvec3 rotor_drag_torque_in_world =
-            -m_lift_force
+            -m_total_lift_force
             * m_params.main_rotor_length / 3  // Geometric coeffcient from rotor lift to drag torque.
             * std::tan(angle_of_attack)  // Ratio between wing's lift and drag.
             * rotor_y;  // Directed upwards.
@@ -355,7 +355,7 @@ void BaseHeli::update(double time_delta,
     m_pos += time_delta * m_v;
 
     update_ui(time_delta);
-    m_lift_force = norm(lift);
+    m_total_lift_force = norm(lift + m_torbulant_force_in_world);
 }
 
 static irrvec3 rotate(irr::core::matrix4 matrix, irrvec3 vec) {

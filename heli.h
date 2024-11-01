@@ -139,7 +139,7 @@ protected:
     irrvec3 m_prev_reaction_in_body;
 
     // To avoid recalculation, some forces are stored:
-    float m_lift_force;
+    float m_total_lift_force;
     float m_tail_rotor_force;
 
     // For telemetry, some parameters are stored;

@@ -177,6 +177,8 @@ void BaseHeli::update_moments(float time_delta,
     } else {
         main_rotor_torque = (1 - (omega_ratio - 0.9) * 10) * m_params.main_rotor_torque;
     }
+    float motor_drag_torque = -0.1 * m_params.main_rotor_torque;
+    main_rotor_torque = main_rotor_torque < motor_drag_torque ? motor_drag_torque : main_rotor_torque;
     m_main_rotor_vel = main_rotor_omega / (2 * PI) * 360;
     irrvec3 rotor_y(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
     irrvec3 engine_torque_in_world = main_rotor_torque * rotor_y;

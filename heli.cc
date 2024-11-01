@@ -173,7 +173,7 @@ void BaseHeli::update_moments(float time_delta,
     float main_rotor_torque;
     float omega_ratio = main_rotor_omega / target_rotor_omega;
     if (omega_ratio < 0.9) {
-        main_rotor_torque = m_params.main_rotor_torque;
+        main_rotor_torque = m_params.main_rotor_torque * (main_rotor_effectiveness + 0.1);
     } else {
         main_rotor_torque = (1 - (omega_ratio - 0.9) * 10) * m_params.main_rotor_torque;
     }
@@ -197,7 +197,7 @@ void BaseHeli::update_moments(float time_delta,
         m_pitch_servo.get() * m_params.swash_torque
     );
     irrvec3 yaw_torque_in_rotor_coords(
-        0, m_yaw_servo.get() * m_params.yaw_torque, 0
+        0, m_yaw_servo.get() * m_params.tail_rotor_max_force * m_params.tail_length, 0
     );
     swash_torque_in_rotor_coords *= main_rotor_effectiveness;
     yaw_torque_in_rotor_coords *= main_rotor_effectiveness;
@@ -478,15 +478,15 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .drag = irrvec3(0.25, 2, 0.05),
     .torbulant_airspeed = 7,
     .main_rotor_max_vel = 50,
-    .main_rotor_torque = 1.6,
+    .main_rotor_torque = 3.,
     .main_rotor_length = 1.,
     .main_rotor_max_angle_of_attack = 12.,
 
     .tail_length = 0.6,
     .tail_drag = 0.1,
+    .tail_rotor_max_force = 10,
 
     .swash_torque = 4. * 10,  // ~= lift * 1M
-    .yaw_torque = 50,
     .rotor_moment_of_inertia = 1./12 * 0.3 * 1, //  = Rod: 1/12 * M * L^2
     .body_moment_of_inertia = irrvec3(
         // pitch: 2 masses - one in the rotor and one in the body.

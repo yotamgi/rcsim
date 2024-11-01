@@ -28,9 +28,9 @@ struct HeliParams {
 
     float tail_length;  // [M]
     float tail_drag;  // Tail drag to apply yaw torque on airspeed [Newton / [M / SEC]]
+    float tail_rotor_max_force;  //  The tail rotor maximal thrust force.
 
     double swash_torque;  //  The swash moment strength [N * M]
-    double yaw_torque;  //  The yaw moment strength [N * M]
     float rotor_moment_of_inertia;  // [Kg * M] around rotor rotating axis.
     irrvec3 body_moment_of_inertia;  //  Moment of inertia [Kg * M] coefficients around center of Mass.
 

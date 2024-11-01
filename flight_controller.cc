@@ -11,7 +11,7 @@ ServoData GyroFlightController::translate(const ServoData& servo_data, float tim
     irrvec3 derror = (error - m_prev_error) / time_delta;
     m_prev_error = error;
 
-    irrvec3 controls = error*irrvec3(2, 0.5, 5) + derror*irrvec3(1e-1, 0.5e-1, 0);
+    irrvec3 controls = error*irrvec3(2, 3, 5) + derror*irrvec3(1e-1, 5e-1, 0);
 
     ServoData new_servo_data = servo_data;
     new_servo_data.yaw = controls.Y;

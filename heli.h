@@ -94,9 +94,6 @@ protected:
                              const irrvec3 &moment_in_world);
     void update_rotor_moments(float time_delta,
                               const irrvec3 &moment_in_world);
-    void update_moments(float time_delta,
-                        const irrvec3 &wind_speed);
-
     class ServoFilter {
     public:
         ServoFilter(float max_rps, float init_value):m_max_rps(max_rps),m_current_status(init_value) {}
@@ -123,24 +120,45 @@ protected:
                             const irrvec3 &lift_in_world);
     void update_torbulation(float time_delta,
                             const irrvec3 &lift_in_world,
-                            const irrvec3 &airspeed_in_world);
+                            const irrvec3 &wind_speed,
+                            irrvec3 &out_torbulant_force_in_world,
+                            irrvec3 &out_torbulant_torque_in_world);
     SmoothRandFloat m_torbulant_rand_front;
     SmoothRandFloat m_torbulant_rand_back;
     SmoothRandFloat m_torbulant_rand_left;
     SmoothRandFloat m_torbulant_rand_right;
-    irrvec3 m_torbulant_force_in_world;
-    irrvec3 m_torbulant_torque_in_world;
+
+    // Body-rotor forces.
+    irrvec3 calc_body_rotor_reaction_moment(float time_delta);
+    irrvec3 m_prev_reaction_in_body;
+
+    // Tail force and torque.
+    void calc_tail_rotor_force(const irrvec3 &wind_speed,
+                               irrvec3 &out_force_in_world,
+                               irrvec3 &out_torque_in_world);
 
     // Body and rotor orientation properties.
     irrvec3 m_rotor_angular_momentum_in_world;
     irr::core::matrix4 m_rotor_rotation;
     irr::core::matrix4 m_body_rotation;
     irrvec3 m_body_angularv_in_body_coords;
-    irrvec3 m_prev_reaction_in_body;
 
-    // To avoid recalculation, some forces are stored:
-    float m_total_lift_force;
-    float m_tail_rotor_force;
+    // Engine torque.
+    irrvec3 calc_engine_torque();
+
+    // The swash torque.
+    irrvec3 calc_swash_torque();
+
+    // The aerodynamic forces and torques.
+    void calc_aerodynamic_drag(const irrvec3 &wind_speed,
+                               irrvec3 &out_force_in_world,
+                               irrvec3 &out_torque_in_world);
+
+    // The lift forces and engine torques.
+    void calc_lift_force(float time_delta,
+                         const irrvec3 &wind_speed,
+                         irrvec3 &out_force_in_world,
+                         irrvec3 &out_rotor_torqu_in_world);
 
     // For telemetry, some parameters are stored;
     float m_main_rotor_target_rps;

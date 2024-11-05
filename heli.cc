@@ -30,8 +30,6 @@ BaseHeli::BaseHeli(const HeliParams &params):
     m_v = irrvec3(0, 0, 0);
     m_rotor_rotation.setRotationDegrees(m_params.init_rotation);
     m_main_rotor_vel = 0;
-    m_total_lift_force = 0.;
-    m_tail_rotor_force = 0.;
 }
 
 float BaseHeli::ServoFilter::update(float value, float time_delta) {
@@ -158,67 +156,7 @@ void BaseHeli::update_rotor_moments(float time_delta, const irrvec3 &moment_in_w
     }
 }
 
-
-void BaseHeli::update_moments(float time_delta,
-                              const irrvec3 &wind_speed)
-{
-    // Update angular velocity according to torques.
-    float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
-
-    // Calculate the engine moment
-    float throttle_ratio = (m_throttle_servo.get() + 1.05) / 2.05;  // Change from (-1, 1) to (0.05, 1).
-    m_main_rotor_target_rps = m_params.main_rotor_max_vel * throttle_ratio;
-    float target_rotor_omega = m_main_rotor_target_rps * 2 * PI;
-    float main_rotor_omega = norm(m_rotor_angular_momentum_in_world) / m_params.rotor_moment_of_inertia;
-    float main_rotor_torque;
-    float omega_ratio = main_rotor_omega / target_rotor_omega;
-    if (omega_ratio < 0.9) {
-        main_rotor_torque = m_params.main_rotor_torque * (main_rotor_effectiveness + 0.1);
-    } else {
-        main_rotor_torque = (1 - (omega_ratio - 0.9) * 10) * m_params.main_rotor_torque;
-    }
-    float motor_drag_torque = -0.1 * m_params.main_rotor_torque;
-    main_rotor_torque = main_rotor_torque < motor_drag_torque ? motor_drag_torque : main_rotor_torque;
-    m_main_rotor_vel = main_rotor_omega / (2 * PI) * 360;
-    irrvec3 rotor_y(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
-    irrvec3 engine_torque_in_world = main_rotor_torque * rotor_y;
-
-    // Calculate the rotor drag force, trying to slow down the rotor.
-    float angle_of_attack = m_params.main_rotor_max_angle_of_attack * m_lift_servo.get() / 360 * 2 * PI;
-    irrvec3 rotor_drag_torque_in_world =
-            -m_total_lift_force
-            * m_params.main_rotor_length / 3  // Geometric coeffcient from rotor lift to drag torque.
-            * std::tan(angle_of_attack)  // Ratio between wing's lift and drag.
-            * rotor_y;  // Directed upwards.
-
-    // Calculate the servos torque.
-    // Note that the roll and pitch are switched due to the gyro 90 deg effect.
-    irrvec3 swash_torque_in_rotor_coords(
-        -m_roll_servo.get() * m_params.swash_torque,
-        0,
-        m_pitch_servo.get() * m_params.swash_torque
-    );
-    irrvec3 yaw_torque_in_rotor_coords(
-        0, m_yaw_servo.get() * m_params.tail_rotor_max_force * m_params.tail_length, 0
-    );
-    swash_torque_in_rotor_coords *= main_rotor_effectiveness;
-    yaw_torque_in_rotor_coords *= main_rotor_effectiveness;
-    m_tail_rotor_force = yaw_torque_in_rotor_coords.Y / m_params.tail_length;
-    irrvec3 swash_torque_in_world;
-    m_rotor_rotation.rotateVect(swash_torque_in_world, swash_torque_in_rotor_coords);
-
-    // calculate the tail-drag moment.
-    irrvec3 heli_right_in_world(m_body_rotation(0, 0), m_body_rotation(0, 1), m_body_rotation(0, 2));
-    irrvec3 airspeed_in_world = - m_v - wind_speed;
-    float tail_wind = heli_right_in_world.dotProduct(airspeed_in_world);
-    tail_wind += m_body_angularv_in_body_coords.Y * m_params.tail_length;
-    float tail_drag_moment_y = -tail_wind * m_params.tail_drag * m_params.tail_length;
-
-    // Calculate the total tail moments.
-    irrvec3 total_tail_moment_in_body_coords(
-        0, yaw_torque_in_rotor_coords.Y + tail_drag_moment_y, 0);
-    irrvec3 total_tail_moment_in_world;
-    m_body_rotation.rotateVect(total_tail_moment_in_world, total_tail_moment_in_body_coords);
+irrvec3 BaseHeli::calc_body_rotor_reaction_moment(float time_delta) {
 
     // Calculate the body reaction moment.
     irrvec3 body_up(m_body_rotation(1, 0), m_body_rotation(1, 1), m_body_rotation(1, 2));
@@ -235,24 +173,64 @@ void BaseHeli::update_moments(float time_delta,
     m_rotor_rotation.rotateVect(anti_wobliness_in_world, dbody_reaction_moment);
     body_reaction_moment_in_world += anti_wobliness_in_world * m_params.anti_wobliness;
 
-    // Limit the external torque.
-    irrvec3 external_torque = m_external_torque;
-    if (norm(external_torque) > m_params.external_torque_limit) {
-        external_torque /= norm(external_torque)/m_params.external_torque_limit;
-    }
+    return body_reaction_moment_in_world;
+}
 
-    // Update rotations.
-    irrvec3 total_body_torques_in_world = total_tail_moment_in_world 
-                                        - engine_torque_in_world
-                                        - body_reaction_moment_in_world
-                                        + external_torque;
-    irrvec3 total_rotor_torques_in_world = swash_torque_in_world
-                                            + m_torbulant_torque_in_world
-                                            + engine_torque_in_world
-                                            + body_reaction_moment_in_world
-                                            + rotor_drag_torque_in_world;
-    update_body_moments(time_delta, total_body_torques_in_world);
-    update_rotor_moments(time_delta, total_rotor_torques_in_world);
+void BaseHeli::calc_tail_rotor_force(const irrvec3 &wind_speed, 
+            irrvec3 &out_force_in_world,
+            irrvec3 &out_torque_in_world) 
+{
+    float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
+
+    irrvec3 tail_torque_in_rotor_coords(
+        0, m_yaw_servo.get() * m_params.tail_rotor_max_force * m_params.tail_length, 0
+    );
+    tail_torque_in_rotor_coords *= main_rotor_effectiveness;
+    float tail_rotor_force_magnitude = tail_torque_in_rotor_coords.Y / m_params.tail_length;
+    irrvec3 heli_right(m_rotor_rotation(0, 0), m_rotor_rotation(0, 1), m_rotor_rotation(0, 2));
+    irrvec3 tail_rotor_force_in_world = tail_rotor_force_magnitude * heli_right;
+
+    irrvec3 tail_torque_in_world;
+    m_body_rotation.rotateVect(tail_torque_in_world, tail_torque_in_rotor_coords);
+
+    out_force_in_world = tail_rotor_force_in_world;
+    out_torque_in_world = tail_torque_in_world;
+}
+
+irrvec3 BaseHeli::calc_engine_torque() {
+    float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
+
+    float throttle_ratio = (m_throttle_servo.get() + 1.05) / 2.05;  // Change from (-1, 1) to (0.05, 1).
+    m_main_rotor_target_rps = m_params.main_rotor_max_vel * throttle_ratio;
+    float target_rotor_omega = m_main_rotor_target_rps * 2 * PI;
+    float main_rotor_omega = norm(m_rotor_angular_momentum_in_world) / m_params.rotor_moment_of_inertia;
+    float main_rotor_torque;
+    float omega_ratio = main_rotor_omega / target_rotor_omega;
+    if (omega_ratio < 0.9) {
+        main_rotor_torque = m_params.main_rotor_torque * (main_rotor_effectiveness + 0.1);
+    } else {
+        main_rotor_torque = (1 - (omega_ratio - 0.9) * 10) * m_params.main_rotor_torque;
+    }
+    float motor_drag_torque = -0.1 * m_params.main_rotor_torque;
+    main_rotor_torque = main_rotor_torque < motor_drag_torque ? motor_drag_torque : main_rotor_torque;
+    m_main_rotor_vel = main_rotor_omega / (2 * PI) * 360;
+    irrvec3 rotor_y(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
+    return main_rotor_torque * rotor_y;
+}
+
+irrvec3 BaseHeli::calc_swash_torque() {
+    float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
+
+    // Note that the roll and pitch are switched due to the gyro 90 deg effect.
+    irrvec3 swash_torque_in_rotor_coords(
+        -m_roll_servo.get() * m_params.swash_torque,
+        0,
+        m_pitch_servo.get() * m_params.swash_torque
+    );
+    swash_torque_in_rotor_coords *= main_rotor_effectiveness;
+    irrvec3 swash_torque_in_world;
+    m_rotor_rotation.rotateVect(swash_torque_in_world, swash_torque_in_rotor_coords);
+    return swash_torque_in_world;
 }
 
 irrvec3 BaseHeli::torbulant_force(
@@ -280,82 +258,161 @@ irrvec3 BaseHeli::torbulant_force(
 
 void BaseHeli::update_torbulation(float time_delta,
                                   const irrvec3 &lift_in_world,
-                                  const irrvec3 &airspeed_in_world) 
+                                  const irrvec3 &wind_speed,
+                                  irrvec3 &out_torbulant_force_in_world,
+                                  irrvec3 &out_torbulant_torque_in_world)
 {
+    irrvec3 airspeed_in_world = - m_v - wind_speed;
+
     irrvec3 front = irrvec3(m_rotor_rotation(2, 0), m_rotor_rotation(2, 1), m_rotor_rotation(2, 2))
                     * m_params.main_rotor_length/2;
     irrvec3 right = irrvec3(m_rotor_rotation(0, 0), m_rotor_rotation(0, 1), m_rotor_rotation(0, 2))
                     * m_params.main_rotor_length/2;
 
     irrvec3 front_torbulation_force = torbulant_force(front, airspeed_in_world, lift_in_world)
-                                      * (0.75 + 0.25*m_torbulant_rand_front.update(time_delta));
+                                     * (0.75 + 0.25*m_torbulant_rand_front.update(time_delta));
     irrvec3 back_torbulation_force = torbulant_force(-front, airspeed_in_world, lift_in_world)
                                      * (0.75 + 0.25*m_torbulant_rand_back.update(time_delta));
     irrvec3 right_torbulation_force = torbulant_force(right, airspeed_in_world, lift_in_world)
                                      * (0.75 + 0.25*m_torbulant_rand_right.update(time_delta));
     irrvec3 left_torbulation_force = torbulant_force(-right, airspeed_in_world, lift_in_world)
                                      * (0.75 + 0.25*m_torbulant_rand_left.update(time_delta));
-    m_torbulant_force_in_world = front_torbulation_force
+    out_torbulant_force_in_world = front_torbulation_force
                         + back_torbulation_force
                         + left_torbulation_force
                         + right_torbulation_force;
-    m_torbulant_torque_in_world = front_torbulation_force.crossProduct(front)
+    out_torbulant_torque_in_world = front_torbulation_force.crossProduct(front)
                         + back_torbulation_force.crossProduct(-front)
                         + right_torbulation_force.crossProduct(right)
                         + left_torbulation_force.crossProduct(-right);
 }
 
+void BaseHeli::calc_aerodynamic_drag(
+        const irrvec3 &wind_speed,
+        irrvec3 &out_force_in_world,
+        irrvec3 &out_torque_in_world)
+{
+    float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
+    irrvec3 airspeed_in_world = - m_v - wind_speed;
+
+    // Calculate the drag force.
+    irrvec3 drag_vec = m_params.drag;
+    drag_vec.Y /= main_rotor_effectiveness > 0.1? 1 : 10;
+    irr::core::matrix4 world_to_heli = m_rotor_rotation.getTransposed();
+    irrvec3 airspeed_in_heli;
+    world_to_heli.rotateVect(airspeed_in_heli, airspeed_in_world);  // In heli coord system.
+    irrvec3 aerodynamic_drag_force = drag_vec * airspeed_in_heli;
+    m_rotor_rotation.rotateVect(aerodynamic_drag_force);  // Back in world coord system.
+
+    // calculate the tail-drag torque.
+    irrvec3 heli_right_in_world(m_body_rotation(0, 0), m_body_rotation(0, 1), m_body_rotation(0, 2));
+    float tail_wind = heli_right_in_world.dotProduct(airspeed_in_world);
+    tail_wind += m_body_angularv_in_body_coords.Y * m_params.tail_length;
+    float tail_drag_moment_y = -tail_wind * m_params.tail_drag * m_params.tail_length;
+    irrvec3 aerodynamic_drag_torque(0, tail_drag_moment_y, 0);
+    irrvec3 total_tail_torque_in_world;
+    m_body_rotation.rotateVect(total_tail_torque_in_world, aerodynamic_drag_torque);
+
+    // Return;
+    out_force_in_world = - aerodynamic_drag_force;
+    out_torque_in_world = - aerodynamic_drag_torque;
+}
+
+// The lift forces and engine torques.
+void BaseHeli::calc_lift_force(float time_delta,
+                     const irrvec3 &wind_speed,
+                     irrvec3 &out_force_in_world,
+                     irrvec3 &out_rotor_torque_in_world)
+{
+    float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
+
+    // Calc the basic lift force.
+    irrvec3 rotor_up(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
+    irrvec3 lift = rotor_up * m_lift_servo.get() * m_params.max_lift * main_rotor_effectiveness;
+
+    // Account for torbulation force and torque.
+    irrvec3 torbulant_force_in_world, torbulant_torque_in_world;
+    update_torbulation(time_delta, lift, wind_speed,
+                       torbulant_force_in_world, torbulant_torque_in_world);
+
+    // Ground effect force.
+    float ground_effect_intensity = (m_pos.Y > 0.3) ? 0 : ((0.3 - m_pos.Y) / 0.3);
+    lift *= (1 + ground_effect_intensity);
+
+    // Calculate the rotor drag force, trying to slow down the rotor.
+    float angle_of_attack = m_params.main_rotor_max_angle_of_attack * m_lift_servo.get() / 360 * 2 * PI;
+    irrvec3 rotor_drag_torque =
+            - norm(lift + torbulant_force_in_world)
+            * m_params.main_rotor_length / 3  // Geometric coeffcient from rotor lift to drag torque.
+            * std::tan(angle_of_attack)  // Ratio between wing's lift and drag.
+            * rotor_up;  // Directed upwards.
+
+    // Return;
+    out_force_in_world = lift + torbulant_force_in_world;
+    out_rotor_torque_in_world = rotor_drag_torque + torbulant_torque_in_world;
+}
+
+
 void BaseHeli::update(double time_delta,
                       const irrvec3 &wind_speed,
                       const ServoData &servo_data)
 {
-    float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
-
     m_pitch_servo.update(servo_data.pitch, time_delta);
     m_roll_servo.update(servo_data.roll, time_delta);
     m_yaw_servo.update(servo_data.yaw, time_delta);
     m_lift_servo.update(servo_data.lift, time_delta);
     m_throttle_servo.update(servo_data.throttle, time_delta);
 
-    // Update angular velocity according to servos.
-    update_moments(time_delta, wind_speed);
+    // Engine torque.
+    irrvec3 engine_torque_in_world = calc_engine_torque();
 
-    // Gravity is easy - always down.
+    // Swash torques.
+    irrvec3 swash_torque_in_world = calc_swash_torque();
+
+    // Tail torque and thrust force.
+    irrvec3 total_tail_torque_in_world, tail_rotor_force_in_world;
+    calc_tail_rotor_force(wind_speed, tail_rotor_force_in_world, total_tail_torque_in_world);
+
+    // The body-rotor reaction forces.
+    irrvec3 body_reaction_moment_in_world = calc_body_rotor_reaction_moment(time_delta);
+
+    // Gravity force.
     irrvec3 gravity(0, -GRAVITY_CONSTANT, 0);
 
-    // Lift is up in the heli axis;
-    irrvec3 heli_up(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
-    irrvec3 lift = heli_up * servo_data.lift * m_params.max_lift * main_rotor_effectiveness;
+    // Aerodynamic drag force and torque.
+    irrvec3 aerodynamic_drag_force, aerodynamic_drag_torque;
+    calc_aerodynamic_drag(wind_speed, aerodynamic_drag_force, aerodynamic_drag_torque);
 
-    // Tail rotor thrust also adds forces.
-    irrvec3 heli_right(m_rotor_rotation(0, 0), m_rotor_rotation(0, 1), m_rotor_rotation(0, 2));
-    irrvec3 tail_thrust = heli_right * m_tail_rotor_force;
+    // Lift force.
+    irrvec3 lift_force, rotor_lift_torque;
+    calc_lift_force(time_delta, wind_speed, lift_force, rotor_lift_torque);
 
-    // Aerodynamic force.
-    irrvec3 drag_vec = m_params.drag;
-    drag_vec.Y /= main_rotor_effectiveness > 0.1? 1 : 10;
-    irrvec3 airspeed_in_world = m_v - wind_speed;
-    irr::core::matrix4 world_to_heli = m_rotor_rotation.getTransposed();
-    irrvec3 airspeed_in_heli;
-    world_to_heli.rotateVect(airspeed_in_heli, airspeed_in_world);  // In heli coord system.
-    irrvec3 aerodynamic_drag = drag_vec * airspeed_in_heli;
-    m_rotor_rotation.rotateVect(aerodynamic_drag);  // Back in world coord system.
+    // Limit the external torque.
+    irrvec3 external_torque = m_external_torque;
+    if (norm(external_torque) > m_params.external_torque_limit) {
+        external_torque /= norm(external_torque)/m_params.external_torque_limit;
+    }
 
-    // Account for torbulation in low airspeed.
-    update_torbulation(time_delta, lift, airspeed_in_world);
-
-    // Account for ground effects.
-    float ground_effect_intensity = (m_pos.Y > 0.3) ? 0 : ((0.3 - m_pos.Y) / 0.3);
-    lift *= (1 + ground_effect_intensity);
-
-    irrvec3 total_force = gravity + lift - aerodynamic_drag - tail_thrust
-            + m_external_force + m_torbulant_force_in_world;
+    // Update pos/speed.
+    irrvec3 total_force = gravity + lift_force - aerodynamic_drag_force - tail_rotor_force_in_world
+            + m_external_force;
     irrvec3 acc = total_force / m_params.mass;
     m_v += time_delta * acc;
     m_pos += time_delta * m_v;
 
+    // Update rotations/angular velocities.
+    update_body_moments(time_delta, total_tail_torque_in_world 
+                                        + aerodynamic_drag_torque
+                                        - engine_torque_in_world
+                                        - body_reaction_moment_in_world
+                                        + external_torque);
+    update_rotor_moments(time_delta, swash_torque_in_world
+                                            + rotor_lift_torque
+                                            + engine_torque_in_world
+                                            + body_reaction_moment_in_world);
+
+    // Update UI.
     update_ui(time_delta);
-    m_total_lift_force = norm(lift + m_torbulant_force_in_world);
 }
 
 static irrvec3 rotate(irr::core::matrix4 matrix, irrvec3 vec) {

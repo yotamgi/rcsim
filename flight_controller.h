@@ -22,6 +22,7 @@ private:
     irr::core::vector3df m_heli_angles;
     irr::core::vector3df m_wanted_angles;
     irr::core::vector3df m_prev_error;
+    irr::core::vector3df m_error_integral;
 
     bool m_six_axis;
 };

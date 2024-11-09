@@ -17,7 +17,6 @@ struct HeliParams {
     irrvec3 init_rotation;
 
     double mass;  //  [Kg]
-    double max_lift;  //  [N]
     irrvec3 drag;  // [N / (M / SEC)]
     float torbulant_airspeed;  // [M / SEC]
 
@@ -137,12 +136,6 @@ protected:
                                irrvec3 &out_force_in_world,
                                irrvec3 &out_torque_in_world);
 
-    // Body and rotor orientation properties.
-    irrvec3 m_rotor_angular_momentum_in_world;
-    irr::core::matrix4 m_rotor_rotation;
-    irr::core::matrix4 m_body_rotation;
-    irrvec3 m_body_angularv_in_body_coords;
-
     // Engine torque.
     irrvec3 calc_engine_torque();
 
@@ -160,10 +153,14 @@ protected:
                          irrvec3 &out_force_in_world,
                          irrvec3 &out_rotor_torqu_in_world);
 
+    // Body and rotor orientation properties.
+    irrvec3 m_rotor_angular_momentum_in_world;
+    irr::core::matrix4 m_rotor_rotation;
+    irr::core::matrix4 m_body_rotation;
+    irrvec3 m_body_angularv_in_body_coords;
+
     // For telemetry, some parameters are stored;
     float m_main_rotor_target_rps;
-
-    HeliParams m_params;
 
     // Servos
     ServoFilter m_pitch_servo;
@@ -171,6 +168,8 @@ protected:
     ServoFilter m_yaw_servo;
     ServoFilter m_lift_servo;
     ServoFilter m_throttle_servo;
+
+    HeliParams m_params;
 };
 
 

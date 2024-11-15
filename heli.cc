@@ -264,7 +264,7 @@ void BaseHeli::update_torbulation(float time_delta,
                                   irrvec3 &out_torbulant_force_in_world,
                                   irrvec3 &out_torbulant_torque_in_world)
 {
-    irrvec3 airspeed_in_world = - m_v - wind_speed;
+    irrvec3 airspeed_in_world = - (m_v - wind_speed);
 
     irrvec3 front = irrvec3(m_rotor_rotation(2, 0), m_rotor_rotation(2, 1), m_rotor_rotation(2, 2))
                     * m_params.main_rotor_length/2;
@@ -294,7 +294,7 @@ void BaseHeli::calc_aerodynamic_drag(
         irrvec3 &out_force_in_world,
         irrvec3 &out_torque_in_world)
 {
-    irrvec3 airspeed_in_world = - m_v - wind_speed;
+    irrvec3 airspeed_in_world = - (m_v - wind_speed);
 
     // Calculate the drag force.
     irrvec3 drag_vec = m_params.drag;
@@ -327,7 +327,7 @@ void BaseHeli::calc_lift_force(float time_delta,
     irrvec3 rotor_up(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
 
     // Calc the basic lift force.
-    irrvec3 airspeed_in_world = - m_v - wind_speed;
+    irrvec3 airspeed_in_world = - (m_v - wind_speed);
     float rotor_inflow_velocity = -rotor_up.dotProduct(airspeed_in_world);
     float rotor_radius = m_params.main_rotor_length / 2.;
     float rotor_angle_of_attack = m_params.main_rotor_max_angle_of_attack * m_lift_servo.get() / 360 * 2 * PI;

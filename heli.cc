@@ -213,7 +213,7 @@ irrvec3 BaseHeli::calc_engine_torque() {
     } else {
         main_rotor_torque = (1 - (omega_ratio - 0.9) * 10) * m_params.main_rotor_torque;
     }
-    float motor_drag_torque = -0.1 * m_params.main_rotor_torque;
+    float motor_drag_torque = -0.03 * m_params.main_rotor_torque;
     main_rotor_torque = main_rotor_torque < motor_drag_torque ? motor_drag_torque : main_rotor_torque;
     m_main_rotor_vel = main_rotor_omega / (2 * PI) * 360;
     irrvec3 rotor_y(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));

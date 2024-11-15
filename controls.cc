@@ -49,7 +49,6 @@ Controls::Controls(FlightController *flight_controller,
          m_throttle_curves(throttle_curves),
          m_lift_curves(lift_curves)
 {
-    m_active_curve = 0;
 }
 
 
@@ -58,9 +57,9 @@ ServoData Controls::get_servo_data(const ControlsInput &input, float time_delta)
     m_before_flight_controller.pitch = input.pitch_stick;
     m_before_flight_controller.roll = input.roll_stick;
     m_before_flight_controller.yaw = input.yaw_stick;
-    m_before_flight_controller.lift = m_lift_curves[m_active_curve]
+    m_before_flight_controller.lift = m_lift_curves[input.active_curve_index]
                 .translate(input.throttle_stick);
-    m_before_flight_controller.throttle = m_throttle_curves[m_active_curve]
+    m_before_flight_controller.throttle = m_throttle_curves[input.active_curve_index]
                 .translate(input.throttle_stick);
 
     m_after_flight_controller = m_flight_controller->translate(
@@ -74,6 +73,6 @@ Controls::Telemetry Controls::get_telemetry() {
     telemetry.user_input = m_user_input;
     telemetry.before_controller = m_before_flight_controller;
     telemetry.after_controller = m_after_flight_controller;
-    telemetry.active_curve_index = m_active_curve;
+    telemetry.active_curve_index = m_user_input.active_curve_index;
     return telemetry;
 }

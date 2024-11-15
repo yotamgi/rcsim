@@ -7,6 +7,7 @@
 #include "flight_controller.h"
 #include "controls.h"
 #include "dashboard.h"
+#include "input_event_reciever.h"
 
 /*
 In the Irrlicht Engine, everything can be found in the namespace 'irr'. So if
@@ -33,111 +34,6 @@ using namespace video;
 using namespace io;
 using namespace gui;
 
-
-/**
- * To receive events like mouse and keyboard input, or GUI events like "the OK
- * button has been clicked", we need an object which is derived from the
- * irr::IEventReceiver object. There is only one method to override:
- * irr::IEventReceiver::OnEvent(). This method will be called by the engine once
- * when an event happens. What we really want to know is whether a key is being
- * held down, and so we will remember the current state of each key.
- */
-class EventReceiver : public irr::IEventReceiver
-{
-public:
-    EventReceiver();
-
-    // This is the one method that we have to implement
-    virtual bool OnEvent(const irr::SEvent& event);
-
-    // This is used to check whether a key is being held down
-    virtual bool IsKeyDown(irr::EKEY_CODE keyCode) const;
-
-    ControlsInput get_servo_data(float time_delta);
-
-private:
-
-    void update_value(float &value, irr::EKEY_CODE key_up, irr::EKEY_CODE key_down, float change_amount);
-
-    // We use this array to store the current state of each key
-    bool KeyIsDown[irr::KEY_KEY_CODES_COUNT];
-
-    SEvent::SJoystickEvent JoystickState;
-    bool m_joystick_active;
-    ControlsInput m_controls_input;
-};
-
-EventReceiver::EventReceiver()
-{
-	for (u32 i=0; i<irr::KEY_KEY_CODES_COUNT; ++i)
-		KeyIsDown[i] = false;
-    m_joystick_active = false;
-    m_controls_input.pitch_stick = 0;
-    m_controls_input.roll_stick = 0;
-    m_controls_input.yaw_stick = 0;
-    m_controls_input.throttle_stick = -1;
-}
-
-bool EventReceiver::OnEvent(const irr::SEvent& event) {
-	// Remember whether each key is down or up
-	if (event.EventType == irr::EET_KEY_INPUT_EVENT)
-		KeyIsDown[event.KeyInput.Key] = event.KeyInput.PressedDown;
-
-    // The state of each connected joystick is sent to us
-    // once every run() of the Irrlicht device.  Store the
-    // state of the first joystick, ignoring other joysticks.
-    // This is currently only supported on Windows and Linux.
-    if (event.EventType == irr::EET_JOYSTICK_INPUT_EVENT
-        && event.JoystickEvent.Joystick == 0)
-    {
-        JoystickState = event.JoystickEvent;
-        m_joystick_active = true;
-    }
-
-	return false;
-}
-
-void EventReceiver::update_value(float &value, irr::EKEY_CODE key_up, irr::EKEY_CODE key_down, float change_amount) {
-    if (IsKeyDown(key_up)) value += change_amount;
-    else if (IsKeyDown(key_down)) value -= change_amount;
-    else {
-        if (std::abs(value) < 0.1) value = 0;
-        else {
-            value += change_amount * ((float)(value < 0)*2 - 1);
-        }
-    }
-
-    value = value > 1 ? 1 : value;
-    value = value < -1 ? -1 : value;
-}
-
-ControlsInput EventReceiver::get_servo_data(float time_delta) {
-    if (m_joystick_active) {
-        m_controls_input.pitch_stick = -(float)JoystickState.Axis[1] / 32768;
-        m_controls_input.roll_stick = -(float)JoystickState.Axis[0] / 32768;
-        m_controls_input.yaw_stick = (float)JoystickState.Axis[4] / 32768;
-        m_controls_input.throttle_stick = -(float)JoystickState.Axis[2] / 32768;
-        return m_controls_input;
-    }
-
-    float change_amount = time_delta * 4;
-    update_value(m_controls_input.pitch_stick, KEY_UP, KEY_DOWN, change_amount);
-    update_value(m_controls_input.roll_stick, KEY_LEFT, KEY_RIGHT, change_amount);
-    update_value(m_controls_input.yaw_stick, KEY_KEY_D, KEY_KEY_A, change_amount);
-
-    if (IsKeyDown(KEY_KEY_W))  m_controls_input.throttle_stick += time_delta;
-    else if (IsKeyDown(KEY_KEY_S)) m_controls_input.throttle_stick -= time_delta;
-
-    m_controls_input.throttle_stick = m_controls_input.throttle_stick > 1 ? 
-            1 : m_controls_input.throttle_stick;
-    m_controls_input.throttle_stick = m_controls_input.throttle_stick < -1 ?
-            -1 : m_controls_input.throttle_stick;
-    return m_controls_input;
-}
-
-bool EventReceiver::IsKeyDown(irr::EKEY_CODE keyCode) const {
-	return KeyIsDown[keyCode];
-}
 
 void add_banana(irr::scene::ISceneManager *smgr,
                 irr::video::IVideoDriver *driver,
@@ -366,11 +262,11 @@ int main()
         }
 
         // Update the helicopter.
-        ControlsInput controls_input = receiver.get_servo_data(time_delta);
+        UserInput user_input = receiver.update_input(time_delta);
         heli.update(
                 time_delta,
                 irrvec3(0, 0, 0),
-                controls.get_servo_data(controls_input, time_delta)
+                controls.get_servo_data(user_input.controls_input, time_delta)
         );
 
         // Apply external force on the helicopter touch points.

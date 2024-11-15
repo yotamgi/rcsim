@@ -14,6 +14,7 @@ struct ControlsInput {
     float roll_stick;
     float yaw_stick;
     float throttle_stick;
+    size_t active_curve_index;
 };
 
 
@@ -39,7 +40,7 @@ class Controls {
 public:
     Controls(FlightController *flight_controller,
              std::vector<ControllerCurve> throttle_curves,
-             std::vector<ControllerCurve> lift);
+             std::vector<ControllerCurve> lift_curves);
 
     ServoData get_servo_data(const ControlsInput &input, float time_delta);
 
@@ -58,7 +59,6 @@ private:
     FlightController *m_flight_controller;
     std::vector<ControllerCurve> m_throttle_curves;
     std::vector<ControllerCurve> m_lift_curves;
-    int m_active_curve;
 
     // Saved for Telemetry.
     ControlsInput m_user_input;

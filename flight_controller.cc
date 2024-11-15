@@ -5,6 +5,16 @@ typedef irr::core::vector3df irrvec;
 
 
 ServoData GyroFlightController::translate(const ServoData& servo_data, float time_delta) {
+
+    // If the throttle is low, set all the servos to 0.
+    if (servo_data.throttle < -0.7) {
+        ServoData zero_servo_data;
+        memset((void *)&zero_servo_data, 0, sizeof(ServoData));
+        zero_servo_data.throttle = servo_data.throttle;
+        return zero_servo_data;
+    }
+
+    // Otherwise, apply PID.
     m_heli_angles += m_heli->get_gyro_angularv() * time_delta;
     m_wanted_angles += irrvec3(servo_data.pitch, servo_data.yaw, servo_data.roll) * time_delta * irrvec3(4, 5, 4);
     irrvec3 error = (m_wanted_angles - m_heli_angles);

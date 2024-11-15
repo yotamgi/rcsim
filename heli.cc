@@ -318,6 +318,24 @@ void BaseHeli::calc_aerodynamic_drag(
     out_torque_in_world = - aerodynamic_drag_torque;
 }
 
+
+
+irrvec3 BaseHeli::calc_dissimetry_of_lift(const irrvec3 &wind_speed, float lift_magnitude) {
+    irrvec3 airspeed_in_world = - (m_v - wind_speed);
+    float rotor_radius = m_params.main_rotor_length / 2.;
+    float rotor_omega = m_main_rotor_vel / 360 * 2 * PI;
+    float max_airspeed = rotor_omega * rotor_radius * 0.8 + 0.0001;
+
+    irrvec3 rotor_up(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
+    irrvec3 transient_flow = airspeed_in_world - rotor_up * airspeed_in_world.dotProduct(rotor_up);
+    float effect_magnitude = norm(transient_flow) / max_airspeed;
+
+    irrvec3 dol_direction = transient_flow / (norm(transient_flow) + 0.0001);
+
+    return dol_direction * effect_magnitude * lift_magnitude * rotor_radius * 0.9;
+}
+
+
 // The lift forces and engine torques.
 void BaseHeli::calc_lift_force(float time_delta,
                      const irrvec3 &wind_speed,
@@ -335,8 +353,9 @@ void BaseHeli::calc_lift_force(float time_delta,
     float rotor_thrust_velocity = rotor_omega * std::tan(rotor_angle_of_attack) * rotor_radius * 0.8;
     float rotor_surface_area = rotor_radius * rotor_radius * PI;
     float rotor_mass_flow = rotor_thrust_velocity * rotor_surface_area * AIR_DENSITY;  // [Mass / Sec]
-    float lift_force_magnitude = rotor_mass_flow * (rotor_thrust_velocity - rotor_inflow_velocity);
-    irrvec3 lift = rotor_up * lift_force_magnitude;
+    float rotor_lift_force_magnitude = rotor_mass_flow * rotor_thrust_velocity;
+    float drag_lift_force_magnitude = - rotor_mass_flow * rotor_inflow_velocity;
+    irrvec3 lift = rotor_up * (rotor_lift_force_magnitude + drag_lift_force_magnitude * 0.7);
 
     // Account for torbulation force and torque.
     irrvec3 torbulant_force_in_world, torbulant_torque_in_world;
@@ -350,13 +369,16 @@ void BaseHeli::calc_lift_force(float time_delta,
             * std::tan(rotor_angle_of_attack)  // Ratio between wing's lift and drag.
             * rotor_up;  // Directed upwards.
 
+    // Account for Dissimetry of Lift.
+    irrvec3 dissimetry_of_lift_torque = calc_dissimetry_of_lift(wind_speed, rotor_lift_force_magnitude);
+
     // Ground effect force.
     float ground_effect_intensity = (m_pos.Y > 0.3) ? 0 : ((0.3 - m_pos.Y) / 0.3);
     lift *= (1 + ground_effect_intensity);
 
     // Return;
     out_force_in_world = lift + torbulant_force_in_world;
-    out_rotor_torque_in_world = rotor_drag_torque + torbulant_torque_in_world;
+    out_rotor_torque_in_world = rotor_drag_torque + torbulant_torque_in_world + dissimetry_of_lift_torque;
 }
 
 
@@ -540,10 +562,10 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .init_pos = irrvec3(0, 0.13 + -0.019, 0),
     .init_rotation = irrvec3(0, 0, 0),
     .mass = 2.,
-    .drag = irrvec3(0.5, 0.3, 0.1),
+    .drag = irrvec3(1, 0.6, 0.2),
     .torbulant_airspeed = 7,
     .main_rotor_max_vel = 35,
-    .main_rotor_torque = 4.,
+    .main_rotor_torque = 8.,
     .main_rotor_length = 1.,
     .main_rotor_max_angle_of_attack = 10.,
 
@@ -551,7 +573,7 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .tail_drag = 0.1,
     .tail_rotor_max_force = 30,
 
-    .swash_torque = 2 * 10,  // ~= Mass * G * 1M
+    .swash_torque = 4 * 10,  // ~= Mass * G * 1M
     .rotor_moment_of_inertia = 1./12 * 0.3 * 1, //  = Rod: 1/12 * M * L^2
     .body_moment_of_inertia = irrvec3(
         // pitch: 2 masses - one in the rotor and one in the body.

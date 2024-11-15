@@ -153,6 +153,9 @@ protected:
                          irrvec3 &out_force_in_world,
                          irrvec3 &out_rotor_torqu_in_world);
 
+    // The dissimetry of lift.
+    irrvec3 calc_dissimetry_of_lift(const irrvec3 &wind_speed, float lift_magnitude);
+
     // Body and rotor orientation properties.
     irrvec3 m_rotor_angular_momentum_in_world;
     irr::core::matrix4 m_rotor_rotation;

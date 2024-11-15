@@ -146,7 +146,7 @@ void BaseHeli::update_rotor_moments(float time_delta, const irrvec3 &moment_in_w
     // Tackle numerical instability in low RPMs - since in low RPMs the torques 
     // on the rotor can change its orientation quite a bit, this causes a lot
     // of numerical instability.
-    if (main_rotor_effectiveness < 0.2) {
+    if (main_rotor_effectiveness < 0.3) {
         m_rotor_rotation = m_body_rotation;
         rot_y.X = m_rotor_rotation(1, 0); rot_y.Y = m_rotor_rotation(1, 1); rot_y.Z = m_rotor_rotation(1, 2);
         rot_y = rot_y.normalize();
@@ -573,7 +573,7 @@ const struct HeliParams BELL_AERODYNAMICS = {
      irrvec3(0, 0.05, -1.12*(5./6.))
     }),
 
-    .external_torque_limit = 1.1
+    .external_torque_limit = 1
 };
 
 

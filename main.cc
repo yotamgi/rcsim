@@ -275,7 +275,6 @@ int main()
         for (unsigned int i=0; i<touchpoints.size(); i++) {
             BaseHeli::TouchPoint tp = touchpoints[i];
             if (tp.pos_in_world.Y < 0) {
-                std::cout << "Touchpoint " << i << ": " << tp.pos_in_world.Y << std::endl;
                 irrvec3 tp_force = irrvec3(0, -500*tp.pos_in_world.Y, 0);
                 tp_force += - tp.vel_in_world * irrvec3(15, 10, 15) * (-tp.pos_in_world.Y / 0.02);
                 heli.add_force(i, tp_force);

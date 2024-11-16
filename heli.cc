@@ -353,8 +353,8 @@ void BaseHeli::calc_lift_force(float time_delta,
     float rotor_thrust_velocity = rotor_omega * std::tan(rotor_angle_of_attack) * rotor_radius * 0.8;
     float rotor_surface_area = rotor_radius * rotor_radius * PI;
     float rotor_mass_flow = rotor_thrust_velocity * rotor_surface_area * AIR_DENSITY;  // [Mass / Sec]
-    float rotor_lift_force_magnitude = rotor_mass_flow * rotor_thrust_velocity;
-    float drag_lift_force_magnitude = - rotor_mass_flow * rotor_inflow_velocity;
+    float rotor_lift_force_magnitude = std::abs(rotor_mass_flow) * rotor_thrust_velocity;
+    float drag_lift_force_magnitude = - std::abs(rotor_mass_flow) * rotor_inflow_velocity;
     irrvec3 lift = rotor_up * (rotor_lift_force_magnitude + drag_lift_force_magnitude * 0.7);
 
     // Account for torbulation force and torque.
@@ -366,7 +366,7 @@ void BaseHeli::calc_lift_force(float time_delta,
     irrvec3 rotor_drag_torque =
             - norm(lift + torbulant_force_in_world)
             * m_params.main_rotor_length / 3  // Geometric coeffcient from rotor lift to drag torque.
-            * std::tan(rotor_angle_of_attack)  // Ratio between wing's lift and drag.
+            * std::tan(std::abs(rotor_angle_of_attack))  // Ratio between wing's lift and drag.
             * rotor_up;  // Directed upwards.
 
     // Account for Dissimetry of Lift.

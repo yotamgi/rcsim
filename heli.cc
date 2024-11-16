@@ -351,7 +351,7 @@ void BaseHeli::calc_lift_force(float time_delta,
     float rotor_angle_of_attack = m_params.main_rotor_max_angle_of_attack * m_lift_servo.get() / 360 * 2 * PI;
     float rotor_omega = m_main_rotor_vel / 360 * 2 * PI;
     float rotor_thrust_velocity = rotor_omega * std::tan(rotor_angle_of_attack) * rotor_radius * 0.8;
-    float rotor_surface_area = rotor_radius * rotor_radius * PI;
+    float rotor_surface_area = rotor_radius * rotor_radius * PI * 0.8;  // Cicle without the center.
     float rotor_mass_flow = rotor_thrust_velocity * rotor_surface_area * AIR_DENSITY;  // [Mass / Sec]
     float rotor_lift_force_magnitude = std::abs(rotor_mass_flow) * rotor_thrust_velocity;
     float drag_lift_force_magnitude = - std::abs(rotor_mass_flow) * rotor_inflow_velocity;

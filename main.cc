@@ -252,7 +252,7 @@ int main()
         int fps = driver->getFPS();
         if (lastFPS != fps)
         {
-            core::stringw str = L"Irrlicht Engine - Quake 3 Map example [";
+            core::stringw str = L"RC Heli Simulator";
             str += driver->getName();
             str += "] FPS:";
             str += fps;

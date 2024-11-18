@@ -108,10 +108,6 @@ protected:
     float m_main_rotor_vel;
     irrvec3 m_external_torque;
     irrvec3 m_external_force;
-    SmoothRandFloat m_torbulant_rand_front;
-    SmoothRandFloat m_torbulant_rand_back;
-    SmoothRandFloat m_torbulant_rand_left;
-    SmoothRandFloat m_torbulant_rand_right;
 
     // Torbulat related.
     irrvec3 torbulant_force(const irrvec3 &pos_in_world,

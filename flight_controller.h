@@ -7,6 +7,7 @@ class FlightController {
 public:
     FlightController(const BaseHeli *heli):m_heli(heli) {}
     virtual ServoData translate(const ServoData& servo_data, float time_delta) = 0;
+    virtual void set_six_axis(bool set) = 0;
 protected:
     const BaseHeli *m_heli;
 };

@@ -62,6 +62,7 @@ ServoData Controls::get_servo_data(const ControlsInput &input, float time_delta)
     m_before_flight_controller.throttle = m_throttle_curves[input.active_curve_index]
                 .translate(input.throttle_stick);
 
+    m_flight_controller->set_six_axis(input.gyro_6dof);
     m_after_flight_controller = m_flight_controller->translate(
             m_before_flight_controller, time_delta);
     return m_after_flight_controller;

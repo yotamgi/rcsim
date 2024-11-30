@@ -13,7 +13,7 @@ EventReceiver::EventReceiver()
     m_user_input.controls_input.yaw_stick = 0;
     m_user_input.controls_input.throttle_stick = -1;
     m_user_input.controls_input.active_curve_index = 0;
-    m_user_input.gyro_6dof = false;
+    m_user_input.controls_input.gyro_6dof = true;
 }
 
 bool EventReceiver::OnEvent(const irr::SEvent& event) {
@@ -25,6 +25,10 @@ bool EventReceiver::OnEvent(const irr::SEvent& event) {
         if (event.KeyInput.Key == KEY_KEY_I && event.KeyInput.PressedDown) {
             m_user_input.controls_input.active_curve_index = 
                 (m_user_input.controls_input.active_curve_index + 1) % NUM_AVAILABLE_CURVES;
+        }
+        // When 'g' is down, update the gyro mode.
+        if (event.KeyInput.Key == KEY_KEY_G && event.KeyInput.PressedDown) {
+            m_user_input.controls_input.gyro_6dof = !m_user_input.controls_input.gyro_6dof;
         }
     }
 

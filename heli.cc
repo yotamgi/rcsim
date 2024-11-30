@@ -7,7 +7,7 @@
 using irr::core::PI;
 
 const double GRAVITY_CONSTANT = 9.8;
-const double MAX_TORBULANT_EFFECT = 0.6;
+const double MAX_TORBULANT_EFFECT = 0.4;
 const float AIR_DENSITY = 1.2;
 
 float norm(irrvec3 vec) {
@@ -344,18 +344,23 @@ void BaseHeli::calc_lift_force(float time_delta,
 {
     irrvec3 rotor_up(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
 
-    // Calc the basic lift force.
+    // Calc the rotor inflow.
     irrvec3 airspeed_in_world = - (m_v - wind_speed);
     float rotor_inflow_velocity = -rotor_up.dotProduct(airspeed_in_world);
     float rotor_radius = m_params.main_rotor_length / 2.;
+
+    // Calc the rotor outflow.
     float rotor_angle_of_attack = m_params.main_rotor_max_angle_of_attack * m_lift_servo.get() / 360 * 2 * PI;
     float rotor_omega = m_main_rotor_vel / 360 * 2 * PI;
-    float rotor_thrust_velocity = rotor_omega * std::tan(rotor_angle_of_attack) * rotor_radius * 0.8;
+    float rotor_target_outflow_velocity = rotor_omega * std::tan(rotor_angle_of_attack) * rotor_radius * 0.8;
+    float rotor_outflow_velocity = m_params.main_rotor_traction * rotor_target_outflow_velocity 
+                                    + (1 - m_params.main_rotor_traction) * rotor_inflow_velocity;
+
+    // Calc the lift force.
     float rotor_surface_area = rotor_radius * rotor_radius * PI * 0.8;  // Cicle without the center.
-    float rotor_mass_flow = rotor_thrust_velocity * rotor_surface_area * AIR_DENSITY;  // [Mass / Sec]
-    float rotor_lift_force_magnitude = std::abs(rotor_mass_flow) * rotor_thrust_velocity;
-    float drag_lift_force_magnitude = - std::abs(rotor_mass_flow) * rotor_inflow_velocity;
-    irrvec3 lift = rotor_up * (rotor_lift_force_magnitude + drag_lift_force_magnitude * 0.7);
+    float rotor_mass_flow = rotor_outflow_velocity * rotor_surface_area * AIR_DENSITY;  // [Mass / Sec]
+    float rotor_lift_force_magnitude = std::abs(rotor_mass_flow) * (rotor_outflow_velocity - rotor_inflow_velocity);
+    irrvec3 lift = rotor_up * rotor_lift_force_magnitude;
 
     // Account for torbulation force and torque.
     irrvec3 torbulant_force_in_world, torbulant_torque_in_world;
@@ -567,7 +572,8 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .main_rotor_max_vel = 35,
     .main_rotor_torque = 8.,
     .main_rotor_length = 1.,
-    .main_rotor_max_angle_of_attack = 10.,
+    .main_rotor_max_angle_of_attack = 12.,
+    .main_rotor_traction = 0.75,
 
     .tail_length = 0.6,
     .tail_drag = 0.1,

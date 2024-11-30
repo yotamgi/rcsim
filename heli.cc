@@ -202,7 +202,7 @@ void BaseHeli::calc_tail_rotor_force(const irrvec3 &wind_speed,
 irrvec3 BaseHeli::calc_engine_torque() {
     float main_rotor_effectiveness = m_main_rotor_vel / 360 / m_params.main_rotor_max_vel;
 
-    float throttle_ratio = (m_throttle_servo.get() + 1.05) / 2.05;  // Change from (-1, 1) to (0.05, 1).
+    float throttle_ratio = (m_throttle_servo.get() + 1) / 2;  // Change from (-1, 1) to (0, 1).
     m_main_rotor_target_rps = m_params.main_rotor_max_vel * throttle_ratio;
     float target_rotor_omega = m_main_rotor_target_rps * 2 * PI;
     float main_rotor_omega = norm(m_rotor_angular_momentum_in_world) / m_params.rotor_moment_of_inertia;
@@ -213,7 +213,7 @@ irrvec3 BaseHeli::calc_engine_torque() {
     } else {
         main_rotor_torque = (1 - (omega_ratio - 0.9) * 10) * m_params.main_rotor_torque;
     }
-    float motor_drag_torque = -0.03 * m_params.main_rotor_torque;
+    float motor_drag_torque = -0.01 * m_params.main_rotor_torque;
     main_rotor_torque = main_rotor_torque < motor_drag_torque ? motor_drag_torque : main_rotor_torque;
     m_main_rotor_vel = main_rotor_omega / (2 * PI) * 360;
     irrvec3 rotor_y(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));

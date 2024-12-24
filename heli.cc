@@ -219,9 +219,13 @@ irrvec3 BaseHeli::calc_engine_torque() {
     } else {
         main_rotor_torque = (1 - (omega_ratio - 0.9) * 10) * m_params.main_rotor_torque;
     }
-    float motor_drag_torque = -0.01 * m_params.main_rotor_torque;
-    main_rotor_torque = main_rotor_torque < motor_drag_torque ? motor_drag_torque : main_rotor_torque;
-    m_main_rotor_vel = main_rotor_omega / (2 * PI) * 360;
+    main_rotor_torque = (main_rotor_torque < 0) ? 0 : main_rotor_torque;
+
+    // Calculate the motor drag torque, trying to hold back the rotor.
+    float max_motor_drag_torque = 0.01 * m_params.main_rotor_torque;
+    float motor_drag_torque = -sign(m_main_rotor_vel) * max_motor_drag_torque;
+    main_rotor_torque += motor_drag_torque;
+
     irrvec3 rotor_y(m_rotor_rotation(1, 0), m_rotor_rotation(1, 1), m_rotor_rotation(1, 2));
     return main_rotor_torque * rotor_y;
 }
@@ -375,9 +379,9 @@ void BaseHeli::calc_lift_force(float time_delta,
 
     // Calculate the rotor drag force, trying to slow down the rotor.
     irrvec3 rotor_drag_torque =
-            - norm(lift + torbulant_force_in_world)
+            - (lift + torbulant_force_in_world).dotProduct(rotor_up)
             * m_params.main_rotor_length / 3  // Geometric coeffcient from rotor lift to drag torque.
-            * std::tan(std::abs(rotor_angle_of_attack))  // Ratio between wing's lift and drag.
+            * std::tan(rotor_angle_of_attack)  // Ratio between wing's lift and drag.
             * rotor_up;  // Directed upwards.
 
     // Account for Dissimetry of Lift.

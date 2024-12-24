@@ -6,7 +6,6 @@
 
 struct UserInput {
     ControlsInput controls_input;
-    bool gyro_6dof;
 };
 
 /**

@@ -14,6 +14,10 @@ float norm(irrvec3 vec) {
     return std::sqrt(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
 }
 
+float sign(float value) { 
+    return (value > 0) ? 1 : -1;
+}
+
 
 BaseHeli::BaseHeli(const HeliParams &params):
          m_torbulant_rand_front(3., 0.6),
@@ -129,6 +133,13 @@ void BaseHeli::update_rotor_moments(float time_delta, const irrvec3 &moment_in_w
     // The Y vector is taken to point towards the angular momentun.
     irrvec3 rot_y = m_rotor_angular_momentum_in_world;
     rot_y.normalize();
+    irrvec3 body_y(m_body_rotation(1, 0), m_body_rotation(1, 1), m_body_rotation(1, 2));
+    // Tackle numerical instability in low RPMs - since in low RPMs the torques 
+    // on the rotor can change its orientation quite a bit, this causes a lot
+    // of numerical instability. 
+    rot_y = main_rotor_effectiveness * m_rotor_angular_momentum_in_world + 
+            (1 - main_rotor_effectiveness) * body_y;
+    rot_y.normalize();
 
     // Only at the first frame, the angular_momentum is 0 and it screws up everything.
     // This is a dirty workaround this.
@@ -143,19 +154,14 @@ void BaseHeli::update_rotor_moments(float time_delta, const irrvec3 &moment_in_w
     irrvec3 rot_x = rot_y.crossProduct(rot_z).normalize();
     rot_z = rot_x.crossProduct(rot_y).normalize();
 
-    // Tackle numerical instability in low RPMs - since in low RPMs the torques 
-    // on the rotor can change its orientation quite a bit, this causes a lot
-    // of numerical instability.
-    if (main_rotor_effectiveness < 0.3) {
-        m_rotor_rotation = m_body_rotation;
-        rot_y.X = m_rotor_rotation(1, 0); rot_y.Y = m_rotor_rotation(1, 1); rot_y.Z = m_rotor_rotation(1, 2);
-        rot_y = rot_y.normalize();
-        m_rotor_angular_momentum_in_world = norm(m_rotor_angular_momentum_in_world) * rot_y;
-    } else {
-        m_rotor_rotation(0, 0) = rot_x.X; m_rotor_rotation(0, 1) = rot_x.Y; m_rotor_rotation(0, 2) = rot_x.Z;
-        m_rotor_rotation(1, 0) = rot_y.X; m_rotor_rotation(1, 1) = rot_y.Y; m_rotor_rotation(1, 2) = rot_y.Z;
-        m_rotor_rotation(2, 0) = rot_z.X; m_rotor_rotation(2, 1) = rot_z.Y; m_rotor_rotation(2, 2) = rot_z.Z;
-    }
+    // update the angular velocity according to the angular momentum.
+    float main_rotor_omega = norm(m_rotor_angular_momentum_in_world) / m_params.rotor_moment_of_inertia;
+    m_main_rotor_vel = main_rotor_omega / (2 * PI) * 360;
+    m_main_rotor_vel *= sign(body_y.dotProduct(m_rotor_angular_momentum_in_world));
+
+    m_rotor_rotation(0, 0) = rot_x.X; m_rotor_rotation(0, 1) = rot_x.Y; m_rotor_rotation(0, 2) = rot_x.Z;
+    m_rotor_rotation(1, 0) = rot_y.X; m_rotor_rotation(1, 1) = rot_y.Y; m_rotor_rotation(1, 2) = rot_y.Z;
+    m_rotor_rotation(2, 0) = rot_z.X; m_rotor_rotation(2, 1) = rot_z.Y; m_rotor_rotation(2, 2) = rot_z.Z;
 }
 
 irrvec3 BaseHeli::calc_body_rotor_reaction_moment(float time_delta) {

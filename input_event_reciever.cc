@@ -14,6 +14,7 @@ EventReceiver::EventReceiver()
     m_user_input.controls_input.throttle_stick = -1;
     m_user_input.controls_input.active_curve_index = 0;
     m_user_input.controls_input.gyro_6dof = true;
+    m_user_input.controls_input.throttle_hold = false;
 }
 
 bool EventReceiver::OnEvent(const irr::SEvent& event) {
@@ -29,6 +30,10 @@ bool EventReceiver::OnEvent(const irr::SEvent& event) {
         // When 'g' is down, update the gyro mode.
         if (event.KeyInput.Key == KEY_KEY_G && event.KeyInput.PressedDown) {
             m_user_input.controls_input.gyro_6dof = !m_user_input.controls_input.gyro_6dof;
+        }
+        // When 't' is down, update the throttle-hold status.
+        if (event.KeyInput.Key == KEY_KEY_T && event.KeyInput.PressedDown) {
+            m_user_input.controls_input.throttle_hold = !m_user_input.controls_input.throttle_hold;
         }
     }
 

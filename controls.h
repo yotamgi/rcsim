@@ -16,6 +16,7 @@ struct ControlsInput {
     float throttle_stick;
     size_t active_curve_index;
     bool gyro_6dof;
+    bool throttle_hold;
 };
 
 

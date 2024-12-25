@@ -28,6 +28,9 @@ const int MAIN_ROTOR_INDICATOR_HEIGHT = 170;
 const int MAIN_ROTOR_INDICATOR_HAND_WIDTH = 39;
 const int MAIN_ROTOR_INDICATOR_HAND_HEIGHT = 140;
 
+const int TEXT_HEIGHT = 60;
+const int TEXT_WIDTH = 60*8;
+
 
 static float curve_x_to_value(int x) {
     return (float(x) / CURVES_IMAGE_WIDTH) * 2. - 1.;
@@ -317,6 +320,11 @@ Dashboard::Dashboard(
     m_main_rotor_indicator_image = driver->getTexture("media/speedometer3_meter.png");
     m_main_rotor_indicator_hand_image = driver->getTexture("media/speedometer3_hand.png");
     m_main_rotor_indicator_target_hand_image = driver->getTexture("media/speedometer3_hand_yellow.png");
+    m_throttle_text = driver->getTexture("media/throttle_text.png");
+    m_throttle_hold_text = driver->getTexture("media/throttle_hold_text.png");
+    m_curves_text = driver->getTexture("media/curves_text.png");
+    m_switch_curves_text = driver->getTexture("media/switch_curves_text.png");
+    m_controls_and_gyro_view_text = driver->getTexture("media/controls_and_gyro_view.png");
 
     m_driver = driver;
 }
@@ -350,6 +358,16 @@ void Dashboard::update_ui(
                                  POS_X(1),
                                  POS_Y(0)),
             irr::core::rect<int>(0, 0, 10, 10),
+            NULL, NULL, true);
+
+    // Draw the controls test
+    m_driver->draw2DImage(
+            m_controls_and_gyro_view_text,
+            irr::core::rect<int>(POS_X(CONTROLS_POS_X) - TEXT_WIDTH / 2,
+                                 POS_Y(CONTROLS_POS_Y) - 10,
+                                 POS_X(CONTROLS_POS_X) + TEXT_WIDTH / 2,
+                                 POS_Y(CONTROLS_POS_Y) + TEXT_HEIGHT - 10),
+            irr::core::rect<int>(0, 0, 800, 100),
             NULL, NULL, true);
 
     // Draw the pitch-roll control view.
@@ -413,6 +431,24 @@ void Dashboard::update_ui(
             irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE),
             NULL, NULL, true);
 
+    // Draw the lift/throttle curves text.
+    m_driver->draw2DImage(
+            m_curves_text,
+            irr::core::rect<int>(POS_X(CURVES_IMAGE_POS_X),
+                                 POS_Y(CURVES_IMAGE_POS_Y) - 30,
+                                 POS_X(CURVES_IMAGE_POS_X) + TEXT_WIDTH,
+                                 POS_Y(CURVES_IMAGE_POS_Y) + TEXT_HEIGHT - 30),
+            irr::core::rect<int>(0, 0, 800, 100),
+            NULL, NULL, true);
+    m_driver->draw2DImage(
+            m_switch_curves_text,
+            irr::core::rect<int>(POS_X(CURVES_IMAGE_POS_X),
+                                 POS_Y(CURVES_IMAGE_POS_Y) + CURVES_IMAGE_HEIGHT,
+                                 POS_X(CURVES_IMAGE_POS_X) + TEXT_WIDTH,
+                                 POS_Y(CURVES_IMAGE_POS_Y) + CURVES_IMAGE_HEIGHT + TEXT_HEIGHT),
+            irr::core::rect<int>(0, 0, 800, 100),
+            NULL, NULL, true);
+
     // Draw the lift/throttle curves.
     m_driver->draw2DImage(
             m_curves_images[active_curve_index],
@@ -428,7 +464,7 @@ void Dashboard::update_ui(
             irr::core::rect<int>(POS_X(CURVES_IMAGE_POS_X) + vertical_line_x_offset,
                                  POS_Y(CURVES_IMAGE_POS_Y),
                                  POS_X(CURVES_IMAGE_POS_X) + vertical_line_x_offset + 3,
-                                 POS_Y(CURVES_IMAGE_POS_Y )+ CURVES_IMAGE_HEIGHT),
+                                 POS_Y(CURVES_IMAGE_POS_Y) + CURVES_IMAGE_HEIGHT),
             irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE),
             NULL, NULL, true);
 
@@ -456,6 +492,24 @@ void Dashboard::update_ui(
                                  throttle_pin_x + POS_X(CURVES_IMAGE_POS_X) + pin_size,
                                  lift_pin_y + POS_Y(CURVES_IMAGE_POS_Y) + pin_size),
             irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE),
+            NULL, NULL, true);
+
+    // Draw the trottle text.
+    m_driver->draw2DImage(
+            m_throttle_text,
+            irr::core::rect<int>(POS_X(MAIN_ROTOR_INDICATOR_X) - 20,
+                                 POS_Y(MAIN_ROTOR_INDICATOR_Y) - TEXT_HEIGHT / 6,
+                                 POS_X(MAIN_ROTOR_INDICATOR_X) + TEXT_WIDTH - 20,
+                                 POS_Y(MAIN_ROTOR_INDICATOR_Y) + TEXT_HEIGHT / 6 * 5),
+            irr::core::rect<int>(0, 0, 800, 100),
+            NULL, NULL, true);
+    m_driver->draw2DImage(
+            m_throttle_hold_text,
+            irr::core::rect<int>(POS_X(MAIN_ROTOR_INDICATOR_X),
+                                 POS_Y(MAIN_ROTOR_INDICATOR_Y) + MAIN_ROTOR_INDICATOR_HEIGHT,
+                                 POS_X(MAIN_ROTOR_INDICATOR_X) + TEXT_WIDTH,
+                                 POS_Y(MAIN_ROTOR_INDICATOR_Y) + MAIN_ROTOR_INDICATOR_HEIGHT + TEXT_HEIGHT),
+            irr::core::rect<int>(0, 0, 800, 100),
             NULL, NULL, true);
 
     // Draw the main rotor indicator.

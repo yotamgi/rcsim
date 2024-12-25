@@ -30,6 +30,13 @@ private:
     std::vector<irr::video::ITexture *> m_curves_images;
     irr::video::ITexture *m_curves_vertical_line;
 
+    // Texts.
+    irr::video::ITexture *m_throttle_text;
+    irr::video::ITexture *m_throttle_hold_text;
+    irr::video::ITexture *m_curves_text;
+    irr::video::ITexture *m_switch_curves_text;
+    irr::video::ITexture *m_controls_and_gyro_view_text;
+
     // Heli telemetry images.
     irr::video::ITexture *m_main_rotor_indicator_image;
     irr::video::ITexture *m_main_rotor_indicator_hand_image;

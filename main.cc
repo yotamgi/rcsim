@@ -32,7 +32,6 @@ using namespace core;
 using namespace scene;
 using namespace video;
 using namespace io;
-using namespace gui;
 
 
 void add_banana(irr::scene::ISceneManager *smgr,
@@ -117,15 +116,12 @@ int main()
 	*/
 	IVideoDriver* driver = device->getVideoDriver();
 	ISceneManager* smgr = device->getSceneManager();
-	IGUIEnvironment* guienv = device->getGUIEnvironment();
 
 	/*
 	We add a hello world label to the window, using the GUI environment.
 	The text is placed at the position (10,10) as top left corner and
 	(260,22) as lower right corner.
 	*/
-	guienv->addStaticText(L"Hello World! This is the Irrlicht Software renderer!",
-		rect<s32>(10,10,260,22), true);
 
     // Light configuration.
 	smgr->setAmbientLight(video::SColorf(0.5, 0.5, 0.5));

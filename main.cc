@@ -179,8 +179,8 @@ int main()
                 }),
                 // Idle-up mode:
                 ControllerCurve({
-                    ControllerCurve::Point(-1, 0.75),
-                    ControllerCurve::Point( 1, 0.75),
+                    ControllerCurve::Point(-1, 0.5),
+                    ControllerCurve::Point( 1, 0.5),
                 }),
             },
             // Blades pitch curves: 

@@ -16,7 +16,7 @@ ServoData GyroFlightController::translate(const ServoData& servo_data, float tim
 
     // Otherwise, apply PID.
     m_heli_angles += m_heli->get_gyro_angularv() * time_delta;
-    m_wanted_angles += irrvec3(servo_data.pitch, servo_data.yaw, servo_data.roll) * time_delta * irrvec3(4, 5, 4);
+    m_wanted_angles += irrvec3(servo_data.pitch, servo_data.yaw, servo_data.roll) * time_delta * irrvec3(8, 8, 6);
     irrvec3 error = (m_wanted_angles - m_heli_angles);
     irrvec3 derror = (error - m_prev_error) / time_delta;
     m_prev_error = error;

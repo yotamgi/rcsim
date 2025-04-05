@@ -11,7 +11,7 @@ run: rcsim
 
 OBJS = smooth_rand.o heli.o main.o rotor_blur.o arrow.o flight_controller.o controls.o dashboard.o input_event_reciever.o
 
-.o: input_event_reciever.cc
+input_event_reciever.o: input_event_reciever.cc
 	$(CXX) -c $(CXXFLAGS) input_event_reciever.cc -o input_event_reciever.o
 
 dashboard.o: dashboard.cc

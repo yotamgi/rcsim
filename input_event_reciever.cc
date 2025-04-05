@@ -62,20 +62,20 @@ void EventReceiver::update_value(float &value, irr::EKEY_CODE key_up, irr::EKEY_
         }
     }
 
-    value = value > 1 ? 1 : value;
-    value = value < -1 ? -1 : value;
+    value = value > 0.5 ? 0.5 : value;
+    value = value < -0.5 ? -0.5 : value;
 }
 
 UserInput EventReceiver::update_input(float time_delta) {
     if (m_joystick_active) {
         m_user_input.controls_input.pitch_stick = -(float)JoystickState.Axis[1] / 32768;
         m_user_input.controls_input.roll_stick = -(float)JoystickState.Axis[0] / 32768;
-        m_user_input.controls_input.yaw_stick = (float)JoystickState.Axis[4] / 32768;
+        m_user_input.controls_input.yaw_stick = (float)JoystickState.Axis[5] / 32768;
         m_user_input.controls_input.throttle_stick = -(float)JoystickState.Axis[2] / 32768;
         return m_user_input;
     }
 
-    float change_amount = time_delta * 4;
+    float change_amount = time_delta * 2;
     update_value(m_user_input.controls_input.pitch_stick, KEY_UP, KEY_DOWN, change_amount);
     update_value(m_user_input.controls_input.roll_stick, KEY_LEFT, KEY_RIGHT, change_amount);
     update_value(m_user_input.controls_input.yaw_stick, KEY_KEY_D, KEY_KEY_A, change_amount);

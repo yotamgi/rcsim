@@ -583,7 +583,7 @@ const struct HeliParams BELL_AERODYNAMICS = {
     .main_rotor_torque = 8.,
     .main_rotor_length = 1.,
     .main_rotor_max_angle_of_attack = 12.,
-    .main_rotor_traction = 0.75,
+    .main_rotor_traction = 0.9,
 
     .tail_length = 0.6,
     .tail_drag = 0.1,
@@ -601,7 +601,7 @@ const struct HeliParams BELL_AERODYNAMICS = {
     ),
 
     .rigidness = 20,
-    .anti_wobliness = 1./20,
+    .anti_wobliness = 1./16,
 
     .touchpoints_in_heli = std::vector<irrvec3>({
      irrvec3( 0.19*(5./6.), -0.128*(5./6.),  0.17*(5./6.)),

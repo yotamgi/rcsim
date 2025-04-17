@@ -168,10 +168,10 @@ Dashboard::Dashboard(
             irr::video::IVideoDriver *driver,
             std::vector<ControllerCurve> throttle_curves,
             std::vector<ControllerCurve> lift_curves,
-            float main_rotor_max_rps):
+            float max_rps):
     m_throttle_curves(throttle_curves),
     m_lift_curves(lift_curves),
-    m_main_rotor_max_rps(main_rotor_max_rps)
+    m_max_rps(max_rps)
 {
 
     // Create the dashboard background
@@ -343,7 +343,7 @@ static int pos_x_ratio(irr::video::IVideoDriver *driver, float pos_x_ratio) {
 
 void Dashboard::update_ui(
         const Controls::Telemetry &controls_telemetry,
-        const BaseHeli::Telemetry &heli_telemetry)
+        const BaseHeli::Telemetry &telemetry)
 {
     ControlsInput user_input = controls_telemetry.user_input;
     ServoData before_controller = controls_telemetry.before_controller;
@@ -534,7 +534,7 @@ void Dashboard::update_ui(
         /*sourceRect*/ irr::core::rect<int>(0, 0, 91, 329), 
         /*position*/ irr::core::position2d<irr::s32>(hand_x, hand_y),
         /*rotationPoint*/irr::core::position2d<irr::s32>(hand_rotation_point_x, hand_rotation_point_y),
-        /*rotation*/180.*heli_telemetry.main_rotor_target_rps/m_main_rotor_max_rps - 90., 
+        /*rotation*/180.*telemetry.target_rps/m_max_rps - 90., 
         /*scale*/ irr::core::vector2df(size_x, size_y), 
         /*color*/ irr::video::SColor(255, 255, 255, 255)) ;
     draw2DImageWithRotation(
@@ -543,7 +543,7 @@ void Dashboard::update_ui(
         /*sourceRect*/ irr::core::rect<int>(0, 0, 91, 329), 
         /*position*/ irr::core::position2d<irr::s32>(hand_x, hand_y),
         /*rotationPoint*/irr::core::position2d<irr::s32>(hand_rotation_point_x, hand_rotation_point_y),
-        /*rotation*/180.*heli_telemetry.main_rotor_rps/m_main_rotor_max_rps - 90., 
+        /*rotation*/180.*telemetry.rps/m_max_rps - 90., 
         /*scale*/ irr::core::vector2df(size_x, size_y), 
         /*color*/ irr::video::SColor(255, 255, 255, 255)) ;
 }

@@ -1,6 +1,7 @@
 #ifndef __HELI_H__
 #define __HELI_H__
 
+#include "flying_object.h"
 #include "smooth_rand.h"
 #include "rotor_blur.h"
 #include <string>
@@ -45,19 +46,7 @@ struct HeliParams {
                                   //          the heli touches the ground.
 };
 
-/**
- * Servo data, from -1 to 1.
- */
-struct ServoData {
-    double roll;
-    double pitch;
-    double yaw;
-    double lift;
-    double throttle;
-};
-
-
-class BaseHeli {
+class BaseHeli : public FlyingObject {
 public:
 
     BaseHeli(const HeliParams &params);
@@ -74,19 +63,11 @@ public:
     void add_force(unsigned int touchpoints_index, const irrvec3 &force);
     void reset_force() { m_external_force = irrvec3();  m_external_torque = irrvec3(); }
 
-    struct TouchPoint {
-        irrvec3 pos_in_world;
-        irrvec3 vel_in_world;
-    };
+    std::vector<TouchPoint> get_touchpoints_in_world() const;
 
-    std::vector<TouchPoint> get_touchpoints_in_world();
-
-    struct Telemetry {
-        float main_rotor_rps;
-        float main_rotor_target_rps;
-    };
     Telemetry get_telemetry() const;
-    HeliParams get_params() const { return m_params; }
+    virtual double get_max_rps() const { return m_params.main_rotor_max_vel; }
+    virtual double get_mass() const { return m_params.mass; }
 
 protected:
     virtual void update_ui(float time_delta) = 0;
@@ -170,6 +151,26 @@ protected:
     ServoFilter m_throttle_servo;
 
     HeliParams m_params;
+};
+
+
+class RcBellHeli : public BaseHeli {
+public:
+    RcBellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* driver);
+
+private:
+    virtual void update_ui(float time_delta);
+
+    irr::core::matrix4 m_shape_rotation;
+	irr::scene::IMeshSceneNode* m_body_node;
+	irr::scene::IMeshSceneNode* m_rotor_node;
+	irr::scene::IMeshSceneNode* m_tail_rotor_node;
+    std::shared_ptr<RotorBlur> m_main_rotor_blur;
+    std::shared_ptr<RotorBlur> m_flybar_blur;
+    std::shared_ptr<RotorBlur> m_tail_prop_blur;
+
+    float m_main_rotor_angle;
+    float m_tail_rotor_angle;
 };
 
 

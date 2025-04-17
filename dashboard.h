@@ -1,7 +1,7 @@
 #ifndef __DASHBOARD_H__
 #define __DASHBOARD_H__
 
-#include "heli.h"
+#include "flying_object.h"
 #include "controls.h"
 #include <irrlicht/irrlicht.h>
 #include <vector>
@@ -13,12 +13,12 @@ public:
             irr::video::IVideoDriver *driver,
             std::vector<ControllerCurve> throttle_curves,
             std::vector<ControllerCurve> lift_curves,
-            float main_rotor_max_rps
+            float max_rps
     );
 
     void update_ui(
         const Controls::Telemetry &controls_telemetry,
-        const BaseHeli::Telemetry &heli_telemetry
+        const FlyingObject::Telemetry &telemetry
     );
 
 private:
@@ -47,7 +47,7 @@ private:
 
     std::vector<ControllerCurve> m_throttle_curves;
     std::vector<ControllerCurve>  m_lift_curves;
-    float m_main_rotor_max_rps;
+    float m_max_rps;
 };
 
 

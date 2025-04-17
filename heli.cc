@@ -472,7 +472,7 @@ void BaseHeli::add_force(unsigned int touchpoint_index, const irrvec3 &force) {
 }
 
 
-std::vector<BaseHeli::TouchPoint> BaseHeli::get_touchpoints_in_world() {
+std::vector<BaseHeli::TouchPoint> BaseHeli::get_touchpoints_in_world() const {
     std::vector<BaseHeli::TouchPoint> touchpoints_in_world;
     for (auto touchpoint_in_body : m_params.touchpoints_in_heli) {
         BaseHeli::TouchPoint tp;
@@ -487,8 +487,8 @@ std::vector<BaseHeli::TouchPoint> BaseHeli::get_touchpoints_in_world() {
 
 BaseHeli::Telemetry BaseHeli::get_telemetry() const {
     Telemetry telemetry;
-    telemetry.main_rotor_rps = m_main_rotor_vel / 360;
-    telemetry.main_rotor_target_rps = m_main_rotor_target_rps;
+    telemetry.rps = m_main_rotor_vel / 360;
+    telemetry.target_rps = m_main_rotor_target_rps;
     return telemetry;
 }
 
@@ -573,7 +573,7 @@ private:
 
 
 
-const struct HeliParams BELL_AERODYNAMICS = {
+const struct HeliParams RC_BELL_AERODYNAMICS = {
     .init_pos = irrvec3(0, 0.13 + -0.019, 0),
     .init_rotation = irrvec3(0, 0, 0),
     .mass = 2.,
@@ -615,13 +615,140 @@ const struct HeliParams BELL_AERODYNAMICS = {
 };
 
 
+RcBellHeli::RcBellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* driver):
+    BaseHeli(RC_BELL_AERODYNAMICS)
+{
+    // Create the body mesh.
+	irr::scene::IMesh* heli_mesh = smgr->getMesh("media/Bell/source/bell_body.obj");
+	m_body_node = smgr->addMeshSceneNode(heli_mesh);
+    m_body_node->setScale(irrvec3(1./5, 1./5, 1./5));
+    m_body_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+    m_body_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+    m_body_node->setDebugDataVisible(irr::scene::EDS_OFF);
+    m_body_node->setMaterialTexture(0, driver->getTexture("media/Bell/textures/1001_albedo.jpg"));
+    m_body_node->addShadowVolumeSceneNode();
+    for (unsigned int i=0; i < m_body_node->getMaterialCount(); i++) {
+        m_body_node->getMaterial(i).AmbientColor.set(255, 255, 255, 255);
+    }
+
+    // Create the main rotor mesh.
+	irr::scene::IMesh* main_rotor_mesh = smgr->getMesh("media/Bell/source/bell_main_rotor.obj");
+    irr::core::matrix4 main_rotor_translation;
+    main_rotor_translation.setTranslation(irrvec3(0.45, -1.4, 0));
+    smgr->getMeshManipulator()->apply(
+        irr::scene::SVertexPositionTransformManipulator(main_rotor_translation), main_rotor_mesh);
+	m_rotor_node = smgr->addMeshSceneNode(main_rotor_mesh, m_body_node);
+    m_rotor_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+    m_rotor_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+    m_rotor_node->setDebugDataVisible(irr::scene::EDS_OFF);
+    m_rotor_node->setMaterialTexture(0, driver->getTexture("media/Bell/textures/1001_albedo.jpg"));
+    m_rotor_node->addShadowVolumeSceneNode();
+    for (unsigned int i=0; i < m_rotor_node->getMaterialCount(); i++) {
+        m_rotor_node->getMaterial(i).AmbientColor.set(255, 255, 255, 255);
+    }
+
+    // Create the tail rotor mesh.
+	irr::scene::IMesh* tail_rotor_mesh = smgr->getMesh("media/Bell/source/bell_tail_rotor.obj");
+    irr::core::matrix4 tail_rotor_translation;
+    tail_rotor_translation.setTranslation(irrvec3(4.62, -1.54, 0));
+    smgr->getMeshManipulator()->apply(
+        irr::scene::SVertexPositionTransformManipulator(tail_rotor_translation), tail_rotor_mesh);
+	m_tail_rotor_node = smgr->addMeshSceneNode(tail_rotor_mesh, m_body_node);
+    m_tail_rotor_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+    m_tail_rotor_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+    m_tail_rotor_node->setDebugDataVisible(irr::scene::EDS_OFF);
+    m_tail_rotor_node->setMaterialTexture(0, driver->getTexture("media/Bell/textures/1001_albedo.jpg"));
+    m_tail_rotor_node->addShadowVolumeSceneNode();
+    for (unsigned int i=0; i < m_tail_rotor_node->getMaterialCount(); i++) {
+        m_tail_rotor_node->getMaterial(i).AmbientColor.set(255, 255, 255, 255);
+    }
+
+    m_shape_rotation.setRotationDegrees(irrvec3(0, -90, 0));
+
+    m_main_rotor_blur = std::make_shared<MainRotorBlur>(smgr, m_rotor_node);
+    m_flybar_blur = std::make_shared<FlybarBlur>(smgr, m_rotor_node);
+    m_tail_prop_blur = std::make_shared<TailRotorBlur>(smgr, m_body_node);
+    m_main_rotor_angle = 0;
+    m_tail_rotor_angle = 0;
+
+    update_ui(0);
+}
+
+void RcBellHeli::update_ui(float time_delta) {
+    m_body_node->setPosition(m_pos);
+    m_tail_rotor_node->setPosition(m_pos);
+
+    m_body_node->setRotation((m_body_rotation * m_shape_rotation).getRotationDegrees());
+    m_tail_rotor_node->setRotation((m_rotor_rotation * m_shape_rotation).getRotationDegrees());
+
+    // Set the main rotor rotation.
+    irr::core::matrix4 main_rotor_rotation;
+    main_rotor_rotation.setRotationDegrees(irrvec3(0, m_main_rotor_angle, 0));
+    m_main_rotor_angle += m_main_rotor_vel * time_delta;
+    irrvec3 main_rotor_offset(0.45, -1.4, 0);
+    m_rotor_node->setPosition(-main_rotor_offset);
+    irr::core::matrix4 rotor_rotation_in_body_coords = m_body_rotation.getTransposed() * m_rotor_rotation;
+    m_rotor_node->setRotation((rotor_rotation_in_body_coords * main_rotor_rotation).getRotationDegrees());
+
+    // Set the tail rotor rotation.
+    irr::core::matrix4 tail_rotor_rotation;
+    tail_rotor_rotation.setRotationDegrees(irrvec3(0, 0, m_tail_rotor_angle));
+    m_tail_rotor_angle += 3 * m_main_rotor_vel * time_delta;
+    irrvec3 tail_rotor_offset(2.31*2, -0.77*2, 0);
+    m_tail_rotor_node->setPosition(-tail_rotor_offset);
+    m_tail_rotor_node->setRotation((tail_rotor_rotation).getRotationDegrees());
+}
+
+
+const struct HeliParams BELL_AERODYNAMICS = {
+    .init_pos = irrvec3(0, (0.13 + -0.019)*5, 0),
+    .init_rotation = irrvec3(0, 0, 0),
+    .mass = 3000.,
+    .drag = irrvec3(1, 0.6, 0.2),
+    .torbulant_airspeed = 7,
+    .main_rotor_max_vel = 20,
+    .main_rotor_torque = 30000.,
+    .main_rotor_length = 14.,
+    .main_rotor_max_angle_of_attack = 8.,
+    .main_rotor_traction = 0.4,
+
+    .tail_length = 9,
+    .tail_drag = 10,
+    .tail_rotor_max_force = 8000,
+
+    .swash_torque = 3000 * 10 * 12,  // ~= Mass * G 
+    .rotor_moment_of_inertia = 3742, // https://www.quora.com/What-is-the-weight-of-a-normal-light-weighted-helicopter-rotor-blades
+    .body_moment_of_inertia = irrvec3(
+        // pitch: 2 masses - one in the tail and one in the body.
+        100 * 9*9 + 2500 * 1*1,
+        // yaw: 2 masses - one in the tail and one close.
+        100 * 9*9 + 2500 * 1*1,
+        // roll: 1 masses - the body.
+        (2500 * 1*1)
+    ),
+
+    .rigidness = 80000,
+    .anti_wobliness = 1./10,
+
+    .touchpoints_in_heli = std::vector<irrvec3>({
+     irrvec3( 0.19*(5./6.)*5, -0.12*(5./6.)*5,  0.17*(5./6.)*5),
+     irrvec3(-0.19*(5./6.)*5, -0.12*(5./6.)*5,  0.17*(5./6.)*5),
+     irrvec3(-0.19*(5./6.)*5, -0.12*(5./6.)*5, -0.28*(5./6.)*5),
+     irrvec3( 0.19*(5./6.)*5, -0.12*(5./6.)*5, -0.28*(5./6.)*5),
+     irrvec3(0, 0.05*5, -1.12*(5./6.)*5)
+    }),
+
+    .external_torque_limit = 10000
+};
+
+
 BellHeli::BellHeli(irr::scene::ISceneManager* smgr, irr::video::IVideoDriver* driver):
     BaseHeli(BELL_AERODYNAMICS)
 {
     // Create the body mesh.
 	irr::scene::IMesh* heli_mesh = smgr->getMesh("media/Bell/source/bell_body.obj");
 	m_body_node = smgr->addMeshSceneNode(heli_mesh);
-    m_body_node->setScale(irrvec3(1./5, 1./5, 1./5));
+    m_body_node->setScale(irrvec3(1., 1., 1.));
     m_body_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
     m_body_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
     m_body_node->setDebugDataVisible(irr::scene::EDS_OFF);
@@ -684,7 +811,7 @@ void BellHeli::update_ui(float time_delta) {
     // Set the main rotor rotation.
     irr::core::matrix4 main_rotor_rotation;
     main_rotor_rotation.setRotationDegrees(irrvec3(0, m_main_rotor_angle, 0));
-    m_main_rotor_angle += m_main_rotor_vel * time_delta / 2.1;
+    m_main_rotor_angle += m_main_rotor_vel * time_delta;
     irrvec3 main_rotor_offset(0.45, -1.4, 0);
     m_rotor_node->setPosition(-main_rotor_offset);
     irr::core::matrix4 rotor_rotation_in_body_coords = m_body_rotation.getTransposed() * m_rotor_rotation;

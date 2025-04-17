@@ -165,7 +165,7 @@ int main()
     add_banana(smgr, driver, core::vector3df(0.4, 0.05, 0.0), core::vector3df(90, 0, 0));
 
     // The helicopter setup.
-    BellHeli heli(smgr, driver);
+    RcBellHeli heli(smgr, driver);
     GyroFlightController flight_controller(&heli);
     Controls controls(
             &flight_controller,
@@ -198,10 +198,11 @@ int main()
                 }),
             }
     );
-    Dashboard dashboard(driver, 
+    Dashboard dashboard(
+        driver, 
 		controls.get_throttle_curves(), 
 		controls.get_lift_curves(), 
-		heli.get_params().main_rotor_max_vel
+		heli.get_max_rps()
 	);
 
     // Add skybox
@@ -271,8 +272,8 @@ int main()
         for (unsigned int i=0; i<touchpoints.size(); i++) {
             BaseHeli::TouchPoint tp = touchpoints[i];
             if (tp.pos_in_world.Y < 0) {
-                irrvec3 tp_force = irrvec3(0, -500*tp.pos_in_world.Y, 0);
-                tp_force += - tp.vel_in_world * irrvec3(15, 10, 15) * (-tp.pos_in_world.Y / 0.02);
+                irrvec3 tp_force = irrvec3(0, -500*tp.pos_in_world.Y, 0) * heli.get_mass();
+                tp_force += - tp.vel_in_world * irrvec3(15, 10, 15) * (-tp.pos_in_world.Y / 0.02) * heli.get_mass();
                 heli.add_force(i, tp_force);
             }
         }

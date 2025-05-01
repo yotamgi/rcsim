@@ -8,14 +8,10 @@ typedef irr::core::vector3df irrvec3;
 
 
 /**
- * Servo data, from -1 to 1.
+ * Servo data, each channel is expected to change from -1 to 1.
  */
 struct ServoData {
-    double roll;
-    double pitch;
-    double yaw;
-    double lift;
-    double throttle;
+    double channels[10];
 };
 
 
@@ -33,6 +29,10 @@ public:
 
     virtual std::vector<TouchPoint> get_touchpoints_in_world() const = 0;
     virtual double get_mass() const = 0;
+    virtual irrvec3 get_position() const = 0;
+    virtual void set_position(const irrvec3 new_pos) = 0;
+    virtual irrvec3 get_velocity() const = 0;
+    virtual void set_velocity(const irrvec3 new_v) = 0;
 
     // For telemetry.
     struct Telemetry {

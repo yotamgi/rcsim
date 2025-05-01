@@ -3,11 +3,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <iostream>
-#include "heli.h"
-#include "flight_controller.h"
-#include "controls.h"
-#include "dashboard.h"
 #include "input_event_reciever.h"
+#include "model_configurations.h"
 
 /*
 In the Irrlicht Engine, everything can be found in the namespace 'irr'. So if
@@ -106,7 +103,7 @@ int main()
 	'L' in front of the string. The Irrlicht Engine uses wide character
 	strings when displaying text.
 	*/
-	device->setWindowCaption(L"My RC Helicopter Simulator");
+	device->setWindowCaption(L"My RC Simulator");
 
 	/*
 	Get a pointer to the VideoDriver, the SceneManager and the graphical
@@ -164,47 +161,6 @@ int main()
     add_banana(smgr, driver, core::vector3df(0.9, 0.05, 0.3), core::vector3df(90, 40, 0));
     add_banana(smgr, driver, core::vector3df(0.4, 0.05, 0.0), core::vector3df(90, 0, 0));
 
-    // The helicopter setup.
-    RcBellHeli heli(smgr, driver);
-    GyroFlightController flight_controller(&heli);
-    Controls controls(
-            &flight_controller,
-            // Throttle curves:
-            {
-                // Normal mode:
-                ControllerCurve({
-                    ControllerCurve::Point(-1, -1),
-                    ControllerCurve::Point(-0.5, 0.2),
-                    ControllerCurve::Point(1, 0.2),
-                }),
-                // Idle-up mode:
-                ControllerCurve({
-                    ControllerCurve::Point(-1, 0.5),
-                    ControllerCurve::Point( 1, 0.5),
-                }),
-            },
-            // Blades pitch curves: 
-            {
-                // Normal mode:
-                ControllerCurve({
-                    ControllerCurve::Point(-1, -0.1),
-                    ControllerCurve::Point(-0.5, -0.0),
-                    ControllerCurve::Point( 1, 1.),
-                }),
-                // Idle-up mode:
-                ControllerCurve({
-                    ControllerCurve::Point(-1, -1),
-                    ControllerCurve::Point( 1, 1),
-                }),
-            }
-    );
-    Dashboard dashboard(
-        driver, 
-		controls.get_throttle_curves(), 
-		controls.get_lift_curves(), 
-		heli.get_max_rps()
-	);
-
     // Add skybox
     smgr->addSkyBoxSceneNode(
 		driver->getTexture("media/skybox/irrlicht2_up.jpg"),
@@ -230,9 +186,12 @@ int main()
 	double then = tv.tv_sec*1000. + tv.tv_usec/1000.;
     double time_delta;
 
-
     irr::core::array<SJoystickInfo> joystickInfo;
     device->activateJoysticks(joystickInfo);
+
+    Configuration model_conf = MODEL_CONFIGURATIONS[0].create(driver, smgr);
+
+    float model_mass = model_conf.model->get_mass();
 
 	while(device->run())
 	{
@@ -258,31 +217,31 @@ int main()
             lastFPS = fps;
         }
 
-        // Update the helicopter.
+        // Update the model.
         UserInput user_input = receiver.update_input(time_delta);
-        heli.update(
+        model_conf.model->update(
                 time_delta,
                 irrvec3(0, 0, 0),
-                controls.get_servo_data(user_input.controls_input, time_delta)
+                model_conf.controls->get_servo_data(user_input.controls_input, time_delta)
         );
 
         // Apply external force on the helicopter touch points.
-        heli.reset_force();
-        std::vector<BaseHeli::TouchPoint> touchpoints = heli.get_touchpoints_in_world();
+        model_conf.model->reset_force();
+        std::vector<BaseHeli::TouchPoint> touchpoints = model_conf.model->get_touchpoints_in_world();
         for (unsigned int i=0; i<touchpoints.size(); i++) {
             BaseHeli::TouchPoint tp = touchpoints[i];
             if (tp.pos_in_world.Y < 0) {
-                irrvec3 tp_force = irrvec3(0, -500*tp.pos_in_world.Y, 0) * heli.get_mass();
-                tp_force += - tp.vel_in_world * irrvec3(15, 10, 15) * (-tp.pos_in_world.Y / 0.02) * heli.get_mass();
-                heli.add_force(i, tp_force);
+                irrvec3 tp_force = irrvec3(0, -500*tp.pos_in_world.Y, 0) * model_mass;
+                tp_force += - tp.vel_in_world * irrvec3(15, 10, 15) * (-tp.pos_in_world.Y / 0.02) * model_mass;
+                model_conf.model->add_force(i, tp_force);
             }
         }
 
         // Draw.
-        camera_node->setTarget(heli.get_position());
+        camera_node->setTarget(model_conf.model->get_position());
         driver->beginScene(true, true, video::SColor(255,200,200,200));
         smgr->drawAll();
-        dashboard.update_ui(controls.get_telemetry(), heli.get_telemetry());
+        model_conf.dashboard->update_ui(model_conf.controls->get_telemetry(), model_conf.model->get_telemetry());
         driver->endScene();
 	}
 

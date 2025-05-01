@@ -9,7 +9,19 @@ all: rcsim
 run: rcsim
 	./rcsim
 
-OBJS = smooth_rand.o heli.o main.o rotor_blur.o arrow.o flight_controller.o controls.o dashboard.o input_event_reciever.o
+OBJS = smooth_rand.o \
+        heli.o \
+        main.o \
+        rotor_blur.o \
+        arrow.o \
+        flight_controller.o \
+        controls.o \
+        dashboard.o \
+        input_event_reciever.o \
+        model_configurations.o
+
+model_configurations.o: model_configurations.cc
+	$(CXX) -c $(CXXFLAGS) model_configurations.cc -o model_configurations.o
 
 input_event_reciever.o: input_event_reciever.cc
 	$(CXX) -c $(CXXFLAGS) input_event_reciever.cc -o input_event_reciever.o

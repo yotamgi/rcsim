@@ -4,6 +4,7 @@
 #include "flight_controller.h"
 #include "heli.h"
 #include <vector>
+#include <memory>
 
 
 const int CURVE_CACHE_SIZE = 250;
@@ -37,14 +38,9 @@ private:
     float m_cache[CURVE_CACHE_SIZE];
 };
 
-
 class Controls {
 public:
-    Controls(FlightController *flight_controller,
-             std::vector<ControllerCurve> throttle_curves,
-             std::vector<ControllerCurve> lift_curves);
-
-    ServoData get_servo_data(const ControlsInput &input, float time_delta);
+    virtual ServoData get_servo_data(const ControlsInput &input, float time_delta) = 0;
 
     struct Telemetry {
         ControlsInput user_input;
@@ -52,13 +48,22 @@ public:
         ServoData after_controller;
         int active_curve_index;
     };
-    Telemetry get_telemetry();
+    virtual Telemetry get_telemetry() = 0;
+};
 
-    std::vector<ControllerCurve> get_throttle_curves() { return m_throttle_curves; }
-    std::vector<ControllerCurve> get_lift_curves() { return m_lift_curves; }
+
+class HeliControls : public Controls {
+public:
+    HeliControls(std::shared_ptr<HeliFlightController> flight_controller,
+             std::vector<ControllerCurve> throttle_curves,
+             std::vector<ControllerCurve> lift_curves);
+
+    // Implementation of the Controls interface.
+    virtual ServoData get_servo_data(const ControlsInput &input, float time_delta);
+    virtual Controls::Telemetry get_telemetry();
 
 private:
-    FlightController *m_flight_controller;
+    std::shared_ptr<HeliFlightController> m_flight_controller;
     std::vector<ControllerCurve> m_throttle_curves;
     std::vector<ControllerCurve> m_lift_curves;
 

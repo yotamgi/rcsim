@@ -13,6 +13,15 @@
 typedef irr::core::vector3df irrvec3;
 
 
+enum Channels {
+    HELI_CHANNEL_THROTTLE = 0,
+    HELI_CHANNEL_PITCH = 1,
+    HELI_CHANNEL_ROLL = 2,
+    HELI_CHANNEL_YAW = 3,
+    HELI_CHANNEL_LIFT = 4,
+};
+
+
 struct HeliParams {
     irrvec3 init_pos;
     irrvec3 init_rotation;
@@ -51,21 +60,21 @@ public:
 
     BaseHeli(const HeliParams &params);
 
-    void update(double time_delta,
+    virtual void update(double time_delta,
                 const irrvec3 &wind_speed,
                 const ServoData &servo_data);
-    irrvec3 get_position() const {return m_pos;}
-    void set_position(const irrvec3 new_pos) { m_pos = new_pos; }
-    irrvec3 get_velocity() const {return m_v;}
-    void set_velocity(const irrvec3 new_v) { m_v = new_v; }
-    irrvec3 get_gyro_angularv() const {return m_body_angularv_in_body_coords; }
+    virtual irrvec3 get_position() const {return m_pos;}
+    virtual void set_position(const irrvec3 new_pos) { m_pos = new_pos; }
+    virtual irrvec3 get_velocity() const {return m_v;}
+    virtual void set_velocity(const irrvec3 new_v) { m_v = new_v; }
+    virtual irrvec3 get_gyro_angularv() const {return m_body_angularv_in_body_coords; }
 
-    void add_force(unsigned int touchpoints_index, const irrvec3 &force);
-    void reset_force() { m_external_force = irrvec3();  m_external_torque = irrvec3(); }
+    virtual void add_force(unsigned int touchpoints_index, const irrvec3 &force);
+    virtual void reset_force() { m_external_force = irrvec3();  m_external_torque = irrvec3(); }
 
-    std::vector<TouchPoint> get_touchpoints_in_world() const;
+    virtual std::vector<TouchPoint> get_touchpoints_in_world() const;
 
-    Telemetry get_telemetry() const;
+    virtual Telemetry get_telemetry() const;
     virtual double get_max_rps() const { return m_params.main_rotor_max_vel; }
     virtual double get_mass() const { return m_params.mass; }
 

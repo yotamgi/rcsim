@@ -2,24 +2,16 @@
 #define __CONTROLLER_H__
 
 #include "heli.h"
+#include <memory>
 
-class FlightController {
+class HeliFlightController {
 public:
-    FlightController(const BaseHeli *heli):m_heli(heli) {}
-    virtual ServoData translate(const ServoData& servo_data, float time_delta) = 0;
-    virtual void set_six_axis(bool set) = 0;
-protected:
-    const BaseHeli *m_heli;
-};
-
-
-class GyroFlightController : public FlightController {
-public:
-    GyroFlightController(const BaseHeli *heli):FlightController(heli),m_six_axis(true) {}
-    virtual ServoData translate(const ServoData& servo_data, float time_delta);
+    HeliFlightController(std::shared_ptr<const BaseHeli> heli):m_heli(heli),m_six_axis(true) {}
+    ServoData translate(const ServoData& servo_data, float time_delta);
 
     void set_six_axis(bool set) { m_six_axis = set; }
 private:
+    std::shared_ptr<const BaseHeli> m_heli;
     irr::core::vector3df m_heli_angles;
     irr::core::vector3df m_wanted_angles;
     irr::core::vector3df m_prev_error;

@@ -42,7 +42,7 @@ float ControllerCurve::translate(float level) const {
 // Controls methods.
 ////////////////////////////////////////////////////////////////////////////////
 
-Controls::Controls(FlightController *flight_controller,
+HeliControls::HeliControls(std::shared_ptr<HeliFlightController> flight_controller,
              std::vector<ControllerCurve> throttle_curves,
              std::vector<ControllerCurve> lift_curves):
          m_flight_controller(flight_controller),
@@ -52,28 +52,28 @@ Controls::Controls(FlightController *flight_controller,
 }
 
 
-ServoData Controls::get_servo_data(const ControlsInput &input, float time_delta) {
+ServoData HeliControls::get_servo_data(const ControlsInput &input, float time_delta) {
     m_user_input = input;
-    m_before_flight_controller.pitch = input.pitch_stick;
-    m_before_flight_controller.roll = input.roll_stick;
-    m_before_flight_controller.yaw = input.yaw_stick;
-    m_before_flight_controller.lift = m_lift_curves[input.active_curve_index]
+    m_before_flight_controller.channels[HELI_CHANNEL_PITCH] = input.pitch_stick;
+    m_before_flight_controller.channels[HELI_CHANNEL_ROLL] = input.roll_stick;
+    m_before_flight_controller.channels[HELI_CHANNEL_YAW] = input.yaw_stick;
+    m_before_flight_controller.channels[HELI_CHANNEL_LIFT] = m_lift_curves[input.active_curve_index]
                 .translate(input.throttle_stick);
-    m_before_flight_controller.throttle = m_throttle_curves[input.active_curve_index]
+    m_before_flight_controller.channels[HELI_CHANNEL_THROTTLE] = m_throttle_curves[input.active_curve_index]
                 .translate(input.throttle_stick);
 
     m_flight_controller->set_six_axis(input.gyro_6dof);
     m_after_flight_controller = m_flight_controller->translate(
             m_before_flight_controller, time_delta);
     if (input.throttle_hold) {
-        m_after_flight_controller.throttle = -1.;
+        m_after_flight_controller.channels[HELI_CHANNEL_THROTTLE] = -1.;
     }
     return m_after_flight_controller;
 }
 
 
-Controls::Telemetry Controls::get_telemetry() {
-    Telemetry telemetry;
+Controls::Telemetry HeliControls::get_telemetry() {
+    Controls::Telemetry telemetry;
     telemetry.user_input = m_user_input;
     telemetry.before_controller = m_before_flight_controller;
     telemetry.after_controller = m_after_flight_controller;

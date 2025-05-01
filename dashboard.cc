@@ -371,10 +371,14 @@ void Dashboard::update_ui(
             NULL, NULL, true);
 
     // Draw the pitch-roll control view.
-    int before_pin_x = POS_X(CONTROLS_POS_X) + CONTROLS_SIZE/2 + before_controller.roll*CONTROLS_SIZE/2 - PIN_SIZE/2;
-    int before_pin_y = POS_Y(CONTROLS_POS_Y) + CONTROLS_SIZE/2 + before_controller.pitch*CONTROLS_SIZE/2 - PIN_SIZE/2;
-    int after_pin_x = POS_X(CONTROLS_POS_X) + CONTROLS_SIZE/2 + after_controller.roll*CONTROLS_SIZE/2 - PIN_SIZE/2;
-    int after_pin_y = POS_Y(CONTROLS_POS_Y) + CONTROLS_SIZE/2 + after_controller.pitch*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    float roll_before = before_controller.channels[2];
+    float roll_after = after_controller.channels[2];
+    float pitch_before = before_controller.channels[1];
+    float pitch_after = after_controller.channels[1];
+    int before_pin_x = POS_X(CONTROLS_POS_X) + CONTROLS_SIZE/2 + roll_before*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    int before_pin_y = POS_Y(CONTROLS_POS_Y) + CONTROLS_SIZE/2 + pitch_before*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    int after_pin_x = POS_X(CONTROLS_POS_X) + CONTROLS_SIZE/2 + roll_after*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    int after_pin_y = POS_Y(CONTROLS_POS_Y) + CONTROLS_SIZE/2 + pitch_after*CONTROLS_SIZE/2 - PIN_SIZE/2;
 
     m_driver->draw2DImage(
             m_controls_image,
@@ -401,9 +405,11 @@ void Dashboard::update_ui(
             true);
 
     // Draw the yaw controls view.
-    int yaw_before_pin_x = POS_X(YAW_VIEW_POS_X) + CONTROLS_SIZE/2 + before_controller.yaw*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    float yaw_before = before_controller.channels[3];
+    float yaw_after = after_controller.channels[3];
+    int yaw_before_pin_x = POS_X(YAW_VIEW_POS_X) + CONTROLS_SIZE/2 + yaw_before*CONTROLS_SIZE/2 - PIN_SIZE/2;
     int yaw_before_pin_y = POS_Y(YAW_VIEW_POS_Y) + YAW_VIEW_HEIGHT/2 - PIN_SIZE/2;
-    int yaw_after_pin_x = POS_X(YAW_VIEW_POS_X) + CONTROLS_SIZE/2 + after_controller.yaw*CONTROLS_SIZE/2 - PIN_SIZE/2;
+    int yaw_after_pin_x = POS_X(YAW_VIEW_POS_X) + CONTROLS_SIZE/2 + yaw_after*CONTROLS_SIZE/2 - PIN_SIZE/2;
     int yaw_after_pin_y = POS_Y(YAW_VIEW_POS_Y) + YAW_VIEW_HEIGHT/2 - PIN_SIZE;
     m_driver->draw2DImage(
             m_yaw_image,
@@ -471,7 +477,7 @@ void Dashboard::update_ui(
     float pin_size = 1.2 * PIN_SIZE;
     int throttle_pin_x = vertical_line_x_offset - pin_size / 2;
     int throttle_pin_y = float(CURVES_IMAGE_HEIGHT)
-                * (-after_controller.throttle + 1) / 2
+                * (-after_controller.channels[0] + 1) / 2
                 - pin_size / 2;
     m_driver->draw2DImage(
             m_pin_image,
@@ -483,7 +489,7 @@ void Dashboard::update_ui(
             NULL, NULL, true);
 
     int lift_pin_y = float(CURVES_IMAGE_HEIGHT)
-                * (-after_controller.lift + 1) / 2
+                * (-after_controller.channels[4] + 1) / 2
                 - pin_size / 2;
     m_driver->draw2DImage(
             m_pin_image,

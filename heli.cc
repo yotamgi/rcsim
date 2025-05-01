@@ -401,11 +401,11 @@ void BaseHeli::update(double time_delta,
                       const irrvec3 &wind_speed,
                       const ServoData &servo_data)
 {
-    m_pitch_servo.update(servo_data.pitch, time_delta);
-    m_roll_servo.update(servo_data.roll, time_delta);
-    m_yaw_servo.update(servo_data.yaw, time_delta);
-    m_lift_servo.update(servo_data.lift, time_delta);
-    m_throttle_servo.update(servo_data.throttle, time_delta);
+    m_pitch_servo.update(servo_data.channels[HELI_CHANNEL_PITCH], time_delta);
+    m_roll_servo.update(servo_data.channels[HELI_CHANNEL_ROLL], time_delta);
+    m_yaw_servo.update(servo_data.channels[HELI_CHANNEL_YAW], time_delta);
+    m_lift_servo.update(servo_data.channels[HELI_CHANNEL_LIFT], time_delta);
+    m_throttle_servo.update(servo_data.channels[HELI_CHANNEL_THROTTLE], time_delta);
 
     // Engine torque.
     irrvec3 engine_torque_in_world = calc_engine_torque();

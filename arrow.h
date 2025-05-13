@@ -3,17 +3,16 @@
 
 #include <irrlicht/irrlicht.h>
 
-
 typedef irr::core::vector3df irrvec3;
 
 class Arrow {
 public:
-    Arrow(irr::scene::ISceneManager *smgr);
+  Arrow(irr::scene::ISceneManager *smgr);
 
-    void point(const irrvec3 &at);
+  void point(const irrvec3 &at);
 
 private:
-	irr::scene::ISceneNode* m_node;
+  irr::scene::ISceneNode *m_node;
 };
 
-#endif  // __ARROW_H__
+#endif // __ARROW_H__

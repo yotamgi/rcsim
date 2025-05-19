@@ -8,7 +8,7 @@ class HeliFlightController {
 public:
   HeliFlightController(std::shared_ptr<const BaseHeli> heli)
       : m_heli(heli), m_six_axis(true) {}
-  ServoData translate(const ServoData &servo_data, float time_delta);
+  std::vector<float> translate(const std::vector<float> &servo_data, float time_delta);
 
   void set_six_axis(bool set) { m_six_axis = set; }
 

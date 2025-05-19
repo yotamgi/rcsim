@@ -27,23 +27,6 @@ BaseHeli::BaseHeli(const HeliParams &params)
   m_main_rotor_vel = 0;
 }
 
-float BaseHeli::ServoFilter::update(float value, float time_delta) {
-  float step = time_delta * m_max_rps;
-  if (step > std::abs(value - m_current_status)) {
-    m_current_status = value;
-  }
-
-  float delta = value - m_current_status;
-  if (delta < 0) {
-    m_current_status -= step;
-  } else if (delta > 0) {
-    m_current_status += step;
-  }
-  m_current_status = std::max(-1.0f, std::min(m_current_status, 1.0f));
-
-  return m_current_status;
-}
-
 void print_matrix(const std::string str, const irr::core::matrix4 &mat) {
   std::cout << std::fixed << std::setprecision(3) << std::setw(5)
             << std::setfill(' ');
@@ -435,14 +418,24 @@ void BaseHeli::calc_lift_force(float time_delta, const irrvec3 &wind_speed,
       rotor_drag_torque + torbulant_torque_in_world + dissimetry_of_lift_torque;
 }
 
-void BaseHeli::update(double time_delta, const irrvec3 &wind_speed,
-                      const ServoData &servo_data) {
-  m_pitch_servo.update(servo_data.channels[HELI_CHANNEL_PITCH], time_delta);
-  m_roll_servo.update(servo_data.channels[HELI_CHANNEL_ROLL], time_delta);
-  m_yaw_servo.update(servo_data.channels[HELI_CHANNEL_YAW], time_delta);
-  m_lift_servo.update(servo_data.channels[HELI_CHANNEL_LIFT], time_delta);
-  m_throttle_servo.update(servo_data.channels[HELI_CHANNEL_THROTTLE],
-                          time_delta);
+ServoFilter &BaseHeli::get_servo(int channel) {
+  switch (channel) {
+  case HELI_CHANNEL_PITCH:
+    return m_pitch_servo;
+  case HELI_CHANNEL_ROLL:
+    return m_roll_servo;
+  case HELI_CHANNEL_YAW:
+    return m_yaw_servo;
+  case HELI_CHANNEL_LIFT:
+    return m_lift_servo;
+  case HELI_CHANNEL_THROTTLE:
+    return m_throttle_servo;
+  default:
+    throw std::runtime_error("Invalid channel");
+  }
+}
+
+void BaseHeli::update(double time_delta, const irrvec3 &wind_speed) {
 
   // Engine torque.
   irrvec3 engine_torque_in_world = calc_engine_torque();

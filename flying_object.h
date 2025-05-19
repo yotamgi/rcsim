@@ -6,17 +6,24 @@
 
 typedef irr::core::vector3df irrvec3;
 
-/**
- * Servo data, each channel is expected to change from -1 to 1.
- */
-struct ServoData {
-  double channels[10];
+class ServoFilter {
+public:
+  ServoFilter(float max_rps, float init_value)
+      : m_max_rps(max_rps), m_current_status(init_value) {}
+  
+  // Values are expected to be in [-1, 1] range.
+  float update(float value, float time_delta);
+  float get() const { return m_current_status; }
+
+private:
+  float m_max_rps;
+  float m_current_status;
 };
 
 class FlyingObject {
 public:
-  virtual void update(double time_delta, const irrvec3 &wind_speed,
-                      const ServoData &servo_data) = 0;
+  virtual ServoFilter & get_servo(int channel) = 0;
+  virtual void update(double time_delta, const irrvec3 &wind_speed) = 0;
   virtual void add_force(unsigned int touchpoints_index,
                          const irrvec3 &force) = 0;
   virtual void reset_force() = 0;

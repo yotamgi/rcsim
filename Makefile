@@ -18,7 +18,11 @@ OBJS = smooth_rand.o \
         controls.o \
         dashboard.o \
         input_event_reciever.o \
-        model_configurations.o
+        model_configurations.o \
+        flying_object.o
+
+flying_object.o: flying_object.cc
+	$(CXX) -c $(CXXFLAGS) flying_object.cc -o flying_object.o
 
 model_configurations.o: model_configurations.cc
 	$(CXX) -c $(CXXFLAGS) model_configurations.cc -o model_configurations.o

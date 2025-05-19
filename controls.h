@@ -8,6 +8,8 @@
 
 const int CURVE_CACHE_SIZE = 250;
 
+typedef std::vector<float> ServoData;
+
 struct ControlsInput {
   float pitch_stick;
   float roll_stick;

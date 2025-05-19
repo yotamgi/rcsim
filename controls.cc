@@ -49,17 +49,18 @@ HeliControls::HeliControls(
     std::vector<ControllerCurve> throttle_curves,
     std::vector<ControllerCurve> lift_curves)
     : m_flight_controller(flight_controller),
-      m_throttle_curves(throttle_curves), m_lift_curves(lift_curves) {}
+      m_throttle_curves(throttle_curves), m_lift_curves(lift_curves),
+      m_before_flight_controller(5) {}
 
 ServoData HeliControls::get_servo_data(const ControlsInput &input,
-                                       float time_delta) {
+                                                float time_delta) {
   m_user_input = input;
-  m_before_flight_controller.channels[HELI_CHANNEL_PITCH] = input.pitch_stick;
-  m_before_flight_controller.channels[HELI_CHANNEL_ROLL] = input.roll_stick;
-  m_before_flight_controller.channels[HELI_CHANNEL_YAW] = input.yaw_stick;
-  m_before_flight_controller.channels[HELI_CHANNEL_LIFT] =
+  m_before_flight_controller[HELI_CHANNEL_PITCH] = input.pitch_stick;
+  m_before_flight_controller[HELI_CHANNEL_ROLL] = input.roll_stick;
+  m_before_flight_controller[HELI_CHANNEL_YAW] = input.yaw_stick;
+  m_before_flight_controller[HELI_CHANNEL_LIFT] =
       m_lift_curves[input.active_curve_index].translate(input.throttle_stick);
-  m_before_flight_controller.channels[HELI_CHANNEL_THROTTLE] =
+  m_before_flight_controller[HELI_CHANNEL_THROTTLE] =
       m_throttle_curves[input.active_curve_index].translate(
           input.throttle_stick);
 
@@ -67,7 +68,7 @@ ServoData HeliControls::get_servo_data(const ControlsInput &input,
   m_after_flight_controller =
       m_flight_controller->translate(m_before_flight_controller, time_delta);
   if (input.throttle_hold) {
-    m_after_flight_controller.channels[HELI_CHANNEL_THROTTLE] = -1.;
+    m_after_flight_controller[HELI_CHANNEL_THROTTLE] = -1.;
   }
   return m_after_flight_controller;
 }

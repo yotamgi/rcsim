@@ -6,7 +6,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-
 /*
 In the Irrlicht Engine, everything can be found in the namespace 'irr'. So if
 you want to use a class of the engine, you have to write irr:: before the name
@@ -219,9 +218,13 @@ int main() {
 
     // Update the model.
     UserInput user_input = receiver.update_input(time_delta);
-    model_conf.model->update(time_delta, irrvec3(0, 0, 0),
-                             model_conf.controls->get_servo_data(
-                                 user_input.controls_input, time_delta));
+    ServoData servo_data = model_conf.controls->get_servo_data(
+        user_input.controls_input, time_delta);
+    for (size_t channel = 0; channel < servo_data.size(); channel++) {
+      model_conf.model->get_servo(channel).update(servo_data[channel],
+                                                  time_delta);
+    }
+    model_conf.model->update(time_delta, irrvec3(0, 0, 0));
 
     // Apply external force on the helicopter touch points.
     model_conf.model->reset_force();

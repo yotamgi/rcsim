@@ -374,10 +374,10 @@ void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
       irr::core::rect<int>(0, 0, 800, 100), NULL, NULL, true);
 
   // Draw the pitch-roll control view.
-  float roll_before = before_controller.channels[2];
-  float roll_after = after_controller.channels[2];
-  float pitch_before = before_controller.channels[1];
-  float pitch_after = after_controller.channels[1];
+  float roll_before = before_controller[2];
+  float roll_after = after_controller[2];
+  float pitch_before = before_controller[1];
+  float pitch_after = after_controller[1];
   int before_pin_x = POS_X(CONTROLS_POS_X) + CONTROLS_SIZE / 2 +
                      roll_before * CONTROLS_SIZE / 2 - PIN_SIZE / 2;
   int before_pin_y = POS_Y(CONTROLS_POS_Y) + CONTROLS_SIZE / 2 +
@@ -404,8 +404,8 @@ void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
                         irr::video::SColor(255, 255, 255, 255), true);
 
   // Draw the yaw controls view.
-  float yaw_before = before_controller.channels[3];
-  float yaw_after = after_controller.channels[3];
+  float yaw_before = before_controller[3];
+  float yaw_after = after_controller[3];
   int yaw_before_pin_x = POS_X(YAW_VIEW_POS_X) + CONTROLS_SIZE / 2 +
                          yaw_before * CONTROLS_SIZE / 2 - PIN_SIZE / 2;
   int yaw_before_pin_y =
@@ -472,7 +472,7 @@ void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
   float pin_size = 1.2 * PIN_SIZE;
   int throttle_pin_x = vertical_line_x_offset - pin_size / 2;
   int throttle_pin_y =
-      float(CURVES_IMAGE_HEIGHT) * (-after_controller.channels[0] + 1) / 2 -
+      float(CURVES_IMAGE_HEIGHT) * (-after_controller[0] + 1) / 2 -
       pin_size / 2;
   m_driver->draw2DImage(
       m_pin_image,
@@ -484,7 +484,7 @@ void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
       irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL, NULL, true);
 
   int lift_pin_y =
-      float(CURVES_IMAGE_HEIGHT) * (-after_controller.channels[4] + 1) / 2 -
+      float(CURVES_IMAGE_HEIGHT) * (-after_controller[4] + 1) / 2 -
       pin_size / 2;
   m_driver->draw2DImage(
       m_pin_image,

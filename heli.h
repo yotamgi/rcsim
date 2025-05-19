@@ -63,8 +63,8 @@ class BaseHeli : public FlyingObject {
 public:
   BaseHeli(const HeliParams &params);
 
-  virtual void update(double time_delta, const irrvec3 &wind_speed,
-                      const ServoData &servo_data);
+  virtual ServoFilter &get_servo(int channel);
+  virtual void update(double time_delta, const irrvec3 &wind_speed);
   virtual irrvec3 get_position() const { return m_pos; }
   virtual void set_position(const irrvec3 new_pos) { m_pos = new_pos; }
   virtual irrvec3 get_velocity() const { return m_v; }
@@ -89,18 +89,6 @@ protected:
   virtual void update_ui(float time_delta) = 0;
   void update_body_moments(float time_delta, const irrvec3 &moment_in_world);
   void update_rotor_moments(float time_delta, const irrvec3 &moment_in_world);
-  class ServoFilter {
-  public:
-    ServoFilter(float max_rps, float init_value)
-        : m_max_rps(max_rps), m_current_status(init_value) {}
-    float update(float value, float time_delta);
-    float get() const { return m_current_status; }
-
-  private:
-    float m_max_rps;
-    float m_current_status;
-  };
-
   irrvec3 m_v;
   irrvec3 m_pos;
   float m_main_rotor_vel;

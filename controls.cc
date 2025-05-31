@@ -81,3 +81,40 @@ Controls::Telemetry HeliControls::get_telemetry() {
   telemetry.active_curve_index = m_user_input.active_curve_index;
   return telemetry;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// AirplaneControls methods.
+////////////////////////////////////////////////////////////////////////////////
+
+ServoData AirplaneControls::get_servo_data(
+    const ControlsInput &input, float time_delta) {
+  ServoData servo_data(6);
+  servo_data[AIRPLANE_CHANNEL_THROTTLE] = input.throttle_stick;
+  servo_data[AIRPLANE_CHANNEL_PITCH] = -input.pitch_stick;
+  servo_data[AIRPLANE_CHANNEL_ROLL] = input.roll_stick;
+  servo_data[AIRPLANE_CHANNEL_YAW] = -input.yaw_stick;
+  servo_data[AIRPLANE_CHANNEL_FLAPRON] = -input.roll_stick;
+  servo_data[AIRPLANE_CHANNEL_FLAPS] = input.gyro_6dof ? 1.0 : 0.0;
+
+  if (m_use_flapron && !input.gyro_6dof) {
+    servo_data[AIRPLANE_CHANNEL_ROLL] += -.25;
+    servo_data[AIRPLANE_CHANNEL_FLAPRON] += -.25;
+  }
+
+  if (input.throttle_hold) {
+    servo_data[AIRPLANE_CHANNEL_THROTTLE] = -1.;
+  }
+
+  m_user_input = input;
+  m_output_servo_data = servo_data;
+  return servo_data;
+}
+  
+Controls::Telemetry AirplaneControls::get_telemetry() {
+  Controls::Telemetry telemetry;
+  telemetry.user_input = m_user_input;
+  telemetry.before_controller = m_output_servo_data;
+  telemetry.after_controller = m_output_servo_data;
+  telemetry.active_curve_index = 0;
+  return telemetry;
+}

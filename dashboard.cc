@@ -450,13 +450,15 @@ void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
                                TEXT_HEIGHT),
       irr::core::rect<int>(0, 0, 800, 100), NULL, NULL, true);
 
-  // Draw the lift/throttle curves.
-  m_driver->draw2DImage(
-      m_curves_images[active_curve_index],
-      irr::core::position2d<int>(POS_X(CURVES_IMAGE_POS_X),
-                                 POS_Y(CURVES_IMAGE_POS_Y)),
-      irr::core::rect<int>(0, 0, CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT), NULL,
-      irr::video::SColor(255, 255, 255, 255), true);
+  if (m_curves_images.size() != 0) {
+    // Draw the lift/throttle curves.
+    m_driver->draw2DImage(
+        m_curves_images[active_curve_index],
+        irr::core::position2d<int>(POS_X(CURVES_IMAGE_POS_X),
+                                   POS_Y(CURVES_IMAGE_POS_Y)),
+        irr::core::rect<int>(0, 0, CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT),
+        NULL, irr::video::SColor(255, 255, 255, 255), true);
+  }
 
   int vertical_line_x_offset =
       float(CURVES_IMAGE_WIDTH) * (user_input.throttle_stick + 1) / 2;

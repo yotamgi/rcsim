@@ -3,6 +3,7 @@
 
 #include "flight_controller.h"
 #include "heli.h"
+#include "airplane.h"
 #include <memory>
 #include <vector>
 
@@ -72,6 +73,22 @@ private:
   ControlsInput m_user_input;
   ServoData m_before_flight_controller;
   ServoData m_after_flight_controller;
+};
+
+class AirplaneControls : public Controls {
+public:
+  AirplaneControls(bool use_flapron): m_use_flapron(use_flapron) {}
+
+  virtual ServoData get_servo_data(const ControlsInput &input,
+                                   float time_delta) override;
+  virtual Controls::Telemetry get_telemetry() override;
+
+private:
+  bool m_use_flapron;
+
+  // Used for telemetry.
+  ControlsInput m_user_input;
+  ServoData m_output_servo_data;
 };
 
 #endif // __CONTROLS_H__

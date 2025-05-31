@@ -19,7 +19,9 @@ OBJS = smooth_rand.o \
         dashboard.o \
         input_event_reciever.o \
         model_configurations.o \
-        flying_object.o
+        flying_object.o \
+        airplane.o \
+        airplane_models.o
 
 flying_object.o: flying_object.cc
 	$(CXX) -c $(CXXFLAGS) flying_object.cc -o flying_object.o
@@ -56,6 +58,12 @@ main.o: main.cc
 
 rcsim: ${OBJS}
 	$(CXX) ${OBJS} -o rcsim $(LDFLAGS) 
+
+airplane.o: airplane.cc
+	$(CXX) -c $(CXXFLAGS) airplane.cc -o airplane.o
+
+airplane_models.o: airplane_models.cc
+	$(CXX) -c $(CXXFLAGS) airplane_models.cc -o airplane_models.o
 
 clean:
 	rm -f ${OBJS} rcsim

@@ -2,8 +2,10 @@
 #include "arrow.h"
 #include <iostream>
 
-Arrow::Arrow(irr::scene::ISceneManager *smgr) {
-  m_node = smgr->addEmptySceneNode();
+Arrow::Arrow(irr::scene::ISceneManager *smgr, 
+             irr::scene::ISceneNode *parent)
+{
+  m_node = smgr->addEmptySceneNode(parent);
 
   irr::scene::ISceneNode *arrow_node = smgr->addAnimatedMeshSceneNode(
       smgr->addArrowMesh("arrow", irr::video::SColor(255, 255, 0, 0),
@@ -17,6 +19,6 @@ Arrow::Arrow(irr::scene::ISceneManager *smgr) {
 }
 
 void Arrow::point(const irrvec3 &at) {
-  m_node->setScale(irrvec3(1, 1, at.getLength()));
+  m_node->setScale(irrvec3(0.2, 0.2, at.getLength()));
   m_node->setRotation(at.getHorizontalAngle());
 }

@@ -483,9 +483,8 @@ void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
           throttle_pin_y + POS_Y(CURVES_IMAGE_POS_Y) + pin_size),
       irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL, NULL, true);
 
-  int lift_pin_y =
-      float(CURVES_IMAGE_HEIGHT) * (-after_controller[4] + 1) / 2 -
-      pin_size / 2;
+  int lift_pin_y = float(CURVES_IMAGE_HEIGHT) * (-after_controller[4] + 1) / 2 -
+                   pin_size / 2;
   m_driver->draw2DImage(
       m_pin_image,
       irr::core::rect<int>(throttle_pin_x + POS_X(CURVES_IMAGE_POS_X),

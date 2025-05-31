@@ -53,7 +53,7 @@ HeliControls::HeliControls(
       m_before_flight_controller(5) {}
 
 ServoData HeliControls::get_servo_data(const ControlsInput &input,
-                                                float time_delta) {
+                                       float time_delta) {
   m_user_input = input;
   m_before_flight_controller[HELI_CHANNEL_PITCH] = input.pitch_stick;
   m_before_flight_controller[HELI_CHANNEL_ROLL] = input.roll_stick;

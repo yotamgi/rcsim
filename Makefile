@@ -1,4 +1,4 @@
-CXXFLAGS = -O3 -Wall -Werror -g
+CXXFLAGS = -O3 -Wall -Werror -g -MMD
 LDFLAGS = -rdynamic -g $(CXXFLAGS)
 
 # target specific settings
@@ -8,6 +8,7 @@ all: rcsim
 
 run: rcsim
 	./rcsim
+-include *.d
 
 OBJS = smooth_rand.o \
         heli.o \

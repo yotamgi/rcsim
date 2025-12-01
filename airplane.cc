@@ -16,11 +16,12 @@ static irrvec3 advection_force(const irrvec3 &airflow,
   float airflow_dot_normal = airflow.dotProduct(surface_normal);
   float effective_area =
       airflow_direction.dotProduct(surface_normal) * surface_area;
-  
+
   // The advection force is the change of momentum of the air.
   float advection_magnitude =
       // Total mass of air that hits the airfoil per second [Kg / SEC]
-      AIR_DENSITY * std::abs(effective_area) * airflow.getLength() 
+      AIR_DENSITY * std::abs(effective_area) *
+      airflow.getLength()
       // Times the change of velocity [M / SEC]
       * airflow_dot_normal;
   return surface_normal * advection_magnitude;
@@ -38,7 +39,8 @@ static irrvec3 rotate(irr::core::matrix4 matrix, irrvec3 vec) {
 AppliedForce PointAirFoil::get_force(const irrvec3 &airflow) {
   float airflow_dot_normal = airflow.dotProduct(m_params.normal);
   float airflow_dot_wing = airflow.dotProduct(m_params.wing_airflow_direction);
-  float angle_of_attack = std::atan2(airflow_dot_normal, -airflow_dot_wing) / M_PI * 180;
+  float angle_of_attack =
+      std::atan2(airflow_dot_normal, -airflow_dot_wing) / M_PI * 180;
 
   // The Advection lift is the force that originates in the fact that air
   // collides in the wing.
@@ -57,7 +59,7 @@ AppliedForce PointAirFoil::get_force(const irrvec3 &airflow) {
   if ((angle_of_attack > m_params.stall_angle_min) &&
       (angle_of_attack < m_params.stall_angle_max)) {
     wing_effect = (lift + flap) * LIFT_COEFFICIENT;
-  } 
+  }
 
   // The total force.
   irrvec3 force = drag + lift + flap + wing_effect;
@@ -111,8 +113,10 @@ RectangularAirFoil::RectangularAirFoil(const RectangularAirFoil::Params &params)
     float point_specific_area = point_area;
     float point_specific_drag_area = point_drag_area;
     if ((i == 0) || (i == m_params.num_points - 1)) {
-      point_specific_area /= 2.0f; // The first and last points are half the area.
-      point_specific_drag_area /= 2.0f; // The first and last points are half the drag area.
+      point_specific_area /=
+          2.0f; // The first and last points are half the area.
+      point_specific_drag_area /=
+          2.0f; // The first and last points are half the drag area.
     }
     PointAirFoil::Params point_params{
         .area = point_specific_area,

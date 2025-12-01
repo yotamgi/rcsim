@@ -4,7 +4,7 @@
 const float SimpleGlider::TOTAL_MASS = 0.3f;      // in Kg.
 const float SimpleGlider::WING_LENGTH = 1.8f;     // in meters.
 const float SimpleGlider::FUSELAGE_LENGTH = 1.2f; // in meters.
-const float SimpleGlider::WING_WIDTH = 0.3f;      // in meters.
+const float SimpleGlider::WING_WIDTH = 0.2f;      // in meters.
 const float SimpleGlider::FUESLAGE_MASS = 0.1f;   // in Kg.
 const float SimpleGlider::WING_MASS =
     SimpleGlider::TOTAL_MASS - SimpleGlider::FUESLAGE_MASS; // in Kg.
@@ -26,8 +26,8 @@ SimpleGlider::SimpleGlider(irr::scene::ISceneManager *smgr,
                       {
                           .x_length = WING_LENGTH / 2,
                           .z_width = WING_WIDTH,
-                          .y_thickness = 0.001,
-                          .rotation_angles = irrvec3(-5, 0, -5),
+                          .y_thickness = 0.0001,
+                          .rotation_angles = irrvec3(-2, 0, -5),
                           .position_in_airplane =
                               irrvec3(-WING_LENGTH / 4, 0, 0),
                           .num_points = 5,
@@ -43,8 +43,8 @@ SimpleGlider::SimpleGlider(irr::scene::ISceneManager *smgr,
                       {
                           .x_length = WING_LENGTH / 2,
                           .z_width = WING_WIDTH,
-                          .y_thickness = 0.001,
-                          .rotation_angles = irrvec3(-5, 0, 5),
+                          .y_thickness = 0.0001,
+                          .rotation_angles = irrvec3(-2, 0, 5),
                           .position_in_airplane =
                               irrvec3(WING_LENGTH / 4, 0, 0),
                           .num_points = 5,
@@ -60,7 +60,7 @@ SimpleGlider::SimpleGlider(irr::scene::ISceneManager *smgr,
                       {
                           .x_length = FUSELAGE_LENGTH,
                           .z_width = 0.01,
-                          .y_thickness = 0.01,
+                          .y_thickness = 0.001,
                           .rotation_angles = irrvec3(0, 90, 90),
                           .position_in_airplane =
                               irrvec3(0, -0.05, -FUSELAGE_LENGTH * 0.2f),
@@ -73,7 +73,7 @@ SimpleGlider::SimpleGlider(irr::scene::ISceneManager *smgr,
                       {
                           .x_length = WING_LENGTH / 4,
                           .z_width = WING_WIDTH / 2,
-                          .y_thickness = 0.005,
+                          .y_thickness = 0.0005,
                           .rotation_angles = irrvec3(0, 0, 0),
                           .position_in_airplane =
                               irrvec3(0, 0, -FUSELAGE_LENGTH * 0.6f),
@@ -90,7 +90,7 @@ SimpleGlider::SimpleGlider(irr::scene::ISceneManager *smgr,
                       {
                           .x_length = WING_LENGTH / 6,
                           .z_width = WING_WIDTH / 2,
-                          .y_thickness = 0.005,
+                          .y_thickness = 0.0005,
                           .rotation_angles = irrvec3(0, 0, 90),
                           .position_in_airplane = irrvec3(
                               0, WING_LENGTH / 8 / 2, -FUSELAGE_LENGTH * 0.6f),
@@ -113,8 +113,8 @@ SimpleGlider::SimpleGlider(irr::scene::ISceneManager *smgr,
                   },
               .servo_max_rps = {1, 1, 1, 1, 1, 1},
               .servo_init_values = {-1, 0, 0, 0, 0, 0},
-              .init_position = irrvec3(0, 10, -5),
-              .init_velocity = irrvec3(0, 0, 15),
+              .init_position = irrvec3(1, 10, -1),
+              .init_velocity = irrvec3(0, 0, 10),
               .init_rotation = irrvec3(0, 0, 0),
           },
           smgr, driver) {}

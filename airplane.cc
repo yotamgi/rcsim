@@ -15,7 +15,8 @@ static irrvec3 advection_force(const irrvec3 &airflow,
   irrvec3 airflow_direction = irrvec3(airflow).normalize();
   float airflow_dot_normal = airflow.dotProduct(surface_normal);
   float effective_area =
-      airflow_direction.dotProduct(surface_normal) * surface_area;
+      std::sqrt(std::abs(airflow_direction.dotProduct(surface_normal))) *
+      surface_area;
 
   // The advection force is the change of momentum of the air.
   float advection_magnitude =
@@ -23,7 +24,8 @@ static irrvec3 advection_force(const irrvec3 &airflow,
       AIR_DENSITY * std::abs(effective_area) *
       airflow.getLength()
       // Times the change of velocity [M / SEC]
-      * airflow_dot_normal;
+      * airflow_dot_normal *
+      1.6; // Magical constant that makes thing behave more nicely
   return surface_normal * advection_magnitude;
 }
 

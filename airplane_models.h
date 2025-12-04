@@ -20,4 +20,21 @@ public:
   static const float WING_MASS;
 };
 
+/***
+ * A 2Kg RC airplane, with wing span of 2m. and length of 1.4m.
+ *
+ * The wing is assumed to weigh 0.5Kg and the fuselage 1.5Kg.
+ */
+class Trainer : public Airplane {
+public:
+  Trainer(irr::scene::ISceneManager *smgr,
+          irr::video::IVideoDriver *driver);
+  static const float TOTAL_MASS;
+  static const float WING_LENGTH;
+  static const float FUSELAGE_LENGTH;
+  static const float WING_WIDTH;
+  static const float FUESLAGE_MASS;
+  static const float WING_MASS;
+};
+
 # endif  // __AIRPLANE_MODELS_H__

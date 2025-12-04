@@ -61,6 +61,21 @@ Configuration create_rc_glider(irr::video::IVideoDriver *driver,
                        .dashboard = dashboard};
 }
 
+Configuration create_rc_trainer(irr::video::IVideoDriver *driver,
+                                irr::scene::ISceneManager *smgr) {
+  std::shared_ptr<FlyingObject> airplane =
+      std::make_shared<Trainer>(smgr, driver);
+  std::shared_ptr<AirplaneControls> controls =
+      std::make_shared<AirplaneControls>(true);
+  std::shared_ptr<Dashboard> dashboard = std::make_shared<Dashboard>(
+      driver, std::vector<ControllerCurve>(), std::vector<ControllerCurve>(),
+      airplane->get_max_rps());
+  return Configuration{.model = airplane,
+                       .controls = controls,
+                       .dashboard = dashboard};
+}
+
 std::vector<ModelConfiguration> MODEL_CONFIGURATIONS = {
     {.name = std::string("RC Bell Heli"), .create = create_rc_bell_heli},
-    {.name = std::string("RC Glider"), .create = create_rc_glider}};
+    {.name = std::string("RC Glider"), .create = create_rc_glider},
+    {.name = std::string("RC Trainer"), .create = create_rc_trainer}};

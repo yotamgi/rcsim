@@ -41,7 +41,7 @@ public:
     float stall_angle_max;
   };
 
-  PointAirFoil(const Params &params):m_params(params) {}
+  PointAirFoil(const Params &params) : m_params(params) {}
 
   void set_flap_normal(const irrvec3 &flap_normal) {
     m_flap_normal = flap_normal;
@@ -189,7 +189,7 @@ public:
   }
 
   virtual Telemetry get_telemetry() const;
-  virtual double get_max_rps() const {return 100;}
+  virtual double get_max_rps() const { return 100; }
 
 private:
   void update_ui();

@@ -181,6 +181,43 @@ void RectangularAirFoil::init_ui(irr::scene::ISceneManager *smgr,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Propellant class implementation
+////////////////////////////////////////////////////////////////////////////////
+
+void Propellant::init_ui(irr::scene::ISceneManager *smgr,
+                         irr::video::IVideoDriver *driver,
+                         irr::scene::ISceneNode *parent) {
+  irr::scene::ISceneNode *point_node = smgr->addSphereSceneNode(
+      0.3f, 16, parent, -1, m_params.position_in_airplane);
+  m_force_arrow = std::make_shared<Arrow>(smgr, point_node);
+
+  point_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+  point_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+  point_node->setDebugDataVisible(irr::scene::EDS_OFF);
+}
+
+AppliedForce Propellant::calc_force(const irrvec3 &wind_in_airplane,
+                                    const irrvec3 &velocity_in_airplane) {
+  irrvec3 airflow = wind_in_airplane - velocity_in_airplane;
+  float airflow_dot_direction =
+      m_params.direction_in_airplane.dotProduct(airflow);
+  float airflow_diff = m_params.thrust_airspeed - airflow_dot_direction;
+  float airflow_ratio = airflow_diff / m_params.thrust_airspeed;
+  float force_magnitude = airflow_ratio * m_params.max_thrust * m_throttle;
+  irrvec3 force = -force_magnitude * m_params.direction_in_airplane;
+
+  // If UI initialized, update it.
+  if (m_force_arrow) {
+    m_force_arrow->point(force * 10);
+  }
+
+  return AppliedForce{
+      .force = force,
+      .position_in_airplane = m_params.position_in_airplane // noindent
+  };
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Airplane class implementation.
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -200,6 +237,13 @@ Airplane::Airplane(const Airplane::Params &params,
     m_airfoils.push_back(airfoil);
   }
 
+  for (const auto &prop_params : m_params.propellants) {
+    std::shared_ptr<Propellant> prop =
+        std::make_shared<Propellant>(prop_params);
+    prop->init_ui(smgr, driver, m_ui_node);
+    m_propellants.push_back(prop);
+  }
+
   m_position_in_world = m_params.init_position;
   m_velocity_in_world = m_params.init_velocity;
   m_rotation_in_world.setRotationDegrees(m_params.init_rotation);
@@ -211,6 +255,11 @@ void Airplane::update(double time_delta, const irrvec3 &wind_speed) {
     if (m_params.channel_flap_mapping.find(i) !=
         m_params.channel_flap_mapping.end()) {
       m_airfoils[m_params.channel_flap_mapping[i]]->set_flap(m_servos[i].get());
+    }
+    if (m_params.channel_prop_mapping.find(i) !=
+        m_params.channel_prop_mapping.end()) {
+      m_propellants[m_params.channel_prop_mapping[i]]->set_throttle(
+          m_servos[i].get());
     }
   }
 
@@ -233,18 +282,33 @@ void Airplane::update(double time_delta, const irrvec3 &wind_speed) {
   irrvec3 airfoil_force_in_world =
       rotate(m_rotation_in_world, airfoil_forces_in_airplane);
 
+  // Calculate the force from the propellants.
+  irrvec3 prop_forces_in_airplane;
+  irrvec3 prop_torque_in_airplane;
+  for (const auto &prop : m_propellants) {
+    AppliedForce force_in_airplane =
+        prop->calc_force(wind_in_airplane, velocity_in_ariplane);
+    prop_forces_in_airplane += force_in_airplane.force;
+    prop_torque_in_airplane +=
+        force_in_airplane.position_in_airplane.crossProduct(
+            force_in_airplane.force);
+  }
+  irrvec3 propellant_force_in_world =
+      rotate(m_rotation_in_world, prop_forces_in_airplane);
+
   // Gravity force.
   irrvec3 gravity_in_world = irrvec3(0, -m_params.mass * GRAVITY_CONSTANT, 0);
 
   // Update position and velocity according to the forces.
-  irrvec3 total_force =
-      airfoil_force_in_world + gravity_in_world + m_external_force_in_world;
+  irrvec3 total_force = airfoil_force_in_world + propellant_force_in_world +
+                        gravity_in_world + m_external_force_in_world;
   m_velocity_in_world += total_force / m_params.mass * time_delta;
   m_position_in_world += m_velocity_in_world * time_delta;
 
   // Update the rotation according to the moments using Euler's equation.
-  irrvec3 total_torque_in_airplane =
-      airfoil_torque_in_airplane + m_external_torque_in_airplane;
+  irrvec3 total_torque_in_airplane = airfoil_torque_in_airplane +
+                                     prop_torque_in_airplane +
+                                     m_external_torque_in_airplane;
   m_angular_velocity_in_airplane +=
       time_delta *
       (total_torque_in_airplane -

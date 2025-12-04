@@ -121,6 +121,33 @@ private:
   irrvec3 m_wing_normal;
 };
 
+class Propellant {
+public:
+  struct Params {
+    irrvec3 direction_in_airplane;
+    irrvec3 position_in_airplane;
+    float thrust_airspeed;
+    float max_thrust;
+  };
+
+  Propellant(const Params &params) : m_params(params) {}
+
+  AppliedForce calc_force(const irrvec3 &wind_in_airplane,
+                          const irrvec3 &velocity_in_airplane);
+
+  void set_throttle(float throttle) { m_throttle = 0.5f + throttle / 2.0f; }
+
+  // // UI functions:
+  void init_ui(irr::scene::ISceneManager *smgr,
+               irr::video::IVideoDriver *driver,
+               irr::scene::ISceneNode *parent);
+
+private:
+  float m_throttle;
+  Params m_params;
+  std::shared_ptr<Arrow> m_force_arrow = nullptr;
+};
+
 class Airplane : public FlyingObject {
 public:
   struct Params {
@@ -128,6 +155,8 @@ public:
     irrvec3 moi;
     std::vector<RectangularAirFoil::Params> airfoils;
     std::map<int, int> channel_flap_mapping;
+    std::vector<Propellant::Params> propellants;
+    std::map<int, int> channel_prop_mapping;
     std::vector<irrvec3> touchpoints_in_airplane;
 
     // Servo parameters.
@@ -178,6 +207,7 @@ private:
   irrvec3 m_external_torque_in_airplane;
 
   std::vector<std::shared_ptr<RectangularAirFoil>> m_airfoils;
+  std::vector<std::shared_ptr<Propellant>> m_propellants;
 
   std::vector<ServoFilter> m_servos;
 

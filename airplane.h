@@ -157,7 +157,7 @@ public:
     std::map<int, int> channel_flap_mapping;
     std::vector<Propellant::Params> propellants;
     std::map<int, int> channel_prop_mapping;
-    std::vector<irrvec3> touchpoints_in_airplane;
+    std::vector<TouchPoint> touchpoints_in_airplane;
 
     // Servo parameters.
     std::vector<float> servo_max_rps;

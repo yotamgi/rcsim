@@ -191,7 +191,7 @@ int main() {
   irr::core::array<SJoystickInfo> joystickInfo;
   device->activateJoysticks(joystickInfo);
 
-  Configuration model_conf = MODEL_CONFIGURATIONS[2].create(driver, smgr);
+  Configuration model_conf = MODEL_CONFIGURATIONS[0].create(driver, smgr);
 
   float model_mass = model_conf.model->get_mass();
 
@@ -232,10 +232,12 @@ int main() {
         model_conf.model->get_touchpoints_in_world();
     for (unsigned int i = 0; i < touchpoints.size(); i++) {
       BaseHeli::TouchPoint tp = touchpoints[i];
-      if (tp.pos_in_world.Y < 0) {
-        irrvec3 tp_force = irrvec3(0, -500 * tp.pos_in_world.Y, 0) * model_mass;
-        tp_force += -tp.vel_in_world * irrvec3(15, 10, 15) *
-                    (-tp.pos_in_world.Y / 0.02) * model_mass;
+      if (tp.pos.Y < 0) {
+        irrvec3 tp_force = irrvec3(0, -500 * tp.pos.Y, 0) * model_mass;
+        irrvec3 vel = tp.vel;
+        tp.friction_coeff.rotateVect(vel);
+        vel.Y = 10.0f * tp.vel.Y;
+        tp_force += -vel * (-tp.pos.Y / 0.02) * model_mass;
         model_conf.model->add_force(i, tp_force);
       }
     }

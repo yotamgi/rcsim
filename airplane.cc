@@ -328,7 +328,7 @@ void Airplane::add_force(unsigned int touchpoint_index, const irrvec3 &force) {
   m_external_torque_in_airplane += force;
   m_external_torque_in_airplane +=
       rotate(m_rotation_in_world,
-             m_params.touchpoints_in_airplane[touchpoint_index])
+             m_params.touchpoints_in_airplane[touchpoint_index].pos)
           .crossProduct(force);
 }
 
@@ -341,12 +341,15 @@ std::vector<Airplane::TouchPoint> Airplane::get_touchpoints_in_world() const {
   std::vector<FlyingObject::TouchPoint> touchpoints_in_world;
   for (auto touchpoint_in_body : m_params.touchpoints_in_airplane) {
     FlyingObject::TouchPoint tp;
-    tp.pos_in_world =
-        m_position_in_world + rotate(m_rotation_in_world, touchpoint_in_body);
-    tp.vel_in_world =
+    tp.pos = m_position_in_world +
+             rotate(m_rotation_in_world, touchpoint_in_body.pos);
+    tp.vel =
         m_velocity_in_world +
-        rotate(m_rotation_in_world,
-               m_angular_velocity_in_airplane.crossProduct(touchpoint_in_body));
+        rotate(m_rotation_in_world, m_angular_velocity_in_airplane.crossProduct(
+                                        touchpoint_in_body.pos));
+    tp.friction_coeff = m_rotation_in_world *
+                        touchpoint_in_body.friction_coeff *
+                        m_rotation_in_world.getTransposed();
     touchpoints_in_world.push_back(tp);
   }
   return touchpoints_in_world;

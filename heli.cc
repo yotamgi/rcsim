@@ -472,11 +472,12 @@ std::vector<BaseHeli::TouchPoint> BaseHeli::get_touchpoints_in_world() const {
   std::vector<BaseHeli::TouchPoint> touchpoints_in_world;
   for (auto touchpoint_in_body : m_params.touchpoints_in_heli) {
     BaseHeli::TouchPoint tp;
-    tp.pos_in_world = m_pos + rotate(m_body_rotation, touchpoint_in_body);
-    tp.vel_in_world =
+    tp.pos = m_pos + rotate(m_body_rotation, touchpoint_in_body);
+    tp.vel =
         m_v +
         rotate(m_body_rotation,
                m_body_angularv_in_body_coords.crossProduct(touchpoint_in_body));
+    tp.friction_coeff = diag2(15.0f, 15.0f);
     touchpoints_in_world.push_back(tp);
   }
   return touchpoints_in_world;

@@ -188,7 +188,7 @@ void Propellant::init_ui(irr::scene::ISceneManager *smgr,
                          irr::video::IVideoDriver *driver,
                          irr::scene::ISceneNode *parent) {
   irr::scene::ISceneNode *point_node = smgr->addSphereSceneNode(
-      0.3f, 16, parent, -1, m_params.position_in_airplane);
+      0.1f, 16, parent, -1, m_params.position_in_airplane);
   m_force_arrow = std::make_shared<Arrow>(smgr, point_node);
 
   point_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);

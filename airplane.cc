@@ -244,6 +244,14 @@ Airplane::Airplane(const Airplane::Params &params,
     m_propellants.push_back(prop);
   }
 
+  for (const auto &tp : m_params.touchpoints_in_airplane) {
+    irr::scene::ISceneNode *point_node = smgr->addSphereSceneNode(
+        0.05f, 16, m_ui_node, -1, tp.pos);
+    point_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+    point_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+    point_node->setDebugDataVisible(irr::scene::EDS_OFF);
+  }
+
   m_position_in_world = m_params.init_position;
   m_velocity_in_world = m_params.init_velocity;
   m_rotation_in_world.setRotationDegrees(m_params.init_rotation);

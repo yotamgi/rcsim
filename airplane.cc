@@ -335,9 +335,8 @@ void Airplane::update(double time_delta, const irrvec3 &wind_speed) {
 void Airplane::add_force(unsigned int touchpoint_index, const irrvec3 &force) {
   m_external_force_in_world += force;
   m_external_torque_in_airplane +=
-      rotate(m_rotation_in_world,
-             m_params.touchpoints_in_airplane[touchpoint_index].pos)
-          .crossProduct(force);
+      m_params.touchpoints_in_airplane[touchpoint_index].pos.crossProduct(
+      rotate(m_rotation_in_world.getTransposed(), force));
 }
 
 void Airplane::reset_force() {

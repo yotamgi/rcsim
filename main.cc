@@ -234,10 +234,11 @@ int main() {
       BaseHeli::TouchPoint tp = touchpoints[i];
       if (tp.pos.Y < 0) {
         irrvec3 tp_force = irrvec3(0, -500 * tp.pos.Y, 0) * model_mass;
-        irrvec3 vel = tp.vel;
-        tp.friction_coeff.rotateVect(vel);
-        vel.Y = 10.0f * tp.vel.Y;
-        tp_force += -vel * (-tp.pos.Y / 0.02) * model_mass;
+        irrvec3 friction_force;
+        friction_force = tp.vel;
+        tp.friction_coeff.rotateVect(friction_force);
+        friction_force.Y = 10.0f * tp.vel.Y;
+        tp_force += -friction_force * (-tp.pos.Y / 0.03) * model_mass;
         model_conf.model->add_force(i, tp_force);
       }
     }

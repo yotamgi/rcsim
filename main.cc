@@ -191,7 +191,7 @@ int main() {
   irr::core::array<SJoystickInfo> joystickInfo;
   device->activateJoysticks(joystickInfo);
 
-  Configuration model_conf = MODEL_CONFIGURATIONS[0].create(driver, smgr);
+  Configuration model_conf = MODEL_CONFIGURATIONS[2].create(driver, smgr);
 
   float model_mass = model_conf.model->get_mass();
 

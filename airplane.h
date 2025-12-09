@@ -167,6 +167,9 @@ public:
     irrvec3 init_position;
     irrvec3 init_velocity;
     irrvec3 init_rotation;
+
+    // Debug shape.
+    bool show_skeleton = true;
   };
 
   Airplane(const Params &params, irr::scene::ISceneManager *smgr,
@@ -191,8 +194,10 @@ public:
   virtual Telemetry get_telemetry() const;
   virtual double get_max_rps() const { return 100; }
 
-private:
-  void update_ui();
+protected:
+  void init_ui(irr::scene::ISceneManager *smgr,
+               irr::video::IVideoDriver *driver);
+  virtual void update_ui();
 
   irrvec3 m_position_in_world;
   irrvec3 m_velocity_in_world;

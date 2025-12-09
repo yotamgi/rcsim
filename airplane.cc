@@ -175,6 +175,7 @@ void RectangularAirFoil::init_ui(irr::scene::ISceneManager *smgr,
   airfoil_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
   airfoil_node->setDebugDataVisible(irr::scene::EDS_OFF);
   airfoil_node->addShadowVolumeSceneNode();
+
   for (auto point_airfoil : m_point_airfoils) {
     point_airfoil->init_ui(smgr, driver, parent);
   }
@@ -233,15 +234,33 @@ Airplane::Airplane(const Airplane::Params &params,
   for (const auto &airfoil_params : m_params.airfoils) {
     std::shared_ptr<RectangularAirFoil> airfoil =
         std::make_shared<RectangularAirFoil>(airfoil_params);
-    airfoil->init_ui(smgr, driver, m_ui_node);
     m_airfoils.push_back(airfoil);
   }
 
   for (const auto &prop_params : m_params.propellants) {
     std::shared_ptr<Propellant> prop =
         std::make_shared<Propellant>(prop_params);
-    prop->init_ui(smgr, driver, m_ui_node);
     m_propellants.push_back(prop);
+  }
+
+  m_position_in_world = m_params.init_position;
+  m_velocity_in_world = m_params.init_velocity;
+  m_rotation_in_world.setRotationDegrees(m_params.init_rotation);
+
+  init_ui(smgr, driver);
+}
+
+void Airplane::init_ui(irr::scene::ISceneManager *smgr,
+                   irr::video::IVideoDriver *driver) 
+{
+  if (!m_params.show_skeleton) return;
+
+  for (const auto &airfoil : m_airfoils) {
+    airfoil->init_ui(smgr, driver, m_ui_node);
+  }
+
+  for (const auto &prop : m_propellants) {
+    prop->init_ui(smgr, driver, m_ui_node);
   }
 
   for (const auto &tp : m_params.touchpoints_in_airplane) {
@@ -251,10 +270,6 @@ Airplane::Airplane(const Airplane::Params &params,
     point_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
     point_node->setDebugDataVisible(irr::scene::EDS_OFF);
   }
-
-  m_position_in_world = m_params.init_position;
-  m_velocity_in_world = m_params.init_velocity;
-  m_rotation_in_world.setRotationDegrees(m_params.init_rotation);
 }
 
 void Airplane::update(double time_delta, const irrvec3 &wind_speed) {

@@ -1,0 +1,37 @@
+# Blender 4.3.2 MTL File: 'None'
+# www.blender.org
+
+newmtl A23DMAT_001
+Ka 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 1
+map_Kd A23DMAT_001_Albedo.jpg
+map_Ks A23DMAT_001_Specular Level.jpg
+map_Ns A23DMAT_001_Roughness.jpg
+map_refl A23DMAT_001_Metallic.jpg
+map_d A23DMAT_001_Opacity.jpg
+map_Bump A23DMAT_001_Normal.jpg
+
+newmtl A23DMAT_002
+Ka 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 2
+map_Kd A23DMAT_002_Albedo.jpg
+map_Ks A23DMAT_002_Specular Level.jpg
+map_Ns A23DMAT_002_Roughness.jpg
+map_d A23DMAT_002_Opacity.jpg
+map_Bump A23DMAT_002_Normal.jpg
+
+newmtl A23DMAT_003
+Ka 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 1
+map_Kd A23DMAT_003_Albedo.jpg
+map_Ks A23DMAT_003_Specular Level.jpg
+map_Ns A23DMAT_003_Translucency Roughness.jpg
+map_refl A23DMAT_003_Metallic.jpg
+map_d A23DMAT_003_Translucency.jpg
+map_Bump A23DMAT_003_Normal.jpg

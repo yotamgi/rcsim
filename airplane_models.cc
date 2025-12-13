@@ -145,9 +145,9 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                           .x_length = WING_LENGTH / 2,
                           .z_width = WING_WIDTH,
                           .y_thickness = 0.01,
-                          .rotation_angles = irrvec3(-3, 0, -5),
+                          .rotation_angles = irrvec3(-3, 0, -1),
                           .position_in_airplane =
-                              irrvec3(-WING_LENGTH / 4, 0, 0),
+                              irrvec3(-WING_LENGTH / 4, 0.05, 0),
                           .num_points = 5,
                           .stall_angle_min = -5,
                           .stall_angle_max = 15,
@@ -162,9 +162,9 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                           .x_length = WING_LENGTH / 2,
                           .z_width = WING_WIDTH,
                           .y_thickness = 0.01,
-                          .rotation_angles = irrvec3(-3, 0, 5),
+                          .rotation_angles = irrvec3(-3, 0, 1),
                           .position_in_airplane =
-                              irrvec3(WING_LENGTH / 4, 0, 0),
+                              irrvec3(WING_LENGTH / 4, 0.05, 0),
                           .num_points = 5,
                           .stall_angle_min = -5,
                           .stall_angle_max = 15,
@@ -194,7 +194,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                           .y_thickness = 0.005,
                           .rotation_angles = irrvec3(0, 0, 0),
                           .position_in_airplane =
-                              irrvec3(0, 0, -FUSELAGE_LENGTH * 0.6f),
+                              irrvec3(0, -0.1, -FUSELAGE_LENGTH * 0.65f),
                           .num_points = 2,
                           .stall_angle_min = -3,
                           .stall_angle_max = 3,
@@ -206,12 +206,12 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                       },
                       // 4: Rudder:
                       {
-                          .x_length = WING_LENGTH / 6,
+                          .x_length = WING_LENGTH / 8,
                           .z_width = WING_WIDTH / 2,
                           .y_thickness = 0.005,
                           .rotation_angles = irrvec3(0, 0, 90),
                           .position_in_airplane = irrvec3(
-                              0, WING_LENGTH / 8 / 2, -FUSELAGE_LENGTH * 0.6f),
+                              0, WING_LENGTH / 8 / 2, -FUSELAGE_LENGTH * 0.7f),
                           .num_points = 2,
                           .stall_angle_min = -3,
                           .stall_angle_max = 3,
@@ -268,10 +268,99 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                       {.pos = irrvec3(0, 0, FUSELAGE_LENGTH * 0.2),
                        .friction_coeff = diag2(3.0f, 3.0f)},
                   },
-              .servo_max_rps = {1, 1, 1, 1, 1, 1},
+              .servo_max_rps = {1, 3, 3, 3, 3, 3},
               .servo_init_values = {-1, 0, 0, 0, 0, 0},
-              .init_position = irrvec3(1, 0.3, -1),
+              .init_position = irrvec3(0, 0.3, 0),
               .init_velocity = irrvec3(0, 0, 0),
               .init_rotation = irrvec3(0, 0, 0),
+              .show_skeleton = false,
           },
-          smgr, driver) {}
+          smgr, driver) {
+
+  irr::scene::IMesh *body_mesh = smgr->getMesh("media/cessna/CessnaBodyFixed2.obj");
+  m_body_node = smgr->addMeshSceneNode(body_mesh, m_ui_node);
+
+  m_body_node->setScale(irrvec3(1. / 4, 1. / 4, 1. / 4));
+  m_body_node->setPosition(irrvec3(0, -0.14, 0));
+  m_body_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+  m_body_node->setMaterialType(irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF);
+  m_body_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+  m_body_node->setMaterialTexture(
+      0, driver->getTexture("media/cessna/A23DMAT_002_Albedo.jpg"));
+//   m_body_node->addShadowVolumeSceneNode(body_mesh);
+
+  irr::scene::IMesh *ailron_mesh = smgr->getMesh("media/cessna/CessnaAilron.obj");
+  m_left_ailron_node = smgr->addMeshSceneNode(ailron_mesh, m_ui_node);
+  m_left_ailron_node->setScale(irrvec3(1. / 4, 1. / 4, 1. / 4));
+  m_left_ailron_node->setPosition(irrvec3(-0.33, 0.035, -0.12));
+  m_left_ailron_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+  m_left_ailron_node->setMaterialType(irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF);
+  m_left_ailron_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+  m_left_ailron_node->setMaterialTexture(
+      0, driver->getTexture("media/cessna/A23DMAT_002_Albedo.jpg"));
+  m_left_ailron_node->addShadowVolumeSceneNode();
+
+  m_right_ailron_node = smgr->addMeshSceneNode(ailron_mesh, m_ui_node);
+  m_right_ailron_node->setScale(irrvec3(1. / 4, 1. / 4, 1. / 4));
+  m_right_ailron_node->setPosition(irrvec3(0.33, 0.035, -0.12));
+  m_right_ailron_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+  m_right_ailron_node->setMaterialType(irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF);
+  m_right_ailron_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+  m_right_ailron_node->setDebugDataVisible(irr::scene::EDS_OFF);
+  m_right_ailron_node->setMaterialTexture(
+      0, driver->getTexture("media/cessna/A23DMAT_002_Albedo.jpg"));
+  m_right_ailron_node->addShadowVolumeSceneNode();
+
+  irr::scene::IMesh *elevator_mesh = smgr->getMesh("media/cessna/CessnaElevator.obj");
+  m_elevator_node = smgr->addMeshSceneNode(elevator_mesh, m_ui_node);
+  m_elevator_node->setScale(irrvec3(1. / 4, 1. / 4, 1. / 4));
+  m_elevator_node->setPosition(irrvec3(0, -0.11, -0.9));
+  m_elevator_node->setRotation(irrvec3(0, 0, 0));
+  m_elevator_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+  m_elevator_node->setMaterialType(irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF);
+  m_elevator_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+  m_elevator_node->setDebugDataVisible(irr::scene::EDS_OFF);
+  m_elevator_node->setMaterialTexture(
+      0, driver->getTexture("media/cessna/A23DMAT_002_Albedo.jpg"));
+  m_elevator_node->addShadowVolumeSceneNode();
+
+  irr::scene::ISceneNode *rudder_base = smgr->addEmptySceneNode(m_ui_node);
+  rudder_base->setPosition(irrvec3(0, -0.14, -0.86));
+  rudder_base->setRotation(irrvec3(-30, 0, 0));
+  irr::scene::IMesh *rudder_mesh = smgr->getMesh("media/cessna/CessnaRudder.obj");
+  m_rudder_node = smgr->addMeshSceneNode(rudder_mesh, rudder_base);
+  m_rudder_node->setScale(irrvec3(1. / 4, 1. / 4, 1. / 4));
+  m_rudder_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+  m_rudder_node->setMaterialType(irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF);
+  m_rudder_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+  m_rudder_node->setDebugDataVisible(irr::scene::EDS_OFF);
+  m_rudder_node->setMaterialTexture(
+      0, driver->getTexture("media/cessna/A23DMAT_002_Albedo.jpg"));
+  m_rudder_node->addShadowVolumeSceneNode();
+
+//   m_body_node->addShadowVolumeSceneNode();
+  irr::scene::IMesh *prop_mesh = smgr->getMesh("media/cessna/CessnaProp.obj");
+  m_prop_node = smgr->addMeshSceneNode(prop_mesh, m_ui_node);
+  m_prop_node->setScale(irrvec3(1. / 4, 1. / 4, 1. / 4));
+  m_prop_node->setPosition(irrvec3(0, -0.07, 0.4));
+  m_prop_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
+  m_prop_node->setMaterialType(irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF);
+  m_prop_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
+  m_prop_node->setDebugDataVisible(irr::scene::EDS_OFF);
+  m_prop_node->setMaterialTexture(
+      0, driver->getTexture("media/cessna/A23DMAT_002_Albedo.jpg"));
+  m_prop_node->addShadowVolumeSceneNode();
+
+    m_prop_angle = 0.0f;
+}
+
+void Trainer::update_ui() {
+    Airplane::update_ui();
+    m_prop_angle += (m_servos[AIRPLANE_CHANNEL_THROTTLE].get() + 1.0) * 3412.0f * 0.1f;
+    m_prop_node->setRotation(irrvec3(0, 0, m_prop_angle));
+
+    m_left_ailron_node->setRotation(irrvec3(m_servos[AIRPLANE_CHANNEL_ROLL].get()*45., 0, -4));
+    m_right_ailron_node->setRotation(-irrvec3(m_servos[AIRPLANE_CHANNEL_FLAPRON].get()*45. - 7, 0, 177));
+    m_elevator_node->setRotation(irrvec3(m_servos[AIRPLANE_CHANNEL_PITCH].get()*45., 0, 0));
+    m_rudder_node->setRotation(irrvec3(0, m_servos[AIRPLANE_CHANNEL_YAW].get()*45., 0));
+}

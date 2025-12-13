@@ -68,7 +68,7 @@ AppliedForce PointAirFoil::get_force(const irrvec3 &airflow) {
 
   // If UI initialized, update it.
   if (m_force_arrow) {
-    m_force_arrow->point(force * 10);
+    m_force_arrow->point(force);
   }
 
   return AppliedForce{.force = force,
@@ -209,7 +209,7 @@ AppliedForce Propellant::calc_force(const irrvec3 &wind_in_airplane,
 
   // If UI initialized, update it.
   if (m_force_arrow) {
-    m_force_arrow->point(force * 10);
+     m_force_arrow->point(force);
   }
 
   return AppliedForce{

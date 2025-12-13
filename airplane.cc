@@ -24,8 +24,7 @@ static irrvec3 advection_force(const irrvec3 &airflow,
       AIR_DENSITY * std::abs(effective_area) *
       airflow.getLength()
       // Times the change of velocity [M / SEC]
-      * airflow_dot_normal *
-      1.6; // Magical constant that makes thing behave more nicely
+      * airflow_dot_normal;
   return surface_normal * advection_magnitude;
 }
 

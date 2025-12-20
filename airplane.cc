@@ -105,7 +105,6 @@ RectangularAirFoil::RectangularAirFoil(const RectangularAirFoil::Params &params)
   float wing_area = m_params.z_width * m_params.x_length;
   float point_area = wing_area / (m_params.num_points - 1);
   float num_flap_points = m_params.flap_point_to - m_params.flap_point_from + 1;
-  float point_flap_area = m_params.flap_area / num_flap_points;
   float drag_area = m_params.y_thickness * m_params.x_length;
   float point_drag_area = drag_area / (m_params.num_points + 1);
 
@@ -118,6 +117,11 @@ RectangularAirFoil::RectangularAirFoil(const RectangularAirFoil::Params &params)
           2.0f; // The first and last points are half the area.
       point_specific_drag_area /=
           2.0f; // The first and last points are half the drag area.
+    }
+    float point_flap_area = 0.0f;
+    if (m_params.has_flap && (i >= m_params.flap_point_from) &&
+        (i <= m_params.flap_point_to)) {
+      point_flap_area = m_params.flap_area / num_flap_points;
     }
     PointAirFoil::Params point_params{
         .area = point_specific_area,

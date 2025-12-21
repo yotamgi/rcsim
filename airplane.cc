@@ -155,7 +155,12 @@ RectangularAirFoil::calc_force(const irrvec3 &wind_in_airplane,
 }
 
 void RectangularAirFoil::set_flap(float value) {
-  float angle = value * m_params.max_flap_angle;
+  float max_angle = m_params.max_flap_angle;
+  float min_angle = (m_params.min_flap_angle == 0.)
+                        ? max_angle
+                        : std::abs(m_params.min_flap_angle);
+  float angle =
+      value * (value > 0 ? max_angle : min_angle) + m_params.flap_mid_angle;
   float angle_radians = angle / 180 * M_PI;
   irrmat4 rotation;
   rotation.setRotationAxisRadians(-angle_radians, m_along_wing_direction);

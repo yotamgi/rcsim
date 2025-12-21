@@ -99,6 +99,8 @@ public:
     int flap_point_from; // starting from left.
     int flap_point_to;
     float max_flap_angle;
+    float flap_mid_angle = 0.;
+    float min_flap_angle = 0.;
   };
 
   RectangularAirFoil(const Params &params);

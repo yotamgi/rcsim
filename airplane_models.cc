@@ -156,6 +156,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                           .flap_point_from = 0,
                           .flap_point_to = 3,
                           .max_flap_angle = 45,
+                          .min_flap_angle = -40,
                       },
                       // 1: Right wing:
                       {
@@ -173,6 +174,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                           .flap_point_from = 1,
                           .flap_point_to = 4,
                           .max_flap_angle = 45,
+                          .min_flap_angle = -40,
                       },
                       // 2: Fuselage:
                       {

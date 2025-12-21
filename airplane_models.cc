@@ -122,7 +122,7 @@ SimpleGlider::SimpleGlider(irr::scene::ISceneManager *smgr,
 const float Trainer::TOTAL_MASS = 2.0f;      // in Kg.
 const float Trainer::WING_LENGTH = 2.0f;     // in meters.
 const float Trainer::FUSELAGE_LENGTH = 1.4f; // in meters.
-const float Trainer::WING_WIDTH = 0.3f;      // in meters.
+const float Trainer::WING_WIDTH = 0.35f;     // in meters.
 const float Trainer::FUESLAGE_MASS = 1.5f;   // in Kg.
 const float Trainer::WING_MASS =
     Trainer::TOTAL_MASS - Trainer::FUESLAGE_MASS; // in Kg.
@@ -147,7 +147,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                           .y_thickness = 0.01,
                           .rotation_angles = irrvec3(-3, 0, -1),
                           .position_in_airplane =
-                              irrvec3(-WING_LENGTH / 4, 0.05, 0),
+                              irrvec3(-WING_LENGTH / 4, 0.12, 0),
                           .num_points = 5,
                           .stall_angle_min = -10,
                           .stall_angle_max = 15,
@@ -165,7 +165,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                           .y_thickness = 0.01,
                           .rotation_angles = irrvec3(-3, 0, 1),
                           .position_in_airplane =
-                              irrvec3(WING_LENGTH / 4, 0.05, 0),
+                              irrvec3(WING_LENGTH / 4, 0.12, 0),
                           .num_points = 5,
                           .stall_angle_min = -10,
                           .stall_angle_max = 15,
@@ -176,11 +176,11 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                           .max_flap_angle = 45,
                           .min_flap_angle = -40,
                       },
-                      // 2: Fuselage:
+                      // 2: Fuselage 1:
                       {
                           .x_length = FUSELAGE_LENGTH,
                           .z_width = 0.01,
-                          .y_thickness = 0.1,
+                          .y_thickness = 0.0,
                           .rotation_angles = irrvec3(0, 90, 90),
                           .position_in_airplane =
                               irrvec3(0, -0.05, -FUSELAGE_LENGTH * 0.2f),
@@ -196,7 +196,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                           .y_thickness = 0.005,
                           .rotation_angles = irrvec3(0, 0, 0),
                           .position_in_airplane =
-                              irrvec3(0, -0.1, -FUSELAGE_LENGTH * 0.65f),
+                              irrvec3(0, -0.03, -FUSELAGE_LENGTH * 0.65f),
                           .num_points = 2,
                           .stall_angle_min = -3,
                           .stall_angle_max = 3,
@@ -205,10 +205,11 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                           .flap_point_from = 0,
                           .flap_point_to = 1,
                           .max_flap_angle = 45,
+                          .flap_mid_angle = -2,
                       },
                       // 4: Rudder:
                       {
-                          .x_length = WING_LENGTH / 8,
+                          .x_length = WING_LENGTH / 6,
                           .z_width = WING_WIDTH / 2,
                           .y_thickness = 0.005,
                           .rotation_angles = irrvec3(0, 0, 90),
@@ -236,7 +237,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                       {
                           .direction_in_airplane = irrvec3(0, 0, -1),
                           .position_in_airplane =
-                              irrvec3(0, 0, FUSELAGE_LENGTH * 0.2),
+                              irrvec3(0, 0.0f, FUSELAGE_LENGTH * 0.3),
                           .thrust_airspeed = 50.0f,
                           .max_thrust = 18.0f,
                       },
@@ -248,20 +249,20 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
               .touchpoints_in_airplane =
                   {
                       // Wheels:
-                      {.pos = irrvec3(0.0, -0.3, 0.3),
+                      {.pos = irrvec3(0.0, -0.26, 0.3),
                        .friction_coeff = diag2(15.0f, 0.0f)},
-                      {.pos = irrvec3(0.3, -0.3, -0.1),
+                      {.pos = irrvec3(0.23, -0.26, -0.07),
                        .friction_coeff = diag2(15.0f, 0.0f)},
-                      {.pos = irrvec3(-0.3, -0.3, -0.1),
+                      {.pos = irrvec3(-0.23, -0.26, -0.07),
                        .friction_coeff = diag2(15.0f, 0.0f)},
                       // Wing touchpoints:
-                      {.pos = irrvec3(1.0, 0.05, 0.14),
+                      {.pos = irrvec3(1.0, 0.12, 0.14),
                        .friction_coeff = diag2(3.0f, 3.0f)},
-                      {.pos = irrvec3(-1.0, 0.05, 0.14),
+                      {.pos = irrvec3(-1.0, 0.12, 0.14),
                        .friction_coeff = diag2(3.0f, 3.0f)},
-                      {.pos = irrvec3(1.0, 0.05, -0.14),
+                      {.pos = irrvec3(1.0, 0.12, -0.14),
                        .friction_coeff = diag2(3.0f, 3.0f)},
-                      {.pos = irrvec3(-1.0, 0.05, -0.14),
+                      {.pos = irrvec3(-1.0, 0.12, -0.14),
                        .friction_coeff = diag2(3.0f, 3.0f)},
                       // Back touchpoint:
                       {.pos = irrvec3(0.0, 0.0, -1.),
@@ -284,7 +285,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
   m_body_node = smgr->addMeshSceneNode(body_mesh, m_ui_node);
 
   m_body_node->setScale(irrvec3(1. / 4, 1. / 4, 1. / 4));
-  m_body_node->setPosition(irrvec3(0, -0.14, 0));
+  m_body_node->setPosition(irrvec3(0, -0.07, 0));
   m_body_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
   m_body_node->setMaterialType(irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF);
   m_body_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
@@ -298,7 +299,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
       smgr->getMesh("media/cessna/CessnaAilron.obj");
   m_left_ailron_node = smgr->addMeshSceneNode(ailron_mesh, m_ui_node);
   m_left_ailron_node->setScale(irrvec3(1. / 4, 1. / 4, 1. / 4));
-  m_left_ailron_node->setPosition(irrvec3(-0.33, 0.035, -0.12));
+  m_left_ailron_node->setPosition(irrvec3(-0.33, 0.105, -0.12));
   m_left_ailron_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
   m_left_ailron_node->setMaterialType(
       irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF);
@@ -309,7 +310,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
 
   m_right_ailron_node = smgr->addMeshSceneNode(ailron_mesh, m_ui_node);
   m_right_ailron_node->setScale(irrvec3(1. / 4, 1. / 4, 1. / 4));
-  m_right_ailron_node->setPosition(irrvec3(0.33, 0.035, -0.12));
+  m_right_ailron_node->setPosition(irrvec3(0.33, 0.105, -0.12));
   m_right_ailron_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
   m_right_ailron_node->setMaterialType(
       irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF);
@@ -323,7 +324,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
       smgr->getMesh("media/cessna/CessnaElevator.obj");
   m_elevator_node = smgr->addMeshSceneNode(elevator_mesh, m_ui_node);
   m_elevator_node->setScale(irrvec3(1. / 4, 1. / 4, 1. / 4));
-  m_elevator_node->setPosition(irrvec3(0, -0.11, -0.9));
+  m_elevator_node->setPosition(irrvec3(0, -0.04, -0.9));
   m_elevator_node->setRotation(irrvec3(0, 0, 0));
   m_elevator_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
   m_elevator_node->setMaterialType(
@@ -335,7 +336,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
   m_elevator_node->addShadowVolumeSceneNode();
 
   irr::scene::ISceneNode *rudder_base = smgr->addEmptySceneNode(m_ui_node);
-  rudder_base->setPosition(irrvec3(0, -0.14, -0.86));
+  rudder_base->setPosition(irrvec3(0, -0.07, -0.86));
   rudder_base->setRotation(irrvec3(-30, 0, 0));
   irr::scene::IMesh *rudder_mesh =
       smgr->getMesh("media/cessna/CessnaRudder.obj");
@@ -352,7 +353,7 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
   irr::scene::IMesh *prop_mesh = smgr->getMesh("media/cessna/CessnaProp.obj");
   m_prop_node = smgr->addMeshSceneNode(prop_mesh, m_ui_node);
   m_prop_node->setScale(irrvec3(1. / 4, 1. / 4, 1. / 4));
-  m_prop_node->setPosition(irrvec3(0, -0.07, 0.4));
+  m_prop_node->setPosition(irrvec3(0, 0, 0.4));
   m_prop_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
   m_prop_node->setMaterialType(irr::video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF);
   m_prop_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);

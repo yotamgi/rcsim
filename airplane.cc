@@ -217,7 +217,7 @@ AppliedForce Propellant::calc_force(const irrvec3 &wind_in_airplane,
 
   // If UI initialized, update it.
   if (m_force_arrow) {
-     m_force_arrow->point(force);
+    m_force_arrow->point(force);
   }
 
   return AppliedForce{
@@ -259,9 +259,9 @@ Airplane::Airplane(const Airplane::Params &params,
 }
 
 void Airplane::init_ui(irr::scene::ISceneManager *smgr,
-                   irr::video::IVideoDriver *driver) 
-{
-  if (!m_params.show_skeleton) return;
+                       irr::video::IVideoDriver *driver) {
+  if (!m_params.show_skeleton)
+    return;
 
   for (const auto &airfoil : m_airfoils) {
     airfoil->init_ui(smgr, driver, m_ui_node);
@@ -272,8 +272,8 @@ void Airplane::init_ui(irr::scene::ISceneManager *smgr,
   }
 
   for (const auto &tp : m_params.touchpoints_in_airplane) {
-    irr::scene::ISceneNode *point_node = smgr->addSphereSceneNode(
-        0.05f, 16, m_ui_node, -1, tp.pos);
+    irr::scene::ISceneNode *point_node =
+        smgr->addSphereSceneNode(0.05f, 16, m_ui_node, -1, tp.pos);
     point_node->setMaterialFlag(irr::video::EMF_LIGHTING, true);
     point_node->setMaterialFlag(irr::video::EMF_NORMALIZE_NORMALS, true);
     point_node->setDebugDataVisible(irr::scene::EDS_OFF);
@@ -359,7 +359,7 @@ void Airplane::add_force(unsigned int touchpoint_index, const irrvec3 &force) {
   m_external_force_in_world += force;
   m_external_torque_in_airplane +=
       m_params.touchpoints_in_airplane[touchpoint_index].pos.crossProduct(
-      rotate(m_rotation_in_world.getTransposed(), force));
+          rotate(m_rotation_in_world.getTransposed(), force));
 }
 
 void Airplane::reset_force() {

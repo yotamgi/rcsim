@@ -161,6 +161,14 @@ public:
     std::map<int, int> channel_prop_mapping;
     std::vector<TouchPoint> touchpoints_in_airplane;
 
+    struct Wheel {
+      int servo_index;
+      float max_angle;
+    };
+
+    // Wheel parameters.
+    std::map<size_t, Wheel> touchpoint_to_channel_mapping;
+
     // Servo parameters.
     std::vector<float> servo_max_rps;
     std::vector<float> servo_init_values;

@@ -369,7 +369,9 @@ void Airplane::reset_force() {
 
 std::vector<Airplane::TouchPoint> Airplane::get_touchpoints_in_world() const {
   std::vector<FlyingObject::TouchPoint> touchpoints_in_world;
-  for (auto touchpoint_in_body : m_params.touchpoints_in_airplane) {
+  for (size_t tp_index = 0; tp_index < m_params.touchpoints_in_airplane.size();
+       tp_index++) {
+    auto touchpoint_in_body = m_params.touchpoints_in_airplane[tp_index];
     FlyingObject::TouchPoint tp;
     tp.pos = m_position_in_world +
              rotate(m_rotation_in_world, touchpoint_in_body.pos);
@@ -377,8 +379,17 @@ std::vector<Airplane::TouchPoint> Airplane::get_touchpoints_in_world() const {
         m_velocity_in_world +
         rotate(m_rotation_in_world, m_angular_velocity_in_airplane.crossProduct(
                                         touchpoint_in_body.pos));
-    tp.friction_coeff = m_rotation_in_world *
-                        touchpoint_in_body.friction_coeff *
+    irrmat4 friction_in_body = touchpoint_in_body.friction_coeff;
+    if (m_params.touchpoint_to_channel_mapping.find(tp_index) !=
+        m_params.touchpoint_to_channel_mapping.end()) {
+      auto wheel_conf = m_params.touchpoint_to_channel_mapping.at(tp_index);
+      float angle = m_servos[wheel_conf.servo_index].get() * wheel_conf.max_angle;
+      irrmat4 wheel_rot;
+      wheel_rot.setRotationDegrees(irrvec3(0, -angle, 0));
+      friction_in_body =
+          wheel_rot * friction_in_body * wheel_rot.getTransposed();
+    }
+    tp.friction_coeff = m_rotation_in_world * friction_in_body *
                         m_rotation_in_world.getTransposed();
     touchpoints_in_world.push_back(tp);
   }

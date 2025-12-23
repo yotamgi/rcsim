@@ -250,11 +250,11 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                   {
                       // Wheels:
                       {.pos = irrvec3(0.0, -0.26, 0.3),
-                       .friction_coeff = diag2(15.0f, 0.0f)},
+                       .friction_coeff = diag2(15.0f, 0.3f)},
                       {.pos = irrvec3(0.23, -0.26, -0.07),
-                       .friction_coeff = diag2(15.0f, 0.0f)},
+                       .friction_coeff = diag2(15.0f, 0.3f)},
                       {.pos = irrvec3(-0.23, -0.26, -0.07),
-                       .friction_coeff = diag2(15.0f, 0.0f)},
+                       .friction_coeff = diag2(15.0f, 0.3f)},
                       // Wing touchpoints:
                       {.pos = irrvec3(1.0, 0.12, 0.14),
                        .friction_coeff = diag2(3.0f, 3.0f)},
@@ -270,6 +270,10 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                       // Engine touchpoint:
                       {.pos = irrvec3(0, 0, FUSELAGE_LENGTH * 0.2),
                        .friction_coeff = diag2(3.0f, 3.0f)},
+                  },
+              .touchpoint_to_channel_mapping =
+                  {
+                      {0, {.servo_index = AIRPLANE_CHANNEL_YAW, .max_angle = 45}},
                   },
               .servo_max_rps = {1, 3, 3, 3, 3, 3},
               .servo_init_values = {-1, 0, 0, 0, 0, 0},

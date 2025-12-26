@@ -179,8 +179,8 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                       // 2: Fuselage 1:
                       {
                           .x_length = FUSELAGE_LENGTH,
-                          .z_width = 0.01,
-                          .y_thickness = 0.0,
+                          .z_width = 0.10,
+                          .y_thickness = 1e-4,
                           .rotation_angles = irrvec3(0, 90, 90),
                           .position_in_airplane =
                               irrvec3(0, -0.05, -FUSELAGE_LENGTH * 0.2f),
@@ -223,6 +223,19 @@ Trainer::Trainer(irr::scene::ISceneManager *smgr,
                           .flap_point_from = 0,
                           .flap_point_to = 0,
                           .max_flap_angle = 45,
+                      },
+                      // 5: Fuselage 2:
+                      {
+                          .x_length = FUSELAGE_LENGTH,
+                          .z_width = 0.1,
+                          .y_thickness = 1e-4,
+                          .rotation_angles = irrvec3(0, 90, 0),
+                          .position_in_airplane =
+                              irrvec3(0, -0.05, -FUSELAGE_LENGTH * 0.2f),
+                          .num_points = 5,
+                          .stall_angle_min = 0,
+                          .stall_angle_max = 0,
+                          .has_flap = false,
                       },
                   },
               .channel_flap_mapping =

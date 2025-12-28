@@ -42,7 +42,7 @@ Configuration create_rc_bell_heli(irr::video::IVideoDriver *driver,
   conf.model = heli_model;
   conf.controls = std::make_shared<HeliControls>(flight_controller,
                                                  throttle_curves, lift_curves);
-  conf.dashboard = std::make_shared<Dashboard>(
+  conf.dashboard = std::make_shared<HeliDashboard>(
       driver, throttle_curves, lift_curves, heli_model->get_max_rps());
   return conf;
 }
@@ -53,7 +53,7 @@ Configuration create_rc_glider(irr::video::IVideoDriver *driver,
       std::make_shared<SimpleGlider>(smgr, driver);
   std::shared_ptr<AirplaneControls> controls =
       std::make_shared<AirplaneControls>(true);
-  std::shared_ptr<Dashboard> dashboard = std::make_shared<Dashboard>(
+  std::shared_ptr<HeliDashboard> dashboard = std::make_shared<HeliDashboard>(
       driver, std::vector<ControllerCurve>(), std::vector<ControllerCurve>(),
       airplane->get_max_rps());
   return Configuration{.model = airplane,
@@ -67,7 +67,7 @@ Configuration create_rc_trainer(irr::video::IVideoDriver *driver,
       std::make_shared<Trainer>(smgr, driver);
   std::shared_ptr<AirplaneControls> controls =
       std::make_shared<AirplaneControls>(true);
-  std::shared_ptr<Dashboard> dashboard = std::make_shared<Dashboard>(
+  std::shared_ptr<HeliDashboard> dashboard = std::make_shared<HeliDashboard>(
       driver, std::vector<ControllerCurve>(), std::vector<ControllerCurve>(),
       airplane->get_max_rps());
   return Configuration{.model = airplane,

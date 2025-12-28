@@ -78,9 +78,15 @@ private:
 
 class Dashboard {
 public:
-  Dashboard(irr::video::IVideoDriver *driver,
-            std::vector<ControllerCurve> throttle_curves,
-            std::vector<ControllerCurve> lift_curves, float max_rps);
+  virtual void update_ui(const Controls::Telemetry &controls_telemetry,
+                         const FlyingObject::Telemetry &telemetry) = 0;
+};
+
+class HeliDashboard : public Dashboard {
+public:
+  HeliDashboard(irr::video::IVideoDriver *driver,
+                std::vector<ControllerCurve> throttle_curves,
+                std::vector<ControllerCurve> lift_curves, float max_rps);
 
   void update_ui(const Controls::Telemetry &controls_telemetry,
                  const FlyingObject::Telemetry &telemetry);

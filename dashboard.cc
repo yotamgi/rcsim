@@ -513,12 +513,13 @@ void SpeedometerInstrument::update(float value1, float value2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//  Dashboard class implementation
+//  HeliDashboard class implementation
 ////////////////////////////////////////////////////////////////////////////////
 
-Dashboard::Dashboard(irr::video::IVideoDriver *driver,
-                     std::vector<ControllerCurve> throttle_curves,
-                     std::vector<ControllerCurve> lift_curves, float max_rps)
+HeliDashboard::HeliDashboard(irr::video::IVideoDriver *driver,
+                             std::vector<ControllerCurve> throttle_curves,
+                             std::vector<ControllerCurve> lift_curves,
+                             float max_rps)
     : m_driver(driver), m_yaw_instrument(driver, YAW_VIEW_POS_X, YAW_VIEW_POS_Y,
                                          CONTROLS_SIZE, YAW_VIEW_HEIGHT),
       m_pitch_roll_instrument(driver, CONTROLS_POS_X, CONTROLS_POS_Y,
@@ -551,8 +552,8 @@ Dashboard::Dashboard(irr::video::IVideoDriver *driver,
       driver->getTexture("media/controls_and_gyro_view.png");
 }
 
-void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
-                          const BaseHeli::Telemetry &telemetry) {
+void HeliDashboard::update_ui(const Controls::Telemetry &controls_telemetry,
+                              const BaseHeli::Telemetry &telemetry) {
   ControlsInput user_input = controls_telemetry.user_input;
   ServoData before_controller = controls_telemetry.before_controller;
   ServoData after_controller = controls_telemetry.after_controller;

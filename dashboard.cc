@@ -38,7 +38,18 @@ static float curve_value_to_y(float value) {
   return float(CURVES_IMAGE_HEIGHT) * ((value + 1.) / 2.);
 }
 
-static void draw2DImageWithRotation(
+static int pos_y_(irr::video::IVideoDriver *driver, int pos_y) {
+  return driver->getScreenSize().Height - pos_y;
+}
+
+static int pos_x_ratio(irr::video::IVideoDriver *driver, float pos_x_ratio) {
+  return driver->getScreenSize().Width * pos_x_ratio;
+}
+
+#define POS_Y(y) pos_y_(m_driver, (y))
+#define POS_X(x) pos_x_ratio(m_driver, (x))
+
+static void draw_image_with_rotation(
     irr::video::IVideoDriver *driver, irr::video::ITexture *texture,
     irr::core::rect<irr::s32> sourceRect,
     irr::core::position2d<irr::s32> position,
@@ -166,31 +177,141 @@ static void plot_curve(const ControllerCurve &curve, irr::video::IImage *image,
   }
 }
 
-Dashboard::Dashboard(irr::video::IVideoDriver *driver,
-                     std::vector<ControllerCurve> throttle_curves,
-                     std::vector<ControllerCurve> lift_curves, float max_rps)
-    : m_throttle_curves(throttle_curves), m_lift_curves(lift_curves),
-      m_max_rps(max_rps) {
+static irr::video::ITexture *
+create_circular_pin_image(irr::video::IVideoDriver *driver, int size,
+                          const irr::video::SColor &color) {
+  irr::video::IImage *pin_image =
+      driver->createImage(irr::video::ECF_A8R8G8B8,
+                          irr::core::dimension2d<unsigned int>(size, size));
 
-  // Create the dashboard background
-  irr::video::IImage *background_image = driver->createImage(
-      irr::video::ECF_A8R8G8B8, irr::core::dimension2d<unsigned int>(10, 10));
-  for (int x = 0; x < 10; x++) {
-    for (int y = 0; y < 10; y++) {
-      background_image->setPixel(x, y, irr::video::SColor(0x30, 0, 0, 0));
+  for (int x = 0; x < size; x++) {
+    for (int y = 0; y < size; y++) {
+      int half = size / 2;
+      float distance =
+          std::pow(float((x - half) * (x - half) + (y - half) * (y - half)) /
+                       (half * half),
+                   3);
+      float intensity = distance > 1 ? 0 : 1 - distance;
+      pin_image->setPixel(x, y,
+                          irr::video::SColor(150 * intensity, 0xff, 0xff, 0));
     }
   }
-  m_dashboard_background = driver->addTexture(
-      irr::io::path("dashboard_background"), background_image);
+  return driver->addTexture(irr::io::path("pin_image"), pin_image);
+}
 
-  // Create the pitch-roll controls image.
+static irr::video::ITexture *
+create_plus_pin_image(irr::video::IVideoDriver *driver, int size,
+                      const irr::video::SColor &color) {
+
+  irr::video::IImage *second_pin_image = driver->createImage(
+      irr::video::ECF_A8R8G8B8,
+      irr::core::dimension2d<unsigned int>(PIN_SIZE, PIN_SIZE));
+
+  for (int x = 0; x < PIN_SIZE; x++) {
+    for (int y = 0; y < PIN_SIZE; y++) {
+      int half = PIN_SIZE / 2;
+      if ((x < half + 2 && x > half - 2) || (y < half + 2 && y > half - 2)) {
+        second_pin_image->setPixel(x, y, irr::video::SColor(0xff, 0, 0, 0));
+      } else {
+        second_pin_image->setPixel(x, y, irr::video::SColor(0, 0, 0, 0));
+      }
+    }
+  }
+  return driver->addTexture(irr::io::path("second_pin_image"),
+                            second_pin_image);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// HorizontalControlsInstrument class implementation
+////////////////////////////////////////////////////////////////////////////////
+
+HorizontalControlsInstrument::HorizontalControlsInstrument(
+    irr::video::IVideoDriver *driver, float pos_x, int pos_y, int width,
+    int height)
+    : m_driver(driver), m_pos_x(POS_X(pos_x)), m_pos_y(POS_Y(pos_y)),
+      m_width(width), m_height(height) {
+
+  // Create the yaw control image.
+  irr::video::IImage *yaw_image =
+      driver->createImage(irr::video::ECF_A8R8G8B8,
+                          irr::core::dimension2d<unsigned int>(width, height));
+
+  for (int x = 0; x < width; x++) {
+    for (int y = 0; y < height; y++) {
+      int half_x = width / 2;
+      int half_y = height / 2;
+      int x_fade = 0.25 * width;
+      // Draw the axes;
+      if ((x > half_x - 1 && x < half_x + 1) ||
+          (y > half_y - 1 && y < half_y + 1)) {
+        yaw_image->setPixel(x, y, irr::video::SColor(0xff, 0, 0, 0));
+      }
+      // Draw the gradient;
+      else {
+        float distance = float(std::abs(y - half_y)) / half_y;
+        float intensity = 1 - distance;
+        if (x < x_fade) {
+          intensity *= 1 - std::pow(float(x_fade - x) / x_fade, 2);
+        } else if (x > width - x_fade) {
+          intensity *= 1 - std::pow(float(x - (width - x_fade)) / x_fade, 2);
+        }
+        yaw_image->setPixel(x, y,
+                            irr::video::SColor(150 * intensity, 0xA0, 0, 0));
+      }
+    }
+  }
+
+  m_yaw_image = driver->addTexture(irr::io::path("yaw_image"), yaw_image);
+  m_pin_image = create_circular_pin_image(driver, PIN_SIZE,
+                                          irr::video::SColor(0xff, 0xff, 0, 0));
+  m_second_pin_image = create_plus_pin_image(driver, PIN_SIZE,
+                                             irr::video::SColor(0xff, 0, 0, 0));
+}
+
+void HorizontalControlsInstrument::update(float pin1, float pin2) {
+  // Draw the yaw controls view.
+  int yaw_before_pin_x =
+      m_pos_x + m_width / 2 + pin1 * m_width / 2 - PIN_SIZE / 2;
+  int yaw_before_pin_y = m_pos_y + m_height / 2 - PIN_SIZE / 2;
+  int yaw_after_pin_x =
+      m_pos_x + m_width / 2 + pin2 * m_width / 2 - PIN_SIZE / 2;
+  int yaw_after_pin_y = m_pos_y + m_height / 2 - PIN_SIZE;
+  m_driver->draw2DImage(m_yaw_image,
+                        irr::core::position2d<int>(m_pos_x, m_pos_y),
+                        irr::core::rect<int>(0, 0, m_width, m_height), NULL,
+                        irr::video::SColor(255, 255, 255, 255), true);
+
+  m_driver->draw2DImage(m_pin_image,
+                        irr::core::rect<int>(yaw_after_pin_x, yaw_after_pin_y,
+                                             yaw_after_pin_x + PIN_SIZE,
+                                             yaw_after_pin_y + PIN_SIZE * 2),
+                        irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL,
+                        NULL, true);
+
+  m_driver->draw2DImage(m_second_pin_image,
+                        irr::core::rect<int>(yaw_before_pin_x, yaw_before_pin_y,
+                                             yaw_before_pin_x + PIN_SIZE,
+                                             yaw_before_pin_y + PIN_SIZE),
+                        irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL,
+                        NULL, true);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Controls2dInstrument class implementation
+////////////////////////////////////////////////////////////////////////////////
+
+Controls2dInstrument::Controls2dInstrument(irr::video::IVideoDriver *driver,
+                                           float pos_x, int pos_y, int size)
+    : m_driver(driver), m_pos_x(POS_X(pos_x)), m_pos_y(POS_Y(pos_y)),
+      m_size(size) {
+  // Create the background image.
   irr::video::IImage *controls_image = driver->createImage(
       irr::video::ECF_A8R8G8B8,
       irr::core::dimension2d<unsigned int>(CONTROLS_SIZE, CONTROLS_SIZE));
 
-  for (int x = 0; x < CONTROLS_SIZE; x++) {
-    for (int y = 0; y < CONTROLS_SIZE; y++) {
-      int half = CONTROLS_SIZE / 2;
+  for (int x = 0; x < size; x++) {
+    for (int y = 0; y < size; y++) {
+      int half = size / 2;
       // Draw the axes;
       if ((x > half - 1 && x < half + 1) || (y > half - 1 && y < half + 1)) {
         controls_image->setPixel(x, y, irr::video::SColor(0xff, 0, 0, 0));
@@ -210,188 +331,24 @@ Dashboard::Dashboard(irr::video::IVideoDriver *driver,
   m_controls_image =
       driver->addTexture(irr::io::path("controls_image"), controls_image);
 
-  // Create the yaw control image.
-  irr::video::IImage *yaw_image = driver->createImage(
-      irr::video::ECF_A8R8G8B8,
-      irr::core::dimension2d<unsigned int>(CONTROLS_SIZE, YAW_VIEW_HEIGHT));
-
-  for (int x = 0; x < CONTROLS_SIZE; x++) {
-    for (int y = 0; y < YAW_VIEW_HEIGHT; y++) {
-      int half_x = CONTROLS_SIZE / 2;
-      int half_y = YAW_VIEW_HEIGHT / 2;
-      int x_fade = 0.25 * CONTROLS_SIZE;
-      // Draw the axes;
-      if ((x > half_x - 1 && x < half_x + 1) ||
-          (y > half_y - 1 && y < half_y + 1)) {
-        yaw_image->setPixel(x, y, irr::video::SColor(0xff, 0, 0, 0));
-      }
-      // Draw the gradient;
-      else {
-        float distance = float(std::abs(y - half_y)) / half_y;
-        float intensity = 1 - distance;
-        if (x < x_fade) {
-          intensity *= 1 - std::pow(float(x_fade - x) / x_fade, 2);
-        } else if (x > CONTROLS_SIZE - x_fade) {
-          intensity *=
-              1 - std::pow(float(x - (CONTROLS_SIZE - x_fade)) / x_fade, 2);
-        }
-        yaw_image->setPixel(x, y,
-                            irr::video::SColor(150 * intensity, 0xA0, 0, 0));
-      }
-    }
-  }
-
-  m_yaw_image = driver->addTexture(irr::io::path("yaw_image"), yaw_image);
-
-  // Create the pin image;
-  irr::video::IImage *pin_image = driver->createImage(
-      irr::video::ECF_A8R8G8B8,
-      irr::core::dimension2d<unsigned int>(PIN_SIZE, PIN_SIZE));
-
-  for (int x = 0; x < PIN_SIZE; x++) {
-    for (int y = 0; y < PIN_SIZE; y++) {
-      int half = PIN_SIZE / 2;
-      float distance =
-          std::pow(float((x - half) * (x - half) + (y - half) * (y - half)) /
-                       (half * half),
-                   3);
-      float intensity = distance > 1 ? 0 : 1 - distance;
-      pin_image->setPixel(x, y,
-                          irr::video::SColor(150 * intensity, 0xff, 0xff, 0));
-    }
-  }
-  m_pin_image = driver->addTexture(irr::io::path("pin_image"), pin_image);
-
-  // Create the second pin image.
-  irr::video::IImage *second_pin_image = driver->createImage(
-      irr::video::ECF_A8R8G8B8,
-      irr::core::dimension2d<unsigned int>(PIN_SIZE, PIN_SIZE));
-
-  for (int x = 0; x < PIN_SIZE; x++) {
-    for (int y = 0; y < PIN_SIZE; y++) {
-      int half = PIN_SIZE / 2;
-      if ((x < half + 2 && x > half - 2) || (y < half + 2 && y > half - 2)) {
-        second_pin_image->setPixel(x, y, irr::video::SColor(0xff, 0, 0, 0));
-      } else {
-        second_pin_image->setPixel(x, y, irr::video::SColor(0, 0, 0, 0));
-      }
-    }
-  }
-  m_second_pin_image =
-      driver->addTexture(irr::io::path("second_pin_image"), second_pin_image);
-
-  m_driver = driver;
-
-  // Create the throttle-lift curves canvas.
-  for (size_t curve_index = 0; curve_index < m_throttle_curves.size();
-       curve_index++) {
-    irr::video::IImage *curves_image = driver->createImage(
-        irr::video::ECF_A8R8G8B8, irr::core::dimension2d<unsigned int>(
-                                      CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT));
-
-    for (int x = 0; x < CURVES_IMAGE_WIDTH; x++) {
-      for (int y = 0; y < CURVES_IMAGE_HEIGHT; y++) {
-        // The grid:
-        if (((x % CURVES_GRID_SIZE == 0) || (y % CURVES_GRID_SIZE == 0)) &&
-            (x != 0) && (y != 0)) {
-          curves_image->setPixel(x, y, irr::video::SColor(0x40, 0, 0, 0));
-        } else {
-          curves_image->setPixel(x, y, irr::video::SColor(0x20, 0, 0, 0));
-        }
-      }
-    }
-    plot_curve(m_throttle_curves[curve_index], curves_image,
-               irr::video::SColor(0xb0, 0x8c, 0x2a, 0xde));
-    plot_curve(m_lift_curves[curve_index], curves_image,
-               irr::video::SColor(0xb0, 0x42, 0x9e, 0xff));
-
-    std::stringstream ss;
-    ss << "curve_images_" << curve_index;
-    m_curves_images.push_back(
-        driver->addTexture(ss.str().c_str(), curves_image));
-  }
-
-  // Create the curves vertical line.
-  irr::video::IImage *curves_vertical_line = driver->createImage(
-      irr::video::ECF_A8R8G8B8,
-      irr::core::dimension2d<unsigned int>(3, CURVES_IMAGE_HEIGHT));
-  for (int x = 0; x < 3; x++) {
-    for (int y = 0; y < CURVES_IMAGE_HEIGHT; y++) {
-      curves_vertical_line->setPixel(x, y, irr::video::SColor(0x80, 0, 0, 0));
-    }
-  }
-  m_curves_vertical_line = driver->addTexture(
-      irr::io::path("curves_vertical_line"), curves_vertical_line);
-
-  // Create the main rotor indicator.
-  m_main_rotor_indicator_image =
-      driver->getTexture("media/speedometer3_meter.png");
-  m_main_rotor_indicator_hand_image =
-      driver->getTexture("media/speedometer3_hand.png");
-  m_main_rotor_indicator_target_hand_image =
-      driver->getTexture("media/speedometer3_hand_yellow.png");
-  m_throttle_text = driver->getTexture("media/throttle_text.png");
-  m_throttle_hold_text = driver->getTexture("media/throttle_hold_text.png");
-  m_curves_text = driver->getTexture("media/curves_text.png");
-  m_switch_curves_text = driver->getTexture("media/switch_curves_text.png");
-  m_controls_and_gyro_view_text =
-      driver->getTexture("media/controls_and_gyro_view.png");
-
-  m_driver = driver;
+  m_pin_image = create_circular_pin_image(driver, PIN_SIZE,
+                                          irr::video::SColor(0xff, 0xff, 0, 0));
+  m_second_pin_image = create_plus_pin_image(driver, PIN_SIZE,
+                                             irr::video::SColor(0xff, 0, 0, 0));
 }
 
-static int pos_y(irr::video::IVideoDriver *driver, int pos_y) {
-  return driver->getScreenSize().Height - pos_y;
-}
+void Controls2dInstrument::update(float pin1_y, float pin1_x, float pin2_y,
+                                  float pin2_x) {
+  // Calculate the pin positions.
+  int before_pin_x = m_pos_x + m_size / 2 + pin1_x * m_size / 2 - PIN_SIZE / 2;
+  int before_pin_y = m_pos_y + m_size / 2 + pin1_y * m_size / 2 - PIN_SIZE / 2;
+  int after_pin_x = m_pos_x + m_size / 2 + pin2_x * m_size / 2 - PIN_SIZE / 2;
+  int after_pin_y = m_pos_y + m_size / 2 + pin2_y * m_size / 2 - PIN_SIZE / 2;
 
-static int pos_x_ratio(irr::video::IVideoDriver *driver, float pos_x_ratio) {
-  return driver->getScreenSize().Width * pos_x_ratio;
-}
-
-#define POS_Y(y) pos_y(m_driver, (y))
-#define POS_X(x) pos_x_ratio(m_driver, (x))
-
-void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
-                          const BaseHeli::Telemetry &telemetry) {
-  ControlsInput user_input = controls_telemetry.user_input;
-  ServoData before_controller = controls_telemetry.before_controller;
-  ServoData after_controller = controls_telemetry.after_controller;
-  int active_curve_index = controls_telemetry.active_curve_index;
-
-  // Draw the background
-  m_driver->draw2DImage(m_dashboard_background,
-                        irr::core::rect<int>(POS_X(0), POS_Y(BACKGROUND_HEIGHT),
-                                             POS_X(1), POS_Y(0)),
-                        irr::core::rect<int>(0, 0, 10, 10), NULL, NULL, true);
-
-  // Draw the controls test
-  m_driver->draw2DImage(
-      m_controls_and_gyro_view_text,
-      irr::core::rect<int>(POS_X(CONTROLS_POS_X) - TEXT_WIDTH / 2,
-                           POS_Y(CONTROLS_POS_Y) - 10,
-                           POS_X(CONTROLS_POS_X) + TEXT_WIDTH / 2,
-                           POS_Y(CONTROLS_POS_Y) + TEXT_HEIGHT - 10),
-      irr::core::rect<int>(0, 0, 800, 100), NULL, NULL, true);
-
-  // Draw the pitch-roll control view.
-  float roll_before = before_controller[2];
-  float roll_after = after_controller[2];
-  float pitch_before = before_controller[1];
-  float pitch_after = after_controller[1];
-  int before_pin_x = POS_X(CONTROLS_POS_X) + CONTROLS_SIZE / 2 +
-                     roll_before * CONTROLS_SIZE / 2 - PIN_SIZE / 2;
-  int before_pin_y = POS_Y(CONTROLS_POS_Y) + CONTROLS_SIZE / 2 +
-                     pitch_before * CONTROLS_SIZE / 2 - PIN_SIZE / 2;
-  int after_pin_x = POS_X(CONTROLS_POS_X) + CONTROLS_SIZE / 2 +
-                    roll_after * CONTROLS_SIZE / 2 - PIN_SIZE / 2;
-  int after_pin_y = POS_Y(CONTROLS_POS_Y) + CONTROLS_SIZE / 2 +
-                    pitch_after * CONTROLS_SIZE / 2 - PIN_SIZE / 2;
-
-  m_driver->draw2DImage(
-      m_controls_image,
-      irr::core::position2d<int>(POS_X(CONTROLS_POS_X), POS_Y(CONTROLS_POS_Y)),
-      irr::core::rect<int>(0, 0, CONTROLS_SIZE, CONTROLS_SIZE), NULL,
-      irr::video::SColor(255, 255, 255, 255), true);
+  m_driver->draw2DImage(m_controls_image,
+                        irr::core::position2d<int>(m_pos_x, m_pos_y),
+                        irr::core::rect<int>(0, 0, m_size, m_size), NULL,
+                        irr::video::SColor(255, 255, 255, 255), true);
 
   m_driver->draw2DImage(m_pin_image,
                         irr::core::position2d<int>(after_pin_x, after_pin_y),
@@ -402,38 +359,225 @@ void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
                         irr::core::position2d<int>(before_pin_x, before_pin_y),
                         irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL,
                         irr::video::SColor(255, 255, 255, 255), true);
+}
 
-  // Draw the yaw controls view.
-  float yaw_before = before_controller[3];
-  float yaw_after = after_controller[3];
-  int yaw_before_pin_x = POS_X(YAW_VIEW_POS_X) + CONTROLS_SIZE / 2 +
-                         yaw_before * CONTROLS_SIZE / 2 - PIN_SIZE / 2;
-  int yaw_before_pin_y =
-      POS_Y(YAW_VIEW_POS_Y) + YAW_VIEW_HEIGHT / 2 - PIN_SIZE / 2;
-  int yaw_after_pin_x = POS_X(YAW_VIEW_POS_X) + CONTROLS_SIZE / 2 +
-                        yaw_after * CONTROLS_SIZE / 2 - PIN_SIZE / 2;
-  int yaw_after_pin_y = POS_Y(YAW_VIEW_POS_Y) + YAW_VIEW_HEIGHT / 2 - PIN_SIZE;
-  m_driver->draw2DImage(
-      m_yaw_image,
-      irr::core::position2d<int>(POS_X(YAW_VIEW_POS_X), POS_Y(YAW_VIEW_POS_Y)),
-      irr::core::rect<int>(0, 0, CONTROLS_SIZE, YAW_VIEW_HEIGHT), NULL,
-      irr::video::SColor(255, 255, 255, 255), true);
+////////////////////////////////////////////////////////////////////////////////
+// CurvesInstrument class implementation
+////////////////////////////////////////////////////////////////////////////////
 
-  m_driver->draw2DImage(m_pin_image,
-                        irr::core::rect<int>(yaw_after_pin_x, yaw_after_pin_y,
-                                             yaw_after_pin_x + PIN_SIZE,
-                                             yaw_after_pin_y + PIN_SIZE * 2),
-                        irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL,
-                        NULL, true);
+CurvesInstrument::CurvesInstrument(
+    irr::video::IVideoDriver *driver,
+    std::vector<std::vector<ControllerCurve>> curve_groups,
+    std::vector<irr::video::SColor> curve_colors, float pos_x, int pos_y,
+    int width, int height)
+    : m_driver(driver), m_curve_groups(curve_groups), m_pos_x(POS_X(pos_x)),
+      m_pos_y(POS_Y(pos_y)), m_width(width), m_height(height) {
 
-  m_driver->draw2DImage(m_second_pin_image,
-                        irr::core::rect<int>(yaw_before_pin_x, yaw_before_pin_y,
-                                             yaw_before_pin_x + PIN_SIZE,
-                                             yaw_before_pin_y + PIN_SIZE),
-                        irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL,
-                        NULL, true);
+  size_t num_curves_in_group = curve_groups[0].size();
 
+  // Create the throttle-lift curves canvas.
+  for (size_t curve_index = 0; curve_index < num_curves_in_group;
+       curve_index++) {
+    irr::video::IImage *curves_image = driver->createImage(
+        irr::video::ECF_A8R8G8B8,
+        irr::core::dimension2d<unsigned int>(width, height));
+
+    for (int x = 0; x < width; x++) {
+      for (int y = 0; y < height; y++) {
+        // The grid:
+        if (((x % CURVES_GRID_SIZE == 0) || (y % CURVES_GRID_SIZE == 0)) &&
+            (x != 0) && (y != 0)) {
+          curves_image->setPixel(x, y, irr::video::SColor(0x40, 0, 0, 0));
+        } else {
+          curves_image->setPixel(x, y, irr::video::SColor(0x20, 0, 0, 0));
+        }
+      }
+    }
+    for (size_t curve_group_index = 0; curve_group_index < curve_groups.size();
+         curve_group_index++) {
+      plot_curve(curve_groups[curve_group_index][curve_index], curves_image,
+                 curve_colors[curve_group_index]);
+    }
+
+    std::stringstream ss;
+    ss << "curve_images_" << curve_index;
+    m_curves_images.push_back(
+        driver->addTexture(ss.str().c_str(), curves_image));
+  }
+
+  // Create the curves vertical line.
+  irr::video::IImage *curves_vertical_line =
+      driver->createImage(irr::video::ECF_A8R8G8B8,
+                          irr::core::dimension2d<unsigned int>(3, height));
+  for (int x = 0; x < 3; x++) {
+    for (int y = 0; y < height; y++) {
+      curves_vertical_line->setPixel(x, y, irr::video::SColor(0x80, 0, 0, 0));
+    }
+  }
+  m_curves_vertical_line = driver->addTexture(
+      irr::io::path("curves_vertical_line"), curves_vertical_line);
+  m_pin_image = create_circular_pin_image(driver, PIN_SIZE,
+                                          irr::video::SColor(0xff, 0xff, 0, 0));
+}
+
+void CurvesInstrument::update(unsigned long active_curve_index,
+                              float x_stick_level,
+                              std::vector<float> y_levels) {
   // Draw the lift/throttle curves text.
+  if (m_curves_images.size() != 0) {
+    // Draw the lift/throttle curves.
+    m_driver->draw2DImage(m_curves_images[active_curve_index],
+                          irr::core::position2d<int>(m_pos_x, m_pos_y),
+                          irr::core::rect<int>(0, 0, m_width, m_height), NULL,
+                          irr::video::SColor(255, 255, 255, 255), true);
+  }
+
+  int vertical_line_x_offset = float(m_width) * (x_stick_level + 1) / 2;
+  m_driver->draw2DImage(
+      m_curves_vertical_line,
+      irr::core::rect<int>(m_pos_x + vertical_line_x_offset, m_pos_y,
+                           m_pos_x + vertical_line_x_offset + 3,
+                           m_pos_y + m_height),
+      irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL, NULL, true);
+
+  float pin_size = 1.2 * PIN_SIZE;
+  for (float y_level : y_levels) {
+    int throttle_pin_x = vertical_line_x_offset - pin_size / 2;
+    int throttle_pin_y = float(m_height) * (-y_level + 1) / 2 - pin_size / 2;
+    m_driver->draw2DImage(
+        m_pin_image,
+        irr::core::rect<int>(throttle_pin_x + m_pos_x, throttle_pin_y + m_pos_y,
+                             throttle_pin_x + m_pos_x + pin_size,
+                             throttle_pin_y + m_pos_y + pin_size),
+        irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL, NULL, true);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//  SpeedometerInstrument class implementation
+////////////////////////////////////////////////////////////////////////////////
+
+SpeedometerInstrument::SpeedometerInstrument(irr::video::IVideoDriver *driver,
+                                             float pos_x, int pos_y,
+                                             float max_value)
+    : m_driver(driver), m_pos_x(POS_X(pos_x)), m_pos_y(POS_Y(pos_y)),
+      m_max_value(max_value) {
+
+  // Create the main rotor indicator.
+  m_speedometer_image = driver->getTexture("media/speedometer3_meter.png");
+  m_speedometer_hand_image = driver->getTexture("media/speedometer3_hand.png");
+  m_speedometer_hand2_image =
+      driver->getTexture("media/speedometer3_hand_yellow.png");
+}
+
+void SpeedometerInstrument::update(float value1, float value2) {
+  m_driver->draw2DImage(
+      m_speedometer_image,
+      irr::core::rect<int>(m_pos_x, m_pos_y,
+                           m_pos_x + MAIN_ROTOR_INDICATOR_WIDTH,
+                           m_pos_y + MAIN_ROTOR_INDICATOR_HEIGHT),
+      irr::core::rect<int>(0, 0, 651, 394), NULL, NULL, true);
+
+  int hand_x = m_pos_x + MAIN_ROTOR_INDICATOR_WIDTH / 2 -
+               MAIN_ROTOR_INDICATOR_HAND_WIDTH / 2;
+  int hand_y =
+      m_pos_y + MAIN_ROTOR_INDICATOR_HEIGHT - MAIN_ROTOR_INDICATOR_HAND_HEIGHT;
+  int hand_rotation_point_x =
+      hand_x + MAIN_ROTOR_INDICATOR_HAND_WIDTH * (45.7 / 91);
+  int hand_rotation_point_y =
+      hand_y + MAIN_ROTOR_INDICATOR_HAND_HEIGHT * (286.6 / 329);
+  float size_x = float(MAIN_ROTOR_INDICATOR_HAND_WIDTH) / 91;
+  float size_y = float(MAIN_ROTOR_INDICATOR_HAND_HEIGHT) / 329;
+  draw_image_with_rotation(
+      m_driver,
+      /*texture*/ m_speedometer_hand2_image,
+      /*sourceRect*/ irr::core::rect<int>(0, 0, 91, 329),
+      /*position*/ irr::core::position2d<irr::s32>(hand_x, hand_y),
+      /*rotationPoint*/
+      irr::core::position2d<irr::s32>(hand_rotation_point_x,
+                                      hand_rotation_point_y),
+      /*rotation*/ 180. * value2 / m_max_value - 90.,
+      /*scale*/ irr::core::vector2df(size_x, size_y),
+      /*color*/ irr::video::SColor(255, 255, 255, 255));
+  draw_image_with_rotation(
+      m_driver,
+      /*texture*/ m_speedometer_hand_image,
+      /*sourceRect*/ irr::core::rect<int>(0, 0, 91, 329),
+      /*position*/ irr::core::position2d<irr::s32>(hand_x, hand_y),
+      /*rotationPoint*/
+      irr::core::position2d<irr::s32>(hand_rotation_point_x,
+                                      hand_rotation_point_y),
+      /*rotation*/ 180. * value1 / m_max_value - 90.,
+      /*scale*/ irr::core::vector2df(size_x, size_y),
+      /*color*/ irr::video::SColor(255, 255, 255, 255));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//  Dashboard class implementation
+////////////////////////////////////////////////////////////////////////////////
+
+Dashboard::Dashboard(irr::video::IVideoDriver *driver,
+                     std::vector<ControllerCurve> throttle_curves,
+                     std::vector<ControllerCurve> lift_curves, float max_rps)
+    : m_driver(driver), m_yaw_instrument(driver, YAW_VIEW_POS_X, YAW_VIEW_POS_Y,
+                                         CONTROLS_SIZE, YAW_VIEW_HEIGHT),
+      m_pitch_roll_instrument(driver, CONTROLS_POS_X, CONTROLS_POS_Y,
+                              CONTROLS_SIZE),
+      m_curves_instrument(driver, {throttle_curves, lift_curves},
+                          {irr::video::SColor(0xb0, 0x8c, 0x2a, 0xde),
+                           irr::video::SColor(0xb0, 0x42, 0x9e, 0xff)},
+                          CURVES_IMAGE_POS_X, CURVES_IMAGE_POS_Y,
+                          CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT),
+      m_main_rotor_instrument(driver, MAIN_ROTOR_INDICATOR_X,
+                              MAIN_ROTOR_INDICATOR_Y, max_rps) {
+
+  // Create the dashboard background
+  irr::video::IImage *background_image = driver->createImage(
+      irr::video::ECF_A8R8G8B8, irr::core::dimension2d<unsigned int>(10, 10));
+  for (int x = 0; x < 10; x++) {
+    for (int y = 0; y < 10; y++) {
+      background_image->setPixel(x, y, irr::video::SColor(0x30, 0, 0, 0));
+    }
+  }
+  m_dashboard_background = driver->addTexture(
+      irr::io::path("dashboard_background"), background_image);
+
+  // The text images.
+  m_throttle_text = driver->getTexture("media/throttle_text.png");
+  m_throttle_hold_text = driver->getTexture("media/throttle_hold_text.png");
+  m_curves_text = driver->getTexture("media/curves_text.png");
+  m_switch_curves_text = driver->getTexture("media/switch_curves_text.png");
+  m_controls_and_gyro_view_text =
+      driver->getTexture("media/controls_and_gyro_view.png");
+}
+
+void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
+                          const BaseHeli::Telemetry &telemetry) {
+  ControlsInput user_input = controls_telemetry.user_input;
+  ServoData before_controller = controls_telemetry.before_controller;
+  ServoData after_controller = controls_telemetry.after_controller;
+
+  // Draw the background
+  m_driver->draw2DImage(m_dashboard_background,
+                        irr::core::rect<int>(POS_X(0), POS_Y(BACKGROUND_HEIGHT),
+                                             POS_X(1), POS_Y(0)),
+                        irr::core::rect<int>(0, 0, 10, 10), NULL, NULL, true);
+
+  // Draw the controls text.
+  m_driver->draw2DImage(
+      m_controls_and_gyro_view_text,
+      irr::core::rect<int>(POS_X(CONTROLS_POS_X) - TEXT_WIDTH / 2,
+                           POS_Y(CONTROLS_POS_Y) - 10,
+                           POS_X(CONTROLS_POS_X) + TEXT_WIDTH / 2,
+                           POS_Y(CONTROLS_POS_Y) + TEXT_HEIGHT - 10),
+      irr::core::rect<int>(0, 0, 800, 100), NULL, NULL, true);
+
+  m_pitch_roll_instrument.update(before_controller[1], before_controller[2],
+                                 after_controller[1], after_controller[2]);
+
+  m_yaw_instrument.update(before_controller[3], after_controller[3]);
+
+  // Draw the curves text.
   m_driver->draw2DImage(
       m_curves_text,
       irr::core::rect<int>(POS_X(CURVES_IMAGE_POS_X),
@@ -450,51 +594,9 @@ void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
                                TEXT_HEIGHT),
       irr::core::rect<int>(0, 0, 800, 100), NULL, NULL, true);
 
-  if (m_curves_images.size() != 0) {
-    // Draw the lift/throttle curves.
-    m_driver->draw2DImage(
-        m_curves_images[active_curve_index],
-        irr::core::position2d<int>(POS_X(CURVES_IMAGE_POS_X),
-                                   POS_Y(CURVES_IMAGE_POS_Y)),
-        irr::core::rect<int>(0, 0, CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT),
-        NULL, irr::video::SColor(255, 255, 255, 255), true);
-  }
-
-  int vertical_line_x_offset =
-      float(CURVES_IMAGE_WIDTH) * (user_input.throttle_stick + 1) / 2;
-  m_driver->draw2DImage(
-      m_curves_vertical_line,
-      irr::core::rect<int>(POS_X(CURVES_IMAGE_POS_X) + vertical_line_x_offset,
-                           POS_Y(CURVES_IMAGE_POS_Y),
-                           POS_X(CURVES_IMAGE_POS_X) + vertical_line_x_offset +
-                               3,
-                           POS_Y(CURVES_IMAGE_POS_Y) + CURVES_IMAGE_HEIGHT),
-      irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL, NULL, true);
-
-  float pin_size = 1.2 * PIN_SIZE;
-  int throttle_pin_x = vertical_line_x_offset - pin_size / 2;
-  int throttle_pin_y =
-      float(CURVES_IMAGE_HEIGHT) * (-after_controller[0] + 1) / 2 -
-      pin_size / 2;
-  m_driver->draw2DImage(
-      m_pin_image,
-      irr::core::rect<int>(
-          throttle_pin_x + POS_X(CURVES_IMAGE_POS_X),
-          throttle_pin_y + POS_Y(CURVES_IMAGE_POS_Y),
-          throttle_pin_x + POS_X(CURVES_IMAGE_POS_X) + pin_size,
-          throttle_pin_y + POS_Y(CURVES_IMAGE_POS_Y) + pin_size),
-      irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL, NULL, true);
-
-  int lift_pin_y = float(CURVES_IMAGE_HEIGHT) * (-after_controller[4] + 1) / 2 -
-                   pin_size / 2;
-  m_driver->draw2DImage(
-      m_pin_image,
-      irr::core::rect<int>(throttle_pin_x + POS_X(CURVES_IMAGE_POS_X),
-                           lift_pin_y + POS_Y(CURVES_IMAGE_POS_Y),
-                           throttle_pin_x + POS_X(CURVES_IMAGE_POS_X) +
-                               pin_size,
-                           lift_pin_y + POS_Y(CURVES_IMAGE_POS_Y) + pin_size),
-      irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL, NULL, true);
+  m_curves_instrument.update(user_input.active_curve_index,
+                             user_input.throttle_stick,
+                             {after_controller[0], after_controller[4]});
 
   // Draw the trottle text.
   m_driver->draw2DImage(
@@ -515,44 +617,5 @@ void Dashboard::update_ui(const Controls::Telemetry &controls_telemetry,
       irr::core::rect<int>(0, 0, 800, 100), NULL, NULL, true);
 
   // Draw the main rotor indicator.
-  m_driver->draw2DImage(
-      m_main_rotor_indicator_image,
-      irr::core::rect<int>(
-          POS_X(MAIN_ROTOR_INDICATOR_X), POS_Y(MAIN_ROTOR_INDICATOR_Y),
-          POS_X(MAIN_ROTOR_INDICATOR_X) + MAIN_ROTOR_INDICATOR_WIDTH,
-          POS_Y(MAIN_ROTOR_INDICATOR_Y) + MAIN_ROTOR_INDICATOR_HEIGHT),
-      irr::core::rect<int>(0, 0, 651, 394), NULL, NULL, true);
-
-  int hand_x = POS_X(MAIN_ROTOR_INDICATOR_X) + MAIN_ROTOR_INDICATOR_WIDTH / 2 -
-               MAIN_ROTOR_INDICATOR_HAND_WIDTH / 2;
-  int hand_y = POS_Y(MAIN_ROTOR_INDICATOR_Y) + MAIN_ROTOR_INDICATOR_HEIGHT -
-               MAIN_ROTOR_INDICATOR_HAND_HEIGHT;
-  int hand_rotation_point_x =
-      hand_x + MAIN_ROTOR_INDICATOR_HAND_WIDTH * (45.7 / 91);
-  int hand_rotation_point_y =
-      hand_y + MAIN_ROTOR_INDICATOR_HAND_HEIGHT * (286.6 / 329);
-  float size_x = float(MAIN_ROTOR_INDICATOR_HAND_WIDTH) / 91;
-  float size_y = float(MAIN_ROTOR_INDICATOR_HAND_HEIGHT) / 329;
-  draw2DImageWithRotation(
-      m_driver,
-      /*texture*/ m_main_rotor_indicator_target_hand_image,
-      /*sourceRect*/ irr::core::rect<int>(0, 0, 91, 329),
-      /*position*/ irr::core::position2d<irr::s32>(hand_x, hand_y),
-      /*rotationPoint*/
-      irr::core::position2d<irr::s32>(hand_rotation_point_x,
-                                      hand_rotation_point_y),
-      /*rotation*/ 180. * telemetry.target_rps / m_max_rps - 90.,
-      /*scale*/ irr::core::vector2df(size_x, size_y),
-      /*color*/ irr::video::SColor(255, 255, 255, 255));
-  draw2DImageWithRotation(
-      m_driver,
-      /*texture*/ m_main_rotor_indicator_hand_image,
-      /*sourceRect*/ irr::core::rect<int>(0, 0, 91, 329),
-      /*position*/ irr::core::position2d<irr::s32>(hand_x, hand_y),
-      /*rotationPoint*/
-      irr::core::position2d<irr::s32>(hand_rotation_point_x,
-                                      hand_rotation_point_y),
-      /*rotation*/ 180. * telemetry.rps / m_max_rps - 90.,
-      /*scale*/ irr::core::vector2df(size_x, size_y),
-      /*color*/ irr::video::SColor(255, 255, 255, 255));
+  m_main_rotor_instrument.update(telemetry.rps, telemetry.target_rps);
 }

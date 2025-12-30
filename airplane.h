@@ -227,6 +227,7 @@ protected:
   std::vector<ServoFilter> m_servos;
 
   Params m_params;
+  float m_airspeed;
 };
 
 #endif // __AIRPLANE_H__

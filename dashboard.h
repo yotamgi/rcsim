@@ -23,6 +23,23 @@ private:
   int m_height;
 };
 
+class VerticalControlsInstrument {
+public:
+  VerticalControlsInstrument(irr::video::IVideoDriver *driver, float pos_x,
+                             int pos_y, int width, int height);
+  void update(float pin1, float pin2);
+
+private:
+  irr::video::IVideoDriver *m_driver;
+  irr::video::ITexture *m_yaw_image;
+  irr::video::ITexture *m_pin_image;
+  irr::video::ITexture *m_second_pin_image;
+  int m_pos_x;
+  int m_pos_y;
+  int m_width;
+  int m_height;
+};
+
 class Controls2dInstrument {
 public:
   Controls2dInstrument(irr::video::IVideoDriver *driver, float pos_x, int pos_y,
@@ -106,6 +123,22 @@ private:
   irr::video::ITexture *m_switch_curves_text;
   irr::video::ITexture *m_controls_and_gyro_view_text;
 
+  irr::video::ITexture *m_dashboard_background;
+};
+
+class PlaneDashboard : public Dashboard {
+public:
+  PlaneDashboard(irr::video::IVideoDriver *driver, float max_airspeed);
+
+  void update_ui(const Controls::Telemetry &controls_telemetry,
+                 const FlyingObject::Telemetry &telemetry);
+
+private:
+  irr::video::IVideoDriver *m_driver;
+  HorizontalControlsInstrument m_yaw_instrument;
+  Controls2dInstrument m_pitch_roll_instrument;
+  VerticalControlsInstrument m_throttle_instrument;
+  SpeedometerInstrument m_airspeed_instrument;
   irr::video::ITexture *m_dashboard_background;
 };
 

@@ -270,28 +270,95 @@ HorizontalControlsInstrument::HorizontalControlsInstrument(
 
 void HorizontalControlsInstrument::update(float pin1, float pin2) {
   // Draw the yaw controls view.
-  int yaw_before_pin_x =
-      m_pos_x + m_width / 2 + pin1 * m_width / 2 - PIN_SIZE / 2;
-  int yaw_before_pin_y = m_pos_y + m_height / 2 - PIN_SIZE / 2;
-  int yaw_after_pin_x =
-      m_pos_x + m_width / 2 + pin2 * m_width / 2 - PIN_SIZE / 2;
-  int yaw_after_pin_y = m_pos_y + m_height / 2 - PIN_SIZE;
+  int pin1_x = m_pos_x + m_width / 2 + pin1 * m_width / 2 - PIN_SIZE / 2;
+  int pin1_y = m_pos_y + m_height / 2 - PIN_SIZE / 2;
+  int pin2_x = m_pos_x + m_width / 2 + pin2 * m_width / 2 - PIN_SIZE / 2;
+  int pin2_y = m_pos_y + m_height / 2 - PIN_SIZE;
   m_driver->draw2DImage(m_yaw_image,
                         irr::core::position2d<int>(m_pos_x, m_pos_y),
                         irr::core::rect<int>(0, 0, m_width, m_height), NULL,
                         irr::video::SColor(255, 255, 255, 255), true);
 
   m_driver->draw2DImage(m_pin_image,
-                        irr::core::rect<int>(yaw_after_pin_x, yaw_after_pin_y,
-                                             yaw_after_pin_x + PIN_SIZE,
-                                             yaw_after_pin_y + PIN_SIZE * 2),
+                        irr::core::rect<int>(pin2_x, pin2_y, pin2_x + PIN_SIZE,
+                                             pin2_y + PIN_SIZE * 2),
                         irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL,
                         NULL, true);
 
   m_driver->draw2DImage(m_second_pin_image,
-                        irr::core::rect<int>(yaw_before_pin_x, yaw_before_pin_y,
-                                             yaw_before_pin_x + PIN_SIZE,
-                                             yaw_before_pin_y + PIN_SIZE),
+                        irr::core::rect<int>(pin1_x, pin1_y, pin1_x + PIN_SIZE,
+                                             pin1_y + PIN_SIZE),
+                        irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL,
+                        NULL, true);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// VerticalControlsInstrument class implementation
+////////////////////////////////////////////////////////////////////////////////
+
+VerticalControlsInstrument::VerticalControlsInstrument(
+    irr::video::IVideoDriver *driver, float pos_x, int pos_y, int width,
+    int height)
+    : m_driver(driver), m_pos_x(POS_X(pos_x)), m_pos_y(POS_Y(pos_y)),
+      m_width(width), m_height(height) {
+
+  // Create the yaw control image.
+  irr::video::IImage *yaw_image =
+      driver->createImage(irr::video::ECF_A8R8G8B8,
+                          irr::core::dimension2d<unsigned int>(width, height));
+
+  for (int x = 0; x < width; x++) {
+    for (int y = 0; y < height; y++) {
+      int half_x = width / 2;
+      int half_y = height / 2;
+      int x_fade = 0.25 * width;
+      // Draw the axes;
+      if ((x > half_x - 1 && x < half_x + 1) ||
+          (y > half_y - 1 && y < half_y + 1)) {
+        yaw_image->setPixel(x, y, irr::video::SColor(0xff, 0, 0, 0));
+      }
+      // Draw the gradient;
+      else {
+        float distance = float(std::abs(y - half_y)) / half_y;
+        float intensity = 1 - distance;
+        if (x < x_fade) {
+          intensity *= 1 - std::pow(float(x_fade - x) / x_fade, 2);
+        } else if (x > width - x_fade) {
+          intensity *= 1 - std::pow(float(x - (width - x_fade)) / x_fade, 2);
+        }
+        yaw_image->setPixel(x, y,
+                            irr::video::SColor(150 * intensity, 0xA0, 0, 0));
+      }
+    }
+  }
+
+  m_yaw_image = driver->addTexture(irr::io::path("yaw_image"), yaw_image);
+  m_pin_image = create_circular_pin_image(driver, PIN_SIZE,
+                                          irr::video::SColor(0xff, 0xff, 0, 0));
+  m_second_pin_image = create_plus_pin_image(driver, PIN_SIZE,
+                                             irr::video::SColor(0xff, 0, 0, 0));
+}
+
+void VerticalControlsInstrument::update(float pin1, float pin2) {
+  // Draw the yaw controls view.
+  int pin1_x = m_pos_x + m_width / 2 - PIN_SIZE / 2;
+  int pin1_y = m_pos_y + m_height / 2 - pin1 * m_height / 2 - PIN_SIZE / 2;
+  int pin2_x = m_pos_x + m_width / 2 - PIN_SIZE;
+  int pin2_y = m_pos_y + m_height / 2 - pin2 * m_height / 2 - PIN_SIZE / 2;
+  m_driver->draw2DImage(m_yaw_image,
+                        irr::core::position2d<int>(m_pos_x, m_pos_y),
+                        irr::core::rect<int>(0, 0, m_width, m_height), NULL,
+                        irr::video::SColor(255, 255, 255, 255), true);
+
+  m_driver->draw2DImage(m_pin_image,
+                        irr::core::rect<int>(pin2_x, pin2_y, pin2_x + PIN_SIZE*2,
+                                             pin2_y + PIN_SIZE),
+                        irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL,
+                        NULL, true);
+
+  m_driver->draw2DImage(m_second_pin_image,
+                        irr::core::rect<int>(pin1_x, pin1_y, pin1_x + PIN_SIZE,
+                                             pin1_y + PIN_SIZE),
                         irr::core::rect<int>(0, 0, PIN_SIZE, PIN_SIZE), NULL,
                         NULL, true);
 }
@@ -619,4 +686,51 @@ void HeliDashboard::update_ui(const Controls::Telemetry &controls_telemetry,
 
   // Draw the main rotor indicator.
   m_main_rotor_instrument.update(telemetry.rps, telemetry.target_rps);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//  PlaneDashboard class implementation
+////////////////////////////////////////////////////////////////////////////////
+
+PlaneDashboard::PlaneDashboard(irr::video::IVideoDriver *driver,
+                               float max_speed)
+    : m_driver(driver), m_yaw_instrument(driver, YAW_VIEW_POS_X, YAW_VIEW_POS_Y,
+                                         CONTROLS_SIZE, YAW_VIEW_HEIGHT),
+      m_pitch_roll_instrument(driver, CONTROLS_POS_X, CONTROLS_POS_Y,
+                              CONTROLS_SIZE),
+      m_throttle_instrument(driver, CONTROLS_POS_X * 0.8, CONTROLS_POS_Y,
+                            CONTROLS_SIZE / 4, CONTROLS_SIZE),
+      m_airspeed_instrument(driver, MAIN_ROTOR_INDICATOR_X,
+                            MAIN_ROTOR_INDICATOR_Y, max_speed) {
+
+  // Create the dashboard background
+  irr::video::IImage *background_image = driver->createImage(
+      irr::video::ECF_A8R8G8B8, irr::core::dimension2d<unsigned int>(10, 10));
+  for (int x = 0; x < 10; x++) {
+    for (int y = 0; y < 10; y++) {
+      background_image->setPixel(x, y, irr::video::SColor(0x30, 0, 0, 0));
+    }
+  }
+  m_dashboard_background = driver->addTexture(
+      irr::io::path("dashboard_background"), background_image);
+}
+
+void PlaneDashboard::update_ui(const Controls::Telemetry &controls_telemetry,
+                               const BaseHeli::Telemetry &telemetry) {
+  // ControlsInput user_input = controls_telemetry.user_input;
+  ServoData before_controller = controls_telemetry.before_controller;
+  ServoData after_controller = controls_telemetry.after_controller;
+
+  // Draw the background
+  m_driver->draw2DImage(m_dashboard_background,
+                        irr::core::rect<int>(POS_X(0), POS_Y(BACKGROUND_HEIGHT),
+                                             POS_X(1), POS_Y(0)),
+                        irr::core::rect<int>(0, 0, 10, 10), NULL, NULL, true);
+
+  m_pitch_roll_instrument.update(before_controller[1], before_controller[2],
+                                 after_controller[1], after_controller[2]);
+
+  m_yaw_instrument.update(before_controller[3], after_controller[3]);
+  m_throttle_instrument.update(before_controller[0], after_controller[0]);
+  m_airspeed_instrument.update(telemetry.airspeed, telemetry.velocity_magnitude);
 }

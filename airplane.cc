@@ -353,6 +353,8 @@ void Airplane::update(double time_delta, const irrvec3 &wind_speed) {
 
   // Update the UI node position and rotation.
   update_ui();
+
+  m_airspeed = (m_velocity_in_world - wind_speed).getLength();
 }
 
 void Airplane::add_force(unsigned int touchpoint_index, const irrvec3 &force) {
@@ -405,5 +407,7 @@ Airplane::Telemetry Airplane::get_telemetry() const {
   Telemetry telemetry;
   telemetry.rps = 0;
   telemetry.target_rps = 0;
+  telemetry.velocity_magnitude = m_velocity_in_world.getLength();
+  telemetry.airspeed = m_airspeed;
   return telemetry;
 }

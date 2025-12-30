@@ -61,6 +61,8 @@ public:
   struct Telemetry {
     float rps;
     float target_rps;
+    float velocity_magnitude;
+    float airspeed;
   };
 
   virtual Telemetry get_telemetry() const = 0;

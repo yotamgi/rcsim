@@ -14,10 +14,10 @@ public:
 
 private:
   std::shared_ptr<const BaseHeli> m_heli;
-  irr::core::vector3df m_heli_angles;
-  irr::core::vector3df m_wanted_angles;
-  irr::core::vector3df m_prev_error;
-  irr::core::vector3df m_error_integral;
+  engine::vec3 m_heli_angles;
+  engine::vec3 m_wanted_angles;
+  engine::vec3 m_prev_error;
+  engine::vec3 m_error_integral;
 
   bool m_six_axis;
 };

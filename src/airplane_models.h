@@ -10,8 +10,7 @@
  */
 class SimpleGlider : public Airplane {
 public:
-  SimpleGlider(irr::scene::ISceneManager *smgr,
-               irr::video::IVideoDriver *driver);
+  SimpleGlider(engine::RaylibDevice *device);
   static const float TOTAL_MASS;
   static const float WING_LENGTH;
   static const float FUSELAGE_LENGTH;
@@ -27,7 +26,7 @@ public:
  */
 class Trainer : public Airplane {
 public:
-  Trainer(irr::scene::ISceneManager *smgr, irr::video::IVideoDriver *driver);
+  Trainer(engine::RaylibDevice *device);
   static const float TOTAL_MASS;
   static const float WING_LENGTH;
   static const float FUSELAGE_LENGTH;
@@ -38,12 +37,12 @@ public:
 protected:
   virtual void update_ui() override;
 
-  irr::scene::IMeshSceneNode *m_body_node;
-  irr::scene::IMeshSceneNode *m_left_ailron_node;
-  irr::scene::IMeshSceneNode *m_right_ailron_node;
-  irr::scene::IMeshSceneNode *m_elevator_node;
-  irr::scene::IMeshSceneNode *m_rudder_node;
-  irr::scene::IMeshSceneNode *m_prop_node;
+  std::shared_ptr<engine::Model> m_body_node;
+  std::shared_ptr<engine::Model> m_left_ailron_node;
+  std::shared_ptr<engine::Model> m_right_ailron_node;
+  std::shared_ptr<engine::Model> m_elevator_node;
+  std::shared_ptr<engine::Model> m_rudder_node;
+  std::shared_ptr<engine::Model> m_prop_node;
 
   float m_prop_angle;
 };

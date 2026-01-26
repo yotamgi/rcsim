@@ -16,10 +16,29 @@
 namespace engine {
 
 ////////////////////////////////////////////////////////////////////////////////
+// Model implementation
+////////////////////////////////////////////////////////////////////////////////
+
+mat4 Model::get_world_transform() const {
+  if (m_parent) {
+    return (raylib::Matrix)m_local_transform *
+           (raylib::Matrix)m_parent->get_world_transform();
+  } else {
+    return m_local_transform;
+  }
+}
+
+void Model::draw() {
+  m_model.SetTransform(get_world_transform());
+  DrawModel(m_model, (Vector3){0, 0, 0}, 1.0f, WHITE);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // RaylibDevice implementation
 ////////////////////////////////////////////////////////////////////////////////
 
-RaylibDevice::RaylibDevice(int screen_width, int screen_height, std::string title)
+RaylibDevice::RaylibDevice(int screen_width, int screen_height,
+                           std::string title)
     : m_camera(raylib::Vector3(2, 4, 6),
                raylib::Vector3(0, 0.5, 0.0)) // Initialize a default camera.
 {
@@ -42,7 +61,7 @@ RaylibDevice::RaylibDevice(int screen_width, int screen_height, std::string titl
 
   // Ambient light level (some basic lighting)
   int ambientLoc = m_lighting_shader.GetLocation("ambient");
-  std::array<float, 4> ambientValues = {0.1f, 0.1f, 0.1f, 1.0f};
+  std::array<float, 4> ambientValues = {0.3f, 0.3f, 0.3f, 0.3f};
   m_lighting_shader.SetValue(ambientLoc, ambientValues.data(),
                              SHADER_UNIFORM_VEC4);
 
@@ -56,13 +75,51 @@ Light &RaylibDevice::create_light(int type, raylib::Vector3 position,
   return m_lights.back();
 }
 
-std::shared_ptr<raylib::Model>
-RaylibDevice::load_model(const std::string &file_name, bool enable_lighting) {
-  std::shared_ptr<raylib::Model> model =
-      std::make_shared<raylib::Model>(file_name);
+std::shared_ptr<Model>
+RaylibDevice::create_empty(std::shared_ptr<Model> parent) {
+  return std::shared_ptr<Model>(new Model(parent));
+}
+
+std::shared_ptr<Model> RaylibDevice::load_model(const std::string &file_name,
+                                                std::shared_ptr<Model> parent,
+                                                bool enable_lighting) {
+  std::shared_ptr<Model> model =
+      std::shared_ptr<Model>(new Model(file_name, parent));
   if (enable_lighting) {
-    for (int i = 0; i < model->GetMaterialCount(); i++) {
-      model->GetMaterials()[i].shader = m_lighting_shader;
+    for (int i = 0; i < model->m_model.GetMaterialCount(); i++) {
+      model->m_model.GetMaterials()[i].shader = m_lighting_shader;
+    }
+  }
+  m_models.push_back(model);
+  return model;
+}
+
+std::shared_ptr<Model>
+RaylibDevice::create_sphere(float radius, int rings, int slices,
+                            std::shared_ptr<Model> parent,
+                            bool enable_lighting) {
+  std::shared_ptr<::Mesh> mesh =
+      std::make_shared<::Mesh>(::GenMeshSphere(radius, rings, slices));
+  std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model(mesh, parent));
+  if (enable_lighting) {
+    for (int i = 0; i < model->m_model.GetMaterialCount(); i++) {
+      model->m_model.GetMaterials()[i].shader = m_lighting_shader;
+    }
+  }
+  m_models.push_back(model);
+  return model;
+}
+
+std::shared_ptr<Model> RaylibDevice::create_cube(float width, float height,
+                                                 float length,
+                                                 std::shared_ptr<Model> parent,
+                                                 bool enable_lighting) {
+  std::shared_ptr<::Mesh> mesh =
+      std::make_shared<::Mesh>(::GenMeshCube(width, height, length));
+  std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model(mesh, parent));
+  if (enable_lighting) {
+    for (int i = 0; i < model->m_model.GetMaterialCount(); i++) {
+      model->m_model.GetMaterials()[i].shader = m_lighting_shader;
     }
   }
   m_models.push_back(model);
@@ -156,7 +213,7 @@ void RaylibDevice::draw_frame() {
 
   // Draw all models.
   for (const auto &model : m_models) {
-    DrawModel(*model, (Vector3){0, 0, 0}, 1.0f, WHITE);
+    model->draw();
   }
 
   m_lighting_shader.EndMode();

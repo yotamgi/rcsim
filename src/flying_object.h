@@ -1,24 +1,21 @@
 #ifndef __FLYING_OBJ__
 #define __FLYING_OBJ__
 
-#include <irrlicht/irrlicht.h>
 #include <vector>
-
-typedef irr::core::vector3df irrvec3;
-typedef irr::core::matrix4 irrmat4;
+#include "raylib_engine.h"
 
 
-static inline irrmat4 diag2(float x, float z) {
-  irrmat4 mat;
-  mat(0, 0) = x;
-  mat(1, 1) = 0;
-  mat(2, 2) = z;
+static inline engine::mat4 diag2(float x, float z) {
+  engine::mat4 mat;
+  engine::mat_get(mat, 0, 0) = x;
+  engine::mat_get(mat, 1, 1) = 0;
+  engine::mat_get(mat, 2, 2) = z;
   return mat;
 }
 
 
 /** A helper function for inifinitisimal update of rotation matrix. */
-void update_rotation_matrix(irr::core::matrix4 &matrix, const irrvec3 angularv);
+void update_rotation_matrix(engine::mat4 &matrix, const engine::vec3 angularv);
 
 class ServoFilter {
 public:
@@ -37,26 +34,25 @@ private:
 class FlyingObject {
 public:
   virtual ServoFilter &get_servo(int channel) = 0;
-  virtual void update(double time_delta, const irrvec3 &wind_speed) = 0;
+  virtual void update(double time_delta, const engine::vec3 &wind_speed) = 0;
   virtual void add_force(unsigned int touchpoints_index,
-                         const irrvec3 &force) = 0;
+                         const engine::vec3 &force) = 0;
   virtual void reset_force() = 0;
 
   struct TouchPoint {
-    irrvec3 pos;
-    irrvec3 vel;
-    irrmat4 friction_coeff; // A symmetric matrix indicating the friction
-                            // coefficient in (x, z) direction. The Y direction
-                            // isn't used.
+    engine::vec3 pos;
+    engine::vec3 vel;
+    engine::mat4 friction_coeff; // A symmetric matrix indicating the friction
+                                 // coefficient in (x, z) direction. The Y direction
+                                 // isn't used.
   };
 
   virtual std::vector<TouchPoint> get_touchpoints_in_world() const = 0;
   virtual double get_mass() const = 0;
-  virtual irrvec3 get_position() const = 0;
-  virtual void set_position(const irrvec3 new_pos) = 0;
-  virtual irrvec3 get_velocity() const = 0;
-  virtual void set_velocity(const irrvec3 new_v) = 0;
-
+  virtual engine::vec3 get_position() const = 0;
+  virtual void set_position(const engine::vec3 new_pos) = 0;
+  virtual engine::vec3 get_velocity() const = 0;
+  virtual void set_velocity(const engine::vec3 new_v) = 0;
   // For telemetry.
   struct Telemetry {
     float rps;

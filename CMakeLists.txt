@@ -32,6 +32,9 @@ add_executable(${PROJECT_NAME}
     src/rlights.cc
     src/input_event_reciever.cc
     src/airplane.cc
+    src/heli.cc
+    src/smooth_rand.cc
+    src/flight_controller.cc
     src/airplane_models.cc
     src/flying_object.cc
     src/controls.cc

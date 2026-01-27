@@ -61,7 +61,7 @@ int main() {
   double then = tv.tv_sec * 1000. + tv.tv_usec / 1000.;
   double time_delta;
 
-  Configuration model_conf = MODEL_CONFIGURATIONS[1].create(&device);
+  Configuration model_conf = MODEL_CONFIGURATIONS[0].create(&device);
 
   float model_mass = model_conf.model->get_mass();
 
@@ -91,7 +91,8 @@ int main() {
     for (unsigned int i = 0; i < touchpoints.size(); i++) {
       FlyingObject::TouchPoint tp = touchpoints[i];
       if (tp.pos.y < 0) {
-        engine::vec3 tp_force = engine::vec3(0, -500 * tp.pos.y, 0) * model_mass;
+        engine::vec3 tp_force =
+            engine::vec3(0, -500 * tp.pos.y, 0) * model_mass;
         engine::vec3 friction_force;
         friction_force = tp.friction_coeff * tp.vel;
         friction_force.y = 10.0f * tp.vel.y;

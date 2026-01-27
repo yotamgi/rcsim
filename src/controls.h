@@ -1,8 +1,8 @@
 #ifndef __CONTROLS_H__
 #define __CONTROLS_H__
 
-// #include "flight_controller.h"
-// #include "heli.h"
+#include "flight_controller.h"
+#include "heli.h"
 #include "airplane.h"
 #include <memory>
 #include <vector>
@@ -53,27 +53,27 @@ public:
   virtual Telemetry get_telemetry() = 0;
 };
 
-// class HeliControls : public Controls {
-// public:
-//   HeliControls(std::shared_ptr<HeliFlightController> flight_controller,
-//                std::vector<ControllerCurve> throttle_curves,
-//                std::vector<ControllerCurve> lift_curves);
+class HeliControls : public Controls {
+public:
+  HeliControls(std::shared_ptr<HeliFlightController> flight_controller,
+               std::vector<ControllerCurve> throttle_curves,
+               std::vector<ControllerCurve> lift_curves);
 
-//   // Implementation of the Controls interface.
-//   virtual ServoData get_servo_data(const ControlsInput &input,
-//                                    float time_delta);
-//   virtual Controls::Telemetry get_telemetry();
+  // Implementation of the Controls interface.
+  virtual ServoData get_servo_data(const ControlsInput &input,
+                                   float time_delta);
+  virtual Controls::Telemetry get_telemetry();
 
-// private:
-//   std::shared_ptr<HeliFlightController> m_flight_controller;
-//   std::vector<ControllerCurve> m_throttle_curves;
-//   std::vector<ControllerCurve> m_lift_curves;
+private:
+  std::shared_ptr<HeliFlightController> m_flight_controller;
+  std::vector<ControllerCurve> m_throttle_curves;
+  std::vector<ControllerCurve> m_lift_curves;
 
-//   // Saved for Telemetry.
-//   ControlsInput m_user_input;
-//   ServoData m_before_flight_controller;
-//   ServoData m_after_flight_controller;
-// };
+  // Saved for Telemetry.
+  ControlsInput m_user_input;
+  ServoData m_before_flight_controller;
+  ServoData m_after_flight_controller;
+};
 
 class AirplaneControls : public Controls {
 public:

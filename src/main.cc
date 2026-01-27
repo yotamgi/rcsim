@@ -11,9 +11,8 @@ void add_banana(engine::RaylibDevice &device, const engine::vec3 &pos,
                 const engine::vec3 &rotation) {
   std::shared_ptr<engine::Model> banana_model =
       device.load_model("resources/media/banana/source/banana.obj");
-  ::SetMaterialTexture(
-      &banana_model->get_materials()[0], 0,
-      ::LoadTexture("resources/media/banana/textures/rgb.jpeg"));
+  banana_model->get_materials()[0]->SetTexture(
+      0, ::LoadTexture("resources/media/banana/textures/rgb.jpeg"));
 
   banana_model->set_transform(
       engine::mat4::Scale(1.0f / 3.0f, 1.0f / 3.0f, 1.0f / 3.0f) *
@@ -33,12 +32,12 @@ int main() {
   // Load the stadium model.
   std::shared_ptr<engine::Model> stadium_model = device.load_model(
       "resources/media/BasketballStadium/source/63BasketBallZemin.obj");
-  raylib::Material stadium_material = stadium_model->get_materials()[0];
+  raylib::Material *stadium_material = stadium_model->get_materials()[0];
   raylib::Texture stadium_texture(
       "resources/media/BasketballStadium/textures/BasketZemin_Color.png");
   stadium_texture.GenMipmaps();
   stadium_texture.SetFilter(TEXTURE_FILTER_TRILINEAR);
-  stadium_material.SetTexture(MATERIAL_MAP_DIFFUSE, stadium_texture);
+  stadium_material->SetTexture(MATERIAL_MAP_DIFFUSE, stadium_texture);
 
   stadium_model->set_transform(engine::mat4::Translate(0, 0, 0) *
                                engine::mat4::Scale(4, 4, 4));

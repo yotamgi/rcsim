@@ -22,6 +22,8 @@ namespace engine {
 
 typedef raylib::Vector3 vec3;
 typedef raylib::Matrix mat4;
+typedef raylib::Texture Texture;
+typedef raylib::Material Material;
 
 static float &mat_get(mat4 &m, int row, int col) {
   size_t index = row * 4 + col;
@@ -50,7 +52,7 @@ public:
   const mat4 &get_transform() const { return m_local_transform; }
   mat4 get_world_transform() const;
 
-  ::Material *get_materials() { return m_model.GetMaterials(); }
+  std::vector<raylib::Material *> get_materials();
 
   void draw();
 

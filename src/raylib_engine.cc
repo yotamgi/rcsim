@@ -33,6 +33,15 @@ void Model::draw() {
   DrawModel(m_model, (Vector3){0, 0, 0}, 1.0f, WHITE);
 }
 
+std::vector<raylib::Material *> Model::get_materials() {
+  std::vector<raylib::Material *> result;
+  ::Material *materials = m_model.GetMaterials();
+  for (int i=0; i<m_model.GetMaterialCount(); i++) {
+    result.push_back(reinterpret_cast<raylib::Material *>(&materials[i]));
+  }
+  return result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // RaylibDevice implementation
 ////////////////////////////////////////////////////////////////////////////////

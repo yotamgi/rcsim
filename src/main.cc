@@ -24,7 +24,7 @@ void add_banana(engine::RaylibDevice &device, const engine::vec3 &pos,
 int main() {
 
   engine::RaylibDevice device(1440, 900, "rcsim - RC Simulator");
-  device.create_light(LIGHT_DIRECTIONAL, raylib::Vector3(-200, 100, -200),
+  device.create_light(LIGHT_DIRECTIONAL, raylib::Vector3(200, 100, -50),
                       raylib::Vector3(0, 0, 0),
                       raylib::Color(255, 255, 255, 255));
   UserInputReciever receiver;
@@ -53,7 +53,7 @@ int main() {
       "resources/media/skybox/py.png", "resources/media/skybox/ny.png",
       "resources/media/skybox/pz.png", "resources/media/skybox/nz.png");
 
-  device.get_camera().SetPosition(raylib::Vector3(0.0f, 2.0f, 5.0f));
+  device.get_camera().SetPosition(raylib::Vector3(0.5f, 1.6f, -5.0f));
 
   int lastFPS = -1;
   struct timeval tv;

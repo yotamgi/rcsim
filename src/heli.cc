@@ -155,7 +155,6 @@ void BaseHeli::calc_tail_rotor_force(const engine::vec3 &wind_speed,
   tail_torque_in_rotor_coords *= main_rotor_effectiveness;
   float tail_rotor_force_magnitude =
       tail_torque_in_rotor_coords.y / m_params.tail_length;
-  std::cout << "Yaw servo " << m_yaw_servo.get() << std::endl;
   engine::vec3 heli_right(engine::mat_get(m_rotor_rotation, 0, 0),
                           engine::mat_get(m_rotor_rotation, 0, 1),
                           engine::mat_get(m_rotor_rotation, 0, 2));

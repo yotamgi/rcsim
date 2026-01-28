@@ -7,8 +7,10 @@
 class HeliFlightController {
 public:
   HeliFlightController(std::shared_ptr<const BaseHeli> heli)
-      : m_heli(heli), m_six_axis(true) {}
-  std::vector<float> translate(const std::vector<float> &servo_data, float time_delta);
+      : m_heli(heli), m_heli_angles(0, 0, 0), m_wanted_angles(0, 0, 0),
+        m_prev_error(0, 0, 0), m_error_integral(0, 0, 0), m_six_axis(true) {}
+  std::vector<float> translate(const std::vector<float> &servo_data,
+                               float time_delta);
 
   void set_six_axis(bool set) { m_six_axis = set; }
 

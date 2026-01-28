@@ -29,7 +29,6 @@ FetchContent_MakeAvailable(raylib_cpp)
 add_executable(${PROJECT_NAME} 
     src/main.cc
     src/raylib_engine.cc
-    src/rlights.cc
     src/input_event_reciever.cc
     src/airplane.cc
     src/heli.cc

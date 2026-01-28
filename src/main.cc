@@ -24,7 +24,7 @@ void add_banana(engine::RaylibDevice &device, const engine::vec3 &pos,
 int main() {
 
   engine::RaylibDevice device(1440, 900, "rcsim - RC Simulator");
-  device.create_light(LIGHT_DIRECTIONAL, raylib::Vector3(200, 100, -50),
+  device.create_light(engine::LIGHT_DIRECTIONAL, raylib::Vector3(200, 100, -50),
                       raylib::Vector3(0, 0, 0),
                       raylib::Color(255, 255, 255, 255));
   UserInputReciever receiver;

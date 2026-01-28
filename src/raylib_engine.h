@@ -2,7 +2,6 @@
 #define __RAYLIB_ENGINE_H__
 
 #include "raylib-cpp.hpp"
-#include "rlights.h"
 
 #include <memory>
 #include <optional>
@@ -45,6 +44,30 @@ static float &mat_get(mat4 &m, int row, int col) {
 
 using raylib::Keyboard::IsKeyDown;
 using raylib::Keyboard::IsKeyPressed;
+
+struct Light {
+    int type;
+    bool enabled;
+    Vector3 position;
+    Vector3 target;
+    Color color;
+    float attenuation;
+
+    // Shader locations
+    int enabledLoc;
+    int typeLoc;
+    int positionLoc;
+    int targetLoc;
+    int colorLoc;
+    int attenuationLoc;
+};
+
+// Light type
+enum LightType {
+    LIGHT_DIRECTIONAL = 0,
+    LIGHT_POINT
+};
+
 
 class Model {
 public:
@@ -102,6 +125,7 @@ public:
 
 private:
   void add_skybox_from_image(const raylib::Image &image);
+  void update_light_value(const Light &light);
 
   raylib::Camera3D m_camera;
   raylib::Shader m_lighting_shader;

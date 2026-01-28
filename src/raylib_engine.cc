@@ -15,6 +15,8 @@
 
 namespace engine {
 
+const size_t MAX_LIGHTS = 4;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Model implementation
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,7 +38,7 @@ void Model::draw() {
 std::vector<raylib::Material *> Model::get_materials() {
   std::vector<raylib::Material *> result;
   ::Material *materials = m_model.GetMaterials();
-  for (int i=0; i<m_model.GetMaterialCount(); i++) {
+  for (int i = 0; i < m_model.GetMaterialCount(); i++) {
     result.push_back(reinterpret_cast<raylib::Material *>(&materials[i]));
   }
   return result;
@@ -79,8 +81,34 @@ RaylibDevice::RaylibDevice(int screen_width, int screen_height,
 
 Light &RaylibDevice::create_light(int type, raylib::Vector3 position,
                                   raylib::Vector3 target, raylib::Color color) {
-  m_lights.push_back(
-      CreateLight(type, position, target, color, m_lighting_shader));
+  Light light = {0};
+
+  size_t light_index = m_lights.size();
+  if (light_index >= MAX_LIGHTS) {
+    throw std::runtime_error("Too many lights");
+  }
+
+  light.enabled = true;
+  light.type = type;
+  light.position = position;
+  light.target = target;
+  light.color = color;
+
+  // NOTE: Lighting shader naming must be the provided ones
+  light.enabledLoc = m_lighting_shader.GetLocation(
+      TextFormat("lights[%i].enabled", light_index));
+  light.typeLoc =
+      m_lighting_shader.GetLocation(TextFormat("lights[%i].type", light_index));
+  light.positionLoc = m_lighting_shader.GetLocation(
+      TextFormat("lights[%i].position", light_index));
+  light.targetLoc = m_lighting_shader.GetLocation(
+      TextFormat("lights[%i].target", light_index));
+  light.colorLoc = m_lighting_shader.GetLocation(
+      TextFormat("lights[%i].color", light_index));
+
+  update_light_value(light);
+
+  m_lights.push_back(light);
   return m_lights.back();
 }
 
@@ -109,7 +137,8 @@ RaylibDevice::create_sphere(float radius, int rings, int slices,
                             bool enable_lighting) {
   std::shared_ptr<::Mesh> mesh =
       std::make_shared<::Mesh>(::GenMeshSphere(radius, rings, slices));
-  std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model(mesh, parent));
+  std::shared_ptr<Model> model =
+      std::shared_ptr<Model>(new Model(mesh, parent));
   if (enable_lighting) {
     for (int i = 0; i < model->m_model.GetMaterialCount(); i++) {
       model->m_model.GetMaterials()[i].shader = m_lighting_shader;
@@ -125,7 +154,8 @@ std::shared_ptr<Model> RaylibDevice::create_cube(float width, float height,
                                                  bool enable_lighting) {
   std::shared_ptr<::Mesh> mesh =
       std::make_shared<::Mesh>(::GenMeshCube(width, height, length));
-  std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model(mesh, parent));
+  std::shared_ptr<Model> model =
+      std::shared_ptr<Model>(new Model(mesh, parent));
   if (enable_lighting) {
     for (int i = 0; i < model->m_model.GetMaterialCount(); i++) {
       model->m_model.GetMaterials()[i].shader = m_lighting_shader;
@@ -190,6 +220,27 @@ void RaylibDevice::add_skybox_from_image(const raylib::Image &image) {
                          CUBEMAP_LAYOUT_AUTO_DETECT); // CUBEMAP_LAYOUT_PANORAMA
 }
 
+void RaylibDevice::update_light_value(const Light &light) {
+  // Send to shader light enabled state and type
+  m_lighting_shader.SetValue(light.enabledLoc, &light.enabled,
+                             SHADER_UNIFORM_INT);
+  m_lighting_shader.SetValue(light.typeLoc, &light.type, SHADER_UNIFORM_INT);
+
+  // Send to shader light position values
+  float position[3] = {light.position.x, light.position.y, light.position.z};
+  m_lighting_shader.SetValue(light.positionLoc, position, SHADER_UNIFORM_VEC3);
+
+  // Send to shader light target position values
+  float target[3] = {light.target.x, light.target.y, light.target.z};
+  m_lighting_shader.SetValue(light.targetLoc, target, SHADER_UNIFORM_VEC3);
+
+  // Send to shader light color values
+  float color[4] = {
+      (float)light.color.r / (float)255, (float)light.color.g / (float)255,
+      (float)light.color.b / (float)255, (float)light.color.a / (float)255};
+  m_lighting_shader.SetValue(light.colorLoc, color, SHADER_UNIFORM_VEC4);
+}
+
 void RaylibDevice::draw_frame() {
   m_camera.Update(CAMERA_CUSTOM);
 
@@ -202,7 +253,7 @@ void RaylibDevice::draw_frame() {
 
   // Update light values (actually, only enable/disable them)
   for (const auto &light : m_lights) {
-    UpdateLightValues(m_lighting_shader, light);
+    update_light_value(light);
   }
   BeginDrawing();
 

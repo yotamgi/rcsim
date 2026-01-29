@@ -46,7 +46,7 @@ target_link_libraries(${PROJECT_NAME} raylib_cpp raylib)
 
 if(EMSCRIPTEN)
   file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/resources" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY -s GL_ENABLE_GET_PROC_ADDRESS=1 --preload-file resources -s ALLOW_MEMORY_GROWTH=1")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_WEBGL2=1 -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY -s GL_ENABLE_GET_PROC_ADDRESS=1 --preload-file resources -s ALLOW_MEMORY_GROWTH=1")
   set(CMAKE_EXECUTABLE_SUFFIX ".html") # This line is used to set your executable to build with the emscripten html template so that you can directly open it.
   target_compile_options(${PROJECT_NAME} PRIVATE -DGRAPHICS_API_OPENGL_ES2 -DPLATFORM_WEB)
 else()

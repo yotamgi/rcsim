@@ -46,28 +46,24 @@ using raylib::Keyboard::IsKeyDown;
 using raylib::Keyboard::IsKeyPressed;
 
 struct Light {
-    int type;
-    bool enabled;
-    Vector3 position;
-    Vector3 target;
-    Color color;
-    float attenuation;
+  int type;
+  bool enabled;
+  Vector3 position;
+  Vector3 target;
+  Color color;
+  float attenuation;
 
-    // Shader locations
-    int enabledLoc;
-    int typeLoc;
-    int positionLoc;
-    int targetLoc;
-    int colorLoc;
-    int attenuationLoc;
+  // Shader locations
+  int enabledLoc;
+  int typeLoc;
+  int positionLoc;
+  int targetLoc;
+  int colorLoc;
+  int attenuationLoc;
 };
 
 // Light type
-enum LightType {
-    LIGHT_DIRECTIONAL = 0,
-    LIGHT_POINT
-};
-
+enum LightType { LIGHT_DIRECTIONAL = 0, LIGHT_POINT };
 
 class Model {
 public:
@@ -92,6 +88,7 @@ private:
   std::shared_ptr<Model> m_parent;
   raylib::Model m_model;
   std::shared_ptr<::Mesh> m_mesh = nullptr;
+  bool enable_shadow;
 };
 
 class RaylibDevice {
@@ -104,13 +101,16 @@ public:
   std::shared_ptr<Model> create_empty(std::shared_ptr<Model> parent = nullptr);
   std::shared_ptr<Model> load_model(const std::string &file_name,
                                     std::shared_ptr<Model> parent = nullptr,
-                                    bool enable_lighting = true);
+                                    bool enable_lighting = true,
+                                    bool enable_shadow = false);
   std::shared_ptr<Model> create_sphere(float radius, int rings, int slices,
                                        std::shared_ptr<Model> parent = nullptr,
-                                       bool enable_lighting = true);
+                                       bool enable_lighting = true,
+                                       bool enable_shadow = false);
   std::shared_ptr<Model> create_cube(float width, float height, float length,
                                      std::shared_ptr<Model> parent = nullptr,
-                                     bool enable_lighting = true);
+                                     bool enable_lighting = true,
+                                     bool enable_shadow = false);
   Light &create_light(int type, raylib::Vector3 position,
                       raylib::Vector3 target, raylib::Color color);
 
@@ -127,11 +127,15 @@ private:
   void add_skybox_from_image(const raylib::Image &image);
   void update_light_value(const Light &light);
 
+  void frame_shadow_pass();
+
   raylib::Camera3D m_camera;
   raylib::Shader m_lighting_shader;
   std::vector<Light> m_lights;
   std::optional<raylib::Model> m_skybox_model;
   std::vector<std::shared_ptr<Model>> m_models;
+
+  raylib::RenderTexture2D m_shadowmap;
 };
 
 class Joystick {

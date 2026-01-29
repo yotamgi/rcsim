@@ -10,7 +10,7 @@
 void add_banana(engine::RaylibDevice &device, const engine::vec3 &pos,
                 const engine::vec3 &rotation) {
   std::shared_ptr<engine::Model> banana_model =
-      device.load_model("resources/media/banana/source/banana.obj");
+      device.load_model("resources/media/banana/source/banana.obj", nullptr, true, true);
   banana_model->get_materials()[0]->SetTexture(
       0, ::LoadTexture("resources/media/banana/textures/rgb.jpeg"));
 
@@ -24,9 +24,9 @@ void add_banana(engine::RaylibDevice &device, const engine::vec3 &pos,
 int main() {
 
   engine::RaylibDevice device(1440, 900, "rcsim - RC Simulator");
-  device.create_light(engine::LIGHT_DIRECTIONAL, raylib::Vector3(200, 100, -50),
+  device.create_light(engine::LIGHT_DIRECTIONAL, raylib::Vector3(100, 200, -50),
                       raylib::Vector3(0, 0, 0),
-                      raylib::Color(255, 255, 255, 255));
+                      raylib::Color(150, 150, 150, 255));
   UserInputReciever receiver;
 
   // Load the stadium model.

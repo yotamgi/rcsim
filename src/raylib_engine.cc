@@ -11,12 +11,14 @@
 #include <array>
 #include <cctype>
 #include <iostream>
+#include <numeric>
 #include <string>
 
 namespace engine {
 
+// Values aligned with the shader.
 const size_t MAX_LIGHTS = 4;
-const int SHADOWMAP_SIZE = 2048;
+const size_t MAX_SHADOW_GROUPS = 4;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Model implementation
@@ -45,6 +47,8 @@ std::vector<raylib::Material *> Model::get_materials() {
   return result;
 }
 
+vec3 Model::get_pos() const { return get_world_transform() * vec3(0, 0, 0); }
+
 ////////////////////////////////////////////////////////////////////////////////
 // RaylibDevice implementation
 ////////////////////////////////////////////////////////////////////////////////
@@ -66,8 +70,7 @@ RenderTexture2D load_shadowmap_from_texture(int width, int height) {
   target.texture.format = RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
   target.texture.mipmaps = 1;
   rlFramebufferAttach(target.id, target.texture.id,
-                      RL_ATTACHMENT_COLOR_CHANNEL0, RL_ATTACHMENT_TEXTURE2D,
-                      0);
+                      RL_ATTACHMENT_COLOR_CHANNEL0, RL_ATTACHMENT_TEXTURE2D, 0);
 
   // 2. Create and Attach Depth Texture
   target.depth.id = rlLoadTextureDepth(width, height, false);
@@ -92,6 +95,79 @@ RenderTexture2D load_shadowmap_from_texture(int width, int height) {
   rlDisableFramebuffer();
 
   return target;
+}
+
+RaylibDevice::ShadowGroup::ShadowGroup(
+    std::vector<std::shared_ptr<Model>> models, size_t size, float fov,
+    int shader_index)
+    : m_models(models), m_size(size), m_fov(fov), m_shadow_index(shader_index) {
+  m_shadowmap = load_shadowmap_from_texture(m_size, m_size);
+}
+
+void RaylibDevice::ShadowGroup::shadow_pass(const Light &shadow_light,
+                                            raylib::Shader &shader) {
+  // Find the center of the shadow group models.
+  vec3 center = std::accumulate(m_models.begin(), m_models.end(), vec3(0, 0, 0),
+                                [](vec3 acc, std::shared_ptr<Model> model) {
+                                  return acc + model->get_pos();
+                                }) /
+                m_models.size();
+
+  raylib::Camera3D light_camera(
+      /* position */ shadow_light.position,
+      /* target */ center,
+      /* up */ vec3(0.0f, 1.0f, 0.0f),
+      /* fovy */ m_fov);
+  light_camera.projection = shadow_light.type == LIGHT_DIRECTIONAL
+                                ? CAMERA_ORTHOGRAPHIC
+                                : CAMERA_PERSPECTIVE;
+
+  // In shadow pass, there is no need to calculate shadow logic.
+  int use_shadow = 0;
+  shader.SetValue(shader.GetLocation("useShadow"), &use_shadow,
+                  SHADER_UNIFORM_INT);
+
+  BeginTextureMode(m_shadowmap);
+
+  rlEnableDepthTest();
+  rlEnableDepthMask();
+  ClearBackground(WHITE);
+
+  BeginMode3D(light_camera);
+  mat4 light_view = rlGetMatrixModelview();
+  mat4 light_proj = rlGetMatrixProjection();
+  for (const auto &model : m_models) {
+    model->draw();
+  }
+  EndMode3D();
+  EndTextureMode();
+  mat4 light_view_proj = light_view * light_proj;
+
+  shader.SetValue(
+      shader.GetLocation(TextFormat("shadowMaps[%i].lightVP", m_shadow_index)),
+      light_view_proj);
+}
+
+void RaylibDevice::ShadowGroup::write_shadowmap_to_shader(
+    raylib::Shader &shader) {
+  rlEnableShader(shader.id);
+  int slot = 10 + m_shadow_index; // Can be anything 0 to 15, but 0 will
+                                  // probably be taken up
+  rlActiveTextureSlot(slot);
+  rlEnableTexture(m_shadowmap.depth.id);
+
+  rlSetUniform(shader.GetLocation(
+                   TextFormat("shadowMaps[%i].shadowMap", m_shadow_index)),
+               &slot, SHADER_UNIFORM_INT, 1);
+  // rlSetUniform(shader.GetLocation("shadowMap"), &slot,
+  // SHADER_UNIFORM_INT, 1);
+  shader.SetValue(shader.GetLocation(
+                      TextFormat("shadowMaps[%i].resolution", m_shadow_index)),
+                  &m_size, SHADER_UNIFORM_INT);
+  int active = 1;
+  shader.SetValue(
+      shader.GetLocation(TextFormat("shadowMaps[%i].enabled", m_shadow_index)),
+      &active, SHADER_UNIFORM_INT);
 }
 
 RaylibDevice::RaylibDevice(int screen_width, int screen_height,
@@ -123,11 +199,6 @@ RaylibDevice::RaylibDevice(int screen_width, int screen_height,
   std::array<float, 4> ambientValues = {0.3f, 0.3f, 0.3f, 0.3f};
   m_lighting_shader.SetValue(ambientLoc, ambientValues.data(),
                              SHADER_UNIFORM_VEC4);
-
-  m_shadowmap = load_shadowmap_from_texture(SHADOWMAP_SIZE, SHADOWMAP_SIZE);
-  m_lighting_shader.SetValue(
-      m_lighting_shader.GetLocation("shadowMapResolution"), &SHADOWMAP_SIZE,
-      SHADER_UNIFORM_INT);
 
   SetTargetFPS(60); // Set our game to run at 60 frames-per-second
 }
@@ -172,8 +243,7 @@ RaylibDevice::create_empty(std::shared_ptr<Model> parent) {
 
 std::shared_ptr<Model> RaylibDevice::load_model(const std::string &file_name,
                                                 std::shared_ptr<Model> parent,
-                                                bool enable_lighting,
-                                                bool enable_shadow) {
+                                                bool enable_lighting) {
   std::shared_ptr<Model> model =
       std::shared_ptr<Model>(new Model(file_name, parent));
   if (enable_lighting) {
@@ -181,15 +251,14 @@ std::shared_ptr<Model> RaylibDevice::load_model(const std::string &file_name,
       model->m_model.GetMaterials()[i].shader = m_lighting_shader;
     }
   }
-  model->enable_shadow = enable_shadow;
   m_models.push_back(model);
   return model;
 }
 
 std::shared_ptr<Model>
 RaylibDevice::create_sphere(float radius, int rings, int slices,
-                            std::shared_ptr<Model> parent, bool enable_lighting,
-                            bool enable_shadow) {
+                            std::shared_ptr<Model> parent,
+                            bool enable_lighting) {
   std::shared_ptr<::Mesh> mesh =
       std::make_shared<::Mesh>(::GenMeshSphere(radius, rings, slices));
   std::shared_ptr<Model> model =
@@ -199,7 +268,6 @@ RaylibDevice::create_sphere(float radius, int rings, int slices,
       model->m_model.GetMaterials()[i].shader = m_lighting_shader;
     }
   }
-  model->enable_shadow = enable_shadow;
   m_models.push_back(model);
   return model;
 }
@@ -207,8 +275,7 @@ RaylibDevice::create_sphere(float radius, int rings, int slices,
 std::shared_ptr<Model> RaylibDevice::create_cube(float width, float height,
                                                  float length,
                                                  std::shared_ptr<Model> parent,
-                                                 bool enable_lighting,
-                                                 bool enable_shadow) {
+                                                 bool enable_lighting) {
   std::shared_ptr<::Mesh> mesh =
       std::make_shared<::Mesh>(::GenMeshCube(width, height, length));
   std::shared_ptr<Model> model =
@@ -218,7 +285,6 @@ std::shared_ptr<Model> RaylibDevice::create_cube(float width, float height,
       model->m_model.GetMaterials()[i].shader = m_lighting_shader;
     }
   }
-  model->enable_shadow = enable_shadow;
   m_models.push_back(model);
   return model;
 }
@@ -299,45 +365,26 @@ void RaylibDevice::update_light_value(const Light &light) {
   m_lighting_shader.SetValue(light.colorLoc, color, SHADER_UNIFORM_VEC4);
 }
 
-void RaylibDevice::frame_shadow_pass() {
-  Light &shadow_light = *m_lights.begin();
-  raylib::Camera3D light_camera(
-      /* position */ shadow_light.position,
-      /* target */ shadow_light.target,
-      /* up */ vec3(0.0f, 1.0f, 0.0f),
-      /* fovy */ 45.0f);
-  light_camera.projection = shadow_light.type == LIGHT_DIRECTIONAL
-                                ? CAMERA_ORTHOGRAPHIC
-                                : CAMERA_PERSPECTIVE;
-
-  // In shadow pass, there is no need to calculate shadow logic.
-  int use_shadow = 0;
-  m_lighting_shader.SetValue(m_lighting_shader.GetLocation("useShadow"),
-                             &use_shadow, SHADER_UNIFORM_INT);
-
-  BeginTextureMode(m_shadowmap);
-
-  rlEnableDepthTest();
-  rlEnableDepthMask();
-  ClearBackground(WHITE);
-
-  BeginMode3D(light_camera);
-  mat4 light_view = rlGetMatrixModelview();
-  mat4 light_proj = rlGetMatrixProjection();
-  for (const auto &model : m_models) {
-    if (model->enable_shadow)
-      model->draw();
-  }
-  EndMode3D();
-  EndTextureMode();
-  mat4 light_view_proj = light_view * light_proj;
-
-  m_lighting_shader.SetValue(m_lighting_shader.GetLocation("lightVP"),
-                             light_view_proj);
+std::shared_ptr<RaylibDevice::ShadowGroup> &
+RaylibDevice::add_shadow_group(std::vector<std::shared_ptr<Model>> models,
+                               size_t size, float fov) {
+  m_shadow_groups.push_back(
+      std::shared_ptr<RaylibDevice::ShadowGroup>(new RaylibDevice::ShadowGroup(
+          models, size, fov, m_shadow_groups.size())));
+  return m_shadow_groups.back();
 }
 
 void RaylibDevice::draw_frame() {
   m_camera.Update(CAMERA_CUSTOM);
+
+  // Disable all shadow groups at the beginning of the frame, and they will be
+  // enabled in the shadowmap class.
+  for (int i = 0; i < MAX_SHADOW_GROUPS; i++) {
+    int active = 0;
+    m_lighting_shader.SetValue(
+        m_lighting_shader.GetLocation(TextFormat("shadowMaps[%i].active", i)),
+        &active, SHADER_UNIFORM_INT);
+  }
 
   // Update the shader with the camera view vector (points towards { 0.0f,
   // 0.0f, 0.0f })
@@ -346,12 +393,7 @@ void RaylibDevice::draw_frame() {
   m_lighting_shader.SetValue(m_lighting_shader.locs[SHADER_LOC_VECTOR_VIEW],
                              cameraPos.data(), SHADER_UNIFORM_VEC3);
 
-  int use_shadow = 0;
-  for (const auto &model : m_models) {
-    use_shadow |= model->enable_shadow;
-  }
-  m_lighting_shader.SetValue(m_lighting_shader.GetLocation("useShadow"),
-                             &use_shadow, SHADER_UNIFORM_INT);
+  int use_shadow = m_shadow_groups.size() > 0;
 
   // Update light values (actually, only enable/disable them)
   for (const auto &light : m_lights) {
@@ -359,9 +401,12 @@ void RaylibDevice::draw_frame() {
   }
   BeginDrawing();
 
-  if (use_shadow != 0) {
-    frame_shadow_pass();
+  for (auto shadow_group : m_shadow_groups) {
+    shadow_group->shadow_pass(*m_lights.begin(), m_lighting_shader);
   }
+
+  m_lighting_shader.SetValue(m_lighting_shader.GetLocation("useShadow"),
+                             &use_shadow, SHADER_UNIFORM_INT);
 
   ClearBackground(RAYWHITE);
 
@@ -377,13 +422,8 @@ void RaylibDevice::draw_frame() {
   }
   m_lighting_shader.BeginMode();
 
-  if (use_shadow != 0) {
-    rlEnableShader(m_lighting_shader.id);
-    int slot = 10; // Can be anything 0 to 15, but 0 will probably be taken up
-    rlActiveTextureSlot(slot);
-    rlEnableTexture(m_shadowmap.depth.id);
-    rlSetUniform(m_lighting_shader.GetLocation("shadowMap"), &slot,
-                 SHADER_UNIFORM_INT, 1);
+  for (auto shadow_group : m_shadow_groups) {
+    shadow_group->write_shadowmap_to_shader(m_lighting_shader);
   }
 
   // Draw all models.
@@ -393,9 +433,10 @@ void RaylibDevice::draw_frame() {
 
   m_lighting_shader.EndMode();
   EndMode3D();
-  
+
   // Use to see the shadowmap:
-  // DrawTextureEx(m_shadowmap.depth, (Vector2){20, 20}, 0.0f, 0.25f, WHITE);
+  // DrawTextureEx(m_shadow_groups[0]->m_shadowmap.depth, (Vector2){20, 20},
+  // 0.0f, 0.25f, WHITE);
   DrawFPS(10, 10);
   DrawText("to be put...", 10, 40, 20, DARKGRAY);
   EndDrawing();

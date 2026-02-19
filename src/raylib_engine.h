@@ -72,6 +72,7 @@ public:
   mat4 get_world_transform() const;
 
   std::vector<raylib::Material *> get_materials();
+  vec3 get_pos() const;
 
   void draw();
 
@@ -88,7 +89,6 @@ private:
   std::shared_ptr<Model> m_parent;
   raylib::Model m_model;
   std::shared_ptr<::Mesh> m_mesh = nullptr;
-  bool enable_shadow;
 };
 
 class RaylibDevice {
@@ -101,16 +101,13 @@ public:
   std::shared_ptr<Model> create_empty(std::shared_ptr<Model> parent = nullptr);
   std::shared_ptr<Model> load_model(const std::string &file_name,
                                     std::shared_ptr<Model> parent = nullptr,
-                                    bool enable_lighting = true,
-                                    bool enable_shadow = false);
+                                    bool enable_lighting = true);
   std::shared_ptr<Model> create_sphere(float radius, int rings, int slices,
                                        std::shared_ptr<Model> parent = nullptr,
-                                       bool enable_lighting = true,
-                                       bool enable_shadow = false);
+                                       bool enable_lighting = true);
   std::shared_ptr<Model> create_cube(float width, float height, float length,
                                      std::shared_ptr<Model> parent = nullptr,
-                                     bool enable_lighting = true,
-                                     bool enable_shadow = false);
+                                     bool enable_lighting = true);
   Light &create_light(int type, raylib::Vector3 position,
                       raylib::Vector3 target, raylib::Color color);
 
@@ -119,23 +116,42 @@ public:
                                 std::string top, std::string bottom,
                                 std::string back, std::string front);
 
-  void draw_frame();
-
   friend class Model;
+
+  class ShadowGroup {
+  public:
+    std::vector<std::shared_ptr<Model>> &get_models() { return m_models; };
+
+  private:
+    ShadowGroup() = delete;
+    ShadowGroup(std::vector<std::shared_ptr<Model>> models, size_t size,
+                float fov, int shader_index);
+    void shadow_pass(const Light &shadow_light, raylib::Shader &shader);
+    void write_shadowmap_to_shader(raylib::Shader &shader);
+    raylib::RenderTexture2D m_shadowmap;
+    std::vector<std::shared_ptr<Model>> m_models;
+    const size_t m_size;
+    float m_fov;
+    int m_shadow_index;
+    friend class RaylibDevice;
+  };
+
+  std::shared_ptr<ShadowGroup> &
+  add_shadow_group(std::vector<std::shared_ptr<Model>> models, size_t size,
+                   float fov);
+
+  void draw_frame();
 
 private:
   void add_skybox_from_image(const raylib::Image &image);
   void update_light_value(const Light &light);
-
-  void frame_shadow_pass();
 
   raylib::Camera3D m_camera;
   raylib::Shader m_lighting_shader;
   std::vector<Light> m_lights;
   std::optional<raylib::Model> m_skybox_model;
   std::vector<std::shared_ptr<Model>> m_models;
-
-  raylib::RenderTexture2D m_shadowmap;
+  std::vector<std::shared_ptr<ShadowGroup>> m_shadow_groups;
 };
 
 class Joystick {

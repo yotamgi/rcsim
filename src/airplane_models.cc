@@ -331,6 +331,11 @@ Trainer::Trainer(engine::RaylibDevice *device)
                              engine::mat4::Translate(0, 0, 0.4));
 
   m_prop_angle = 0.0f;
+
+  device->add_shadow_group({m_body_node, m_right_ailron_node,
+                            m_left_ailron_node, m_elevator_node, m_prop_node,
+                            m_rudder_node},
+                           512, 3.0);
 }
 
 void Trainer::update_ui() {
@@ -349,13 +354,16 @@ void Trainer::update_ui() {
       engine::mat4::Translate(-0.33, 0.105, -0.12));
   m_right_ailron_node->set_transform(
       engine::mat4::Scale(1. / 4, 1. / 4, 1. / 4) *
-      engine::mat4::RotateXYZ(engine::vec3(-roll_angle - 7, 0, 183) / 180. * PI) *
+      engine::mat4::RotateXYZ(engine::vec3(-roll_angle - 7, 0, 183) / 180. *
+                              PI) *
       engine::mat4::Translate(0.33, 0.105, -0.12));
   m_elevator_node->set_transform(
       engine::mat4::Scale(1. / 4, 1. / 4, 1. / 4) *
-      engine::mat4::RotateX(m_servos[AIRPLANE_CHANNEL_PITCH].get() * 45. / 180.0 * PI) *
+      engine::mat4::RotateX(m_servos[AIRPLANE_CHANNEL_PITCH].get() * 45. /
+                            180.0 * PI) *
       engine::mat4::Translate(0, -0.04, -0.9));
   m_rudder_node->set_transform(
       engine::mat4::Scale(1. / 4, 1. / 4, 1. / 4) *
-      engine::mat4::RotateY(m_servos[AIRPLANE_CHANNEL_YAW].get() * 45. / 180.0 * PI));
+      engine::mat4::RotateY(m_servos[AIRPLANE_CHANNEL_YAW].get() * 45. / 180.0 *
+                            PI));
 }

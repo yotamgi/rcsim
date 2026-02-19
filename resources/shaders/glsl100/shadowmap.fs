@@ -65,7 +65,7 @@ void main()
     // Instead of testing if just one point is closer to the current point,
     // we test the surrounding points as well
     // This blurs shadow edges, hiding aliasing artifacts
-    vec2 texelSize = vec2(1.0/float(shadowMapResolution));
+    vec2 texelSize = vec2(1.0/float(shadowMapResolution) * 0.6);
     for (int x = -1; x <= 1; x++)
     {
         for (int y = -1; y <= 1; y++)

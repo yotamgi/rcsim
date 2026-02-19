@@ -15,6 +15,7 @@ uniform vec4 colDiffuse;
 // NOTE: Add your custom variables here
 
 #define     MAX_LIGHTS              4
+#define     MAX_SHADOWMAPS          4
 #define     LIGHT_DIRECTIONAL       0
 #define     LIGHT_POINT             1
 
@@ -31,11 +32,16 @@ uniform Light lights[MAX_LIGHTS];
 uniform vec4 ambient;
 uniform vec3 viewPos;
 
+struct ShadowMap {
+    int enabled;
+    mat4 lightVP;
+    sampler2D shadowMap;
+    int resolution;
+};
+
 // Shadowmap inputs.
 uniform int useShadow;
-uniform mat4 lightVP; // Light source view-projection matrix
-uniform sampler2D shadowMap;
-uniform int shadowMapResolution;
+uniform ShadowMap shadowMaps[MAX_SHADOWMAPS];
 
 void main()
 {
@@ -73,35 +79,47 @@ void main()
 
             // For the first light, use the shadow.
             if ((i == 0) && (useShadow != 0)) {
-                vec4 fragPosLightSpace = lightVP*vec4(fragPosition, 1);
-                fragPosLightSpace.xyz /= fragPosLightSpace.w; // Perform the perspective division
-                fragPosLightSpace.xyz = (fragPosLightSpace.xyz + 1.0)/2.0; // Transform from [-1, 1] range to [0, 1] range
-                vec2 sampleCoords = fragPosLightSpace.xy;
-                float curDepth = fragPosLightSpace.z;
-
-                // Slope-scale depth bias: depth biasing reduces "shadow acne" artifacts, where dark stripes appear all over the scene
-                // The solution is adding a small bias to the depth
-                // In this case, the bias is proportional to the slope of the surface, relative to the light
-                float bias = max(0.0008*(1.0 - dot(normal, light)), 0.00008);
-                int shadowCounter = 0;
-                const int numSamples = 9;
-
-                // PCF (percentage-closer filtering) algorithm:
-                // Instead of testing if just one point is closer to the current point,
-                // we test the surrounding points as well
-                // This blurs shadow edges, hiding aliasing artifacts
-                vec2 texelSize = vec2(1.0/float(shadowMapResolution));
-                for (int x = -1; x <= 1; x++)
-                {
-                    for (int y = -1; y <= 1; y++)
-                    {
-                        float sampleDepth = texture2D(shadowMap, sampleCoords + texelSize*vec2(x, y)).r;
-                        if (curDepth - bias > sampleDepth) shadowCounter++;
+                float total_shadow_intensity = 0.0;
+                for (int shadowmap_index = 0; shadowmap_index < MAX_SHADOWMAPS; shadowmap_index++) {
+                    if (shadowMaps[shadowmap_index].enabled != 1) {
+                        continue;
                     }
+
+                    vec4 fragPosLightSpace = shadowMaps[shadowmap_index].lightVP*vec4(fragPosition, 1);
+                    fragPosLightSpace.xyz /= fragPosLightSpace.w; // Perform the perspective division
+                    fragPosLightSpace.xyz = (fragPosLightSpace.xyz + 1.0)/2.0; // Transform from [-1, 1] range to [0, 1] range
+                    vec2 sampleCoords = fragPosLightSpace.xy;
+                    float curDepth = fragPosLightSpace.z;
+
+                    // Slope-scale depth bias: depth biasing reduces "shadow acne" artifacts, where dark stripes appear all over the scene
+                    // The solution is adding a small bias to the depth
+                    // In this case, the bias is proportional to the slope of the surface, relative to the light
+                    float bias = max(0.0008*(1.0 - dot(normal, light)), 0.00008);
+                    int shadowCounter = 0;
+                    const int numSamples = 9;
+
+                    // PCF (percentage-closer filtering) algorithm:
+                    // Instead of testing if just one point is closer to the current point,
+                    // we test the surrounding points as well
+                    // This blurs shadow edges, hiding aliasing artifacts
+                    vec2 texelSize = vec2(1.0/float(shadowMaps[shadowmap_index].resolution));
+                    for (int x = -1; x <= 1; x++)
+                    {
+                        for (int y = -1; y <= 1; y++)
+                        {
+                            float sampleDepth = texture2D(shadowMaps[shadowmap_index].shadowMap, sampleCoords + texelSize*vec2(x, y)).r;
+                            if (curDepth - bias > sampleDepth) shadowCounter++;
+                        }
+                    }
+                    float shadow_intensity = 1.0 - 0.7 * float(shadowCounter)/float(numSamples);
+                    total_shadow_intensity = min(total_shadow_intensity, shadow_intensity);
                 }
-                float shadow_intensity = 0.7 * float(shadowCounter)/float(numSamples);
-                lightDot += mix(lights[i].color.rgb*NdotL, vec3(0, 0, 0), shadow_intensity);
-                specular += mix(vec3(specCo, specCo, specCo), vec3(0, 0, 0), shadow_intensity);
+
+                // Since currently the depth map is not working, invert the shadow. This will make
+                // sure that when the depth map is working, the difference will be visible.
+                total_shadow_intensity = 1.0 - total_shadow_intensity;
+                lightDot += mix(lights[i].color.rgb*NdotL, vec3(0, 0, 0), total_shadow_intensity);
+                specular += mix(vec3(specCo, specCo, specCo), vec3(0, 0, 0), total_shadow_intensity);
             } else {
                 lightDot += lights[i].color.rgb*NdotL;
                 specular += specCo;

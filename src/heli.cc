@@ -606,8 +606,7 @@ RcBellHeli::RcBellHeli(engine::RaylibDevice *device)
     : BaseHeli(RC_BELL_AERODYNAMICS),
       m_texture("resources/media/Bell/textures/1001_albedo.jpg") {
   // Create the body mesh.
-  m_body_node = device->load_model("resources/media/Bell/source/bell_body.obj",
-                                   nullptr, true, true);
+  m_body_node = device->load_model("resources/media/Bell/source/bell_body.obj");
   auto materials = m_body_node->get_materials();
   for (engine::Material *material : materials) {
     material->SetTexture(MATERIAL_MAP_DIFFUSE, m_texture);
@@ -615,7 +614,7 @@ RcBellHeli::RcBellHeli(engine::RaylibDevice *device)
 
   // Create the main rotor mesh.
   m_rotor_node = device->load_model(
-      "resources/media/Bell/source/bell_main_rotor.obj", nullptr, true, true);
+      "resources/media/Bell/source/bell_main_rotor.obj");
   m_rotor_node->set_transform(engine::mat4::Translate(0.45, -1.4, 0));
   materials = m_rotor_node->get_materials();
   for (engine::Material *material : materials) {
@@ -625,7 +624,7 @@ RcBellHeli::RcBellHeli(engine::RaylibDevice *device)
   // Create the tail rotor mesh.
   m_tail_rotor_node =
       device->load_model("resources/media/Bell/source/bell_tail_rotor.obj",
-                         m_body_node, true, true);
+                         m_body_node);
   m_tail_rotor_node->set_transform(engine::mat4::Translate(4.62, -1.54, 0));
   materials = m_tail_rotor_node->get_materials();
   for (engine::Material *material : materials) {
@@ -637,6 +636,9 @@ RcBellHeli::RcBellHeli(engine::RaylibDevice *device)
   // m_tail_prop_blur = std::make_shared<TailRotorBlur>(smgr, m_body_node);
   m_main_rotor_angle = 0;
   m_tail_rotor_angle = 0;
+
+  device->add_shadow_group(
+    {m_body_node, m_tail_rotor_node, m_rotor_node}, 512, 3.0);
 
   update_ui(0);
 }

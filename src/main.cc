@@ -7,10 +7,11 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-void add_banana(engine::RaylibDevice &device, const engine::vec3 &pos,
-                const engine::vec3 &rotation) {
+std::shared_ptr<engine::Model> add_banana(engine::RaylibDevice &device,
+                                          const engine::vec3 &pos,
+                                          const engine::vec3 &rotation) {
   std::shared_ptr<engine::Model> banana_model =
-      device.load_model("resources/media/banana/source/banana.obj", nullptr, true, true);
+      device.load_model("resources/media/banana/source/banana.obj");
   banana_model->get_materials()[0]->SetTexture(
       0, ::LoadTexture("resources/media/banana/textures/rgb.jpeg"));
 
@@ -19,6 +20,7 @@ void add_banana(engine::RaylibDevice &device, const engine::vec3 &pos,
       engine::mat4::RotateX(rotation.x) * engine::mat4::RotateY(rotation.y) *
       engine::mat4::RotateZ(rotation.z) *
       engine::mat4::Translate(pos.x, pos.y, pos.z));
+  return banana_model;
 }
 
 int main() {
@@ -43,9 +45,12 @@ int main() {
                                engine::mat4::Scale(4, 4, 4));
 
   // Add some bananas for scale.
-  add_banana(device, engine::vec3(-0.5, 0.05, 0.2), engine::vec3(90, 73, 0));
-  add_banana(device, engine::vec3(0.9, 0.05, 0.3), engine::vec3(90, 40, 0));
-  add_banana(device, engine::vec3(0.4, 0.05, 0.0), engine::vec3(90, 0, 0));
+  device.add_shadow_group({add_banana(device, engine::vec3(-0.5, 0.05, 0.2),
+                                      engine::vec3(90, 73, 0)),
+                           add_banana(device, engine::vec3(0.9, 0.05, 0.3),
+                                      engine::vec3(90, 40, 0)),
+                           add_banana(device, engine::vec3(0.4, 0.05, 0.0),
+                                      engine::vec3(90, 0, 0))}, 512, 2);
 
   // Add skybox.
   device.add_skybox_from_6_images(

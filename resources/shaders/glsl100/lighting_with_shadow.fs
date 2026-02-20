@@ -115,9 +115,6 @@ void main()
                     total_shadow_intensity = min(total_shadow_intensity, shadow_intensity);
                 }
 
-                // Since currently the depth map is not working, invert the shadow. This will make
-                // sure that when the depth map is working, the difference will be visible.
-                total_shadow_intensity = 1.0 - total_shadow_intensity;
                 lightDot += mix(lights[i].color.rgb*NdotL, vec3(0, 0, 0), total_shadow_intensity);
                 specular += mix(vec3(specCo, specCo, specCo), vec3(0, 0, 0), total_shadow_intensity);
             } else {

@@ -45,25 +45,46 @@ static float &mat_get(mat4 &m, int row, int col) {
 using raylib::Keyboard::IsKeyDown;
 using raylib::Keyboard::IsKeyPressed;
 
-struct Light {
-  int type;
-  bool enabled;
-  Vector3 position;
-  Vector3 target;
-  Color color;
-  float attenuation;
-
-  // Shader locations
-  int enabledLoc;
-  int typeLoc;
-  int positionLoc;
-  int targetLoc;
-  int colorLoc;
-  int attenuationLoc;
-};
-
 // Light type
 enum LightType { LIGHT_DIRECTIONAL = 0, LIGHT_POINT };
+
+class Light {
+public:
+
+  const vec3 &get_position() const { return m_position; }
+  const void set_position(const vec3 &position) {
+    m_position = position;
+    m_changed = true;
+  }
+  const vec3 &get_target() const { return m_target; }
+  const void set_target(const vec3 &target) {
+    m_target = target;
+    m_changed = true;
+  }
+  const bool enabled() const { return m_enabled == 1; }
+  const void set_enabled(bool enabled) {
+    m_enabled = enabled ? 1 : 0;
+    m_changed = true;
+  }
+
+  LightType get_type() const { return m_type; }
+
+private:
+  Light(vec3 position, vec3 target, Color color, LightType type, int index);
+
+  void write_to_shader(raylib::Shader &shader) const;
+  void reset_changed() { m_changed = false; }
+
+  LightType m_type;
+  int m_enabled;
+  vec3 m_position;
+  vec3 m_target;
+  Color m_color;
+  int m_index;
+  bool m_changed;
+
+  friend class RaylibDevice;
+};
 
 class Model {
 public:
@@ -113,7 +134,7 @@ public:
   std::shared_ptr<Model> create_cube(float width, float height, float length,
                                      std::shared_ptr<Model> parent = nullptr,
                                      bool enable_lighting = true);
-  Light &create_light(int type, raylib::Vector3 position,
+  std::shared_ptr<Light> create_light(LightType type, raylib::Vector3 position,
                       raylib::Vector3 target, raylib::Color color);
 
   void add_skybox_from_single_image(std::string image_path);
@@ -122,6 +143,7 @@ public:
                                 std::string back, std::string front);
 
   friend class Model;
+  friend class Light;
 
   class ShadowGroup {
   public:
@@ -131,7 +153,7 @@ public:
     ShadowGroup() = delete;
     ShadowGroup(std::vector<std::shared_ptr<Model>> models, size_t size,
                 float fov, int shader_index);
-    void shadow_pass(const Light &shadow_light, raylib::Shader &shader);
+    void shadow_pass(const std::shared_ptr<Light> &shadow_light, raylib::Shader &shader);
     void write_shadowmap_to_shader(raylib::Shader &shader);
     raylib::RenderTexture2D m_shadowmap;
     std::vector<std::shared_ptr<Model>> m_models;
@@ -149,11 +171,10 @@ public:
 
 private:
   void add_skybox_from_image(const raylib::Image &image);
-  void update_light_value(const Light &light);
 
   raylib::Camera3D m_camera;
   raylib::Shader m_lighting_shader;
-  std::vector<Light> m_lights;
+  std::vector<std::shared_ptr<Light>> m_lights;
   std::optional<raylib::Model> m_skybox_model;
   std::vector<std::shared_ptr<Model>> m_models;
   std::vector<std::shared_ptr<ShadowGroup>> m_shadow_groups;

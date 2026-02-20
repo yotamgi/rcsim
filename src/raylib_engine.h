@@ -67,12 +67,12 @@ enum LightType { LIGHT_DIRECTIONAL = 0, LIGHT_POINT };
 
 class Model {
 public:
-  void set_transform(const mat4 &transform) { m_local_transform = transform; }
+  void set_transform(const mat4 &transform);
   const mat4 &get_transform() const { return m_local_transform; }
-  mat4 get_world_transform() const;
+  mat4 get_world_transform();
 
   std::vector<raylib::Material *> get_materials();
-  vec3 get_pos() const;
+  vec3 get_pos();
 
   void draw();
 
@@ -80,14 +80,19 @@ public:
 
 private:
   Model(std::string file_name, std::shared_ptr<Model> parent)
-      : m_model(file_name), m_parent(parent) {}
+      : m_model(file_name), m_parent(parent), m_changed(true) {}
   Model(std::shared_ptr<::Mesh> mesh, std::shared_ptr<Model> parent)
-      : m_model(*mesh), m_mesh(mesh), m_parent(parent) {}
-  Model(std::shared_ptr<Model> parent) : m_parent(parent) {}
+      : m_model(*mesh), m_mesh(mesh), m_parent(parent), m_changed(true) {}
+  Model(std::shared_ptr<Model> parent) : m_parent(parent), m_changed(true) {}
+
+  bool changed() const;
+  void reset_changed() { m_changed = false; }
 
   mat4 m_local_transform;
+  mat4 m_world_transform;
   std::shared_ptr<Model> m_parent;
   raylib::Model m_model;
+  bool m_changed;
   std::shared_ptr<::Mesh> m_mesh = nullptr;
 };
 

@@ -24,13 +24,26 @@ const size_t MAX_SHADOW_GROUPS = 4;
 // Model implementation
 ////////////////////////////////////////////////////////////////////////////////
 
-mat4 Model::get_world_transform() const {
-  if (m_parent) {
-    return (raylib::Matrix)m_local_transform *
-           (raylib::Matrix)m_parent->get_world_transform();
-  } else {
-    return m_local_transform;
+bool Model::changed() const {
+  return m_changed || (m_parent && m_parent->changed());
+}
+
+void Model::set_transform(const mat4 &transform) {
+  m_local_transform = transform;
+  m_changed = true;
+}
+
+mat4 Model::get_world_transform() {
+  if (changed()) {
+    if (m_parent) {
+      m_world_transform = (raylib::Matrix)m_local_transform *
+                          (raylib::Matrix)m_parent->get_world_transform();
+    } else {
+      m_world_transform = m_local_transform;
+    }
   }
+
+  return m_world_transform;
 }
 
 void Model::draw() {
@@ -47,7 +60,7 @@ std::vector<raylib::Material *> Model::get_materials() {
   return result;
 }
 
-vec3 Model::get_pos() const { return get_world_transform() * vec3(0, 0, 0); }
+vec3 Model::get_pos() { return get_world_transform() * vec3(0, 0, 0); }
 
 ////////////////////////////////////////////////////////////////////////////////
 // RaylibDevice implementation
@@ -440,6 +453,10 @@ void RaylibDevice::draw_frame() {
   DrawFPS(10, 10);
   DrawText("to be put...", 10, 40, 20, DARKGRAY);
   EndDrawing();
+
+  for (auto model : m_models) {
+    model->reset_changed();
+  }
 }
 
 RaylibDevice::~RaylibDevice() {

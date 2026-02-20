@@ -158,6 +158,19 @@ RaylibDevice::ShadowGroup::ShadowGroup(
 
 void RaylibDevice::ShadowGroup::shadow_pass(
     const std::shared_ptr<Light> &shadow_light, raylib::Shader &shader) {
+
+  // Don't calculate the shadowmap if nothing changed.
+  bool changed = shadow_light->changed();
+  for (const auto &model : m_models) {
+    if (model->changed()) {
+      changed = true;
+      break;
+    }
+  }
+  if (!changed) {
+    return;
+  }
+
   // Find the center of the shadow group models.
   vec3 center = std::accumulate(m_models.begin(), m_models.end(), vec3(0, 0, 0),
                                 [](vec3 acc, std::shared_ptr<Model> model) {

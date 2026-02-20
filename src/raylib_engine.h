@@ -50,7 +50,6 @@ enum LightType { LIGHT_DIRECTIONAL = 0, LIGHT_POINT };
 
 class Light {
 public:
-
   const vec3 &get_position() const { return m_position; }
   const void set_position(const vec3 &position) {
     m_position = position;
@@ -74,6 +73,7 @@ private:
 
   void write_to_shader(raylib::Shader &shader) const;
   void reset_changed() { m_changed = false; }
+  bool changed() const { return m_changed; }
 
   LightType m_type;
   int m_enabled;
@@ -135,7 +135,8 @@ public:
                                      std::shared_ptr<Model> parent = nullptr,
                                      bool enable_lighting = true);
   std::shared_ptr<Light> create_light(LightType type, raylib::Vector3 position,
-                      raylib::Vector3 target, raylib::Color color);
+                                      raylib::Vector3 target,
+                                      raylib::Color color);
 
   void add_skybox_from_single_image(std::string image_path);
   void add_skybox_from_6_images(std::string right, std::string left,
@@ -153,7 +154,8 @@ public:
     ShadowGroup() = delete;
     ShadowGroup(std::vector<std::shared_ptr<Model>> models, size_t size,
                 float fov, int shader_index);
-    void shadow_pass(const std::shared_ptr<Light> &shadow_light, raylib::Shader &shader);
+    void shadow_pass(const std::shared_ptr<Light> &shadow_light,
+                     raylib::Shader &shader);
     void write_shadowmap_to_shader(raylib::Shader &shader);
     raylib::RenderTexture2D m_shadowmap;
     std::vector<std::shared_ptr<Model>> m_models;

@@ -20,9 +20,11 @@ static raylib::Vector3 operator*(const float &scalar,
 namespace engine {
 
 typedef raylib::Vector3 vec3;
+typedef raylib::Rectangle rect2;
 typedef raylib::Matrix mat4;
 typedef raylib::Texture Texture;
 typedef raylib::Material Material;
+typedef raylib::Color Color;
 
 static float &mat_get(mat4 &m, int row, int col) {
   size_t index = row * 4 + col;
@@ -95,8 +97,6 @@ public:
   std::vector<raylib::Material *> get_materials();
   vec3 get_pos();
 
-  void draw();
-
   friend class RaylibDevice;
 
 private:
@@ -109,12 +109,37 @@ private:
   bool changed() const;
   void reset_changed() { m_changed = false; }
 
+  void draw();
+
   mat4 m_local_transform;
   mat4 m_world_transform;
   std::shared_ptr<Model> m_parent;
   raylib::Model m_model;
   bool m_changed;
   std::shared_ptr<::Mesh> m_mesh = nullptr;
+};
+
+class Image2D {
+public:
+  const rect2 &get_position() const { return m_position; }
+  void set_position(const rect2 &position) { m_position = position; }
+  const float &get_rotation() const { return m_rotation; }
+  void set_rotation(float rotation) { m_rotation = rotation; }
+
+  void set_pixel_color(int x, int y, Color color);
+private:
+  Image2D(std::string file_name);
+  Image2D(int width, int height);
+
+  void draw();
+
+  raylib::Image m_image;
+  raylib::Texture2D m_texture;
+  bool m_image_changed;
+  rect2 m_position;
+  float m_rotation;
+
+  friend class RaylibDevice;
 };
 
 class RaylibDevice {
@@ -145,6 +170,7 @@ public:
 
   friend class Model;
   friend class Light;
+  friend class Image2D;
 
   class ShadowGroup {
   public:
@@ -169,6 +195,9 @@ public:
   add_shadow_group(std::vector<std::shared_ptr<Model>> models, size_t size,
                    float fov);
 
+  std::shared_ptr<Image2D> load_image2d(std::string file_name);
+  std::shared_ptr<Image2D> create_image2d(int width, int height);
+
   void draw_frame();
 
 private:
@@ -180,6 +209,7 @@ private:
   std::optional<raylib::Model> m_skybox_model;
   std::vector<std::shared_ptr<Model>> m_models;
   std::vector<std::shared_ptr<ShadowGroup>> m_shadow_groups;
+  std::vector<std::shared_ptr<Image2D>> m_image2ds;
 };
 
 class Joystick {

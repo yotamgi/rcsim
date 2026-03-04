@@ -1,16 +1,19 @@
-#version 100
+#version 300 es
 
 precision highp float;
 
 // Input vertex attributes (from vertex shader)
-varying vec3 fragPosition;
-varying vec2 fragTexCoord;
-varying vec4 fragColor;
-varying vec3 fragNormal;
+in vec3 fragPosition;
+in vec2 fragTexCoord;
+in vec4 fragColor;
+in vec3 fragNormal;
 
 // Input uniform values
 uniform sampler2D texture0;
 uniform vec4 colDiffuse;
+
+// Output fragment color
+out vec4 finalColor;
 
 // NOTE: Add your custom variables here
 
@@ -40,13 +43,13 @@ struct ShadowMap {
 };
 
 // Shadowmap inputs.
-uniform int useShadow;
+uniform int outputDepth;
 uniform ShadowMap shadowMaps[MAX_SHADOWMAPS];
 
 void main()
 {
     // Texel color fetching from texture sampler
-    vec4 texelColor = texture2D(texture0, fragTexCoord);
+    vec4 texelColor = texture(texture0, fragTexCoord);
     vec3 lightDot = vec3(0.0);
     vec3 normal = normalize(fragNormal);
     vec3 viewD = normalize(viewPos - fragPosition);
@@ -54,7 +57,13 @@ void main()
 
     vec4 tint = colDiffuse*fragColor;
 
-    // NOTE: Implement here your fragment shader code
+    // A bullet proof way to output depth values for the shadow pass, since
+    // the depth values do not get to the depth texture in all platforms.
+    if (outputDepth == 1) {
+        float depth = gl_FragCoord.z;
+        finalColor = vec4(depth, depth, depth, 1.0);
+        return;
+    }
 
     for (int i = 0; i < MAX_LIGHTS; i++)
     {
@@ -78,7 +87,8 @@ void main()
             if (NdotL > 0.0) specCo = pow(max(0.0, dot(viewD, reflect(-(light), normal))), 16.0); // 16 refers to shine
 
             // For the first light, use the shadow.
-            if ((i == 0) && (useShadow != 0)) {
+            if (i == 0) {
+
                 float total_shadow_intensity = 0.0;
                 for (int shadowmap_index = 0; shadowmap_index < MAX_SHADOWMAPS; shadowmap_index++) {
                     if (shadowMaps[shadowmap_index].enabled != 1) {
@@ -91,30 +101,34 @@ void main()
                     vec2 sampleCoords = fragPosLightSpace.xy;
                     float curDepth = fragPosLightSpace.z;
 
+                    // To avoid artifacts outside the shadowmap, we make sure that we are within the shadowmap.
+                    if (sampleCoords.x < 0.0 || sampleCoords.x > 1.0 || sampleCoords.y < 0.0 || sampleCoords.y > 1.0) {
+                        continue;
+                    }
+
                     // Slope-scale depth bias: depth biasing reduces "shadow acne" artifacts, where dark stripes appear all over the scene
                     // The solution is adding a small bias to the depth
                     // In this case, the bias is proportional to the slope of the surface, relative to the light
-                    float bias = max(0.0008*(1.0 - dot(normal, light)), 0.00008);
+                    float bias = max(0.00001*(1.0 - dot(normal, light)), 0.00002) + 0.00001;
                     int shadowCounter = 0;
-                    const int numSamples = 9;
+                    const int numSamples = 25;
 
                     // PCF (percentage-closer filtering) algorithm:
                     // Instead of testing if just one point is closer to the current point,
                     // we test the surrounding points as well
                     // This blurs shadow edges, hiding aliasing artifacts
                     vec2 texelSize = vec2(1.0/float(shadowMaps[shadowmap_index].resolution));
-                    for (int x = -1; x <= 1; x++)
+                    for (int x = -2; x <= 2; x++)
                     {
-                        for (int y = -1; y <= 1; y++)
+                        for (int y = -2; y <= 2; y++)
                         {
-                            float sampleDepth = texture2D(shadowMaps[shadowmap_index].shadowMap, sampleCoords + texelSize*vec2(x, y)).r;
+                            float sampleDepth = texture(shadowMaps[shadowmap_index].shadowMap, sampleCoords + texelSize*vec2(x, y)).r;
                             if (curDepth - bias > sampleDepth) shadowCounter++;
                         }
                     }
-                    float shadow_intensity = 1.0 - 0.7 * float(shadowCounter)/float(numSamples);
-                    total_shadow_intensity = min(total_shadow_intensity, shadow_intensity);
+                    float shadow_intensity = 0.7 * float(shadowCounter)/float(numSamples);
+                    total_shadow_intensity = max(total_shadow_intensity, shadow_intensity);
                 }
-
                 lightDot += mix(lights[i].color.rgb*NdotL, vec3(0, 0, 0), total_shadow_intensity);
                 specular += mix(vec3(specCo, specCo, specCo), vec3(0, 0, 0), total_shadow_intensity);
             } else {
@@ -124,9 +138,9 @@ void main()
         }
     }
 
-    vec4 finalColor = (texelColor*((tint + vec4(specular, 1.0))*vec4(lightDot, 1.0)));
-    finalColor += texelColor*(ambient/10.0);
+    finalColor = (texelColor*((tint + vec4(specular, 1.0))*vec4(lightDot, 1.0)));
+    finalColor += texelColor*(ambient/10.0)*tint;
 
     // Gamma correction
-    gl_FragColor = pow(finalColor, vec4(1.0/2.2));
+    finalColor = pow(finalColor, vec4(1.0/2.2));
 }

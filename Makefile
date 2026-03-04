@@ -6,7 +6,7 @@ build-linux/Makefile: CMakeLists.txt
 	cmake -B build-linux -DCMAKE_BUILD_TYPE=Release
 
 build-web/Makefile: CMakeLists.txt
-	emcmake cmake -B build-web -DPLATFORM=Web -DCMAKE_BUILD_TYPE=Debug
+	emcmake cmake -B build-web -DPLATFORM=Web -DCMAKE_BUILD_TYPE=Debug -DGRAPHICS=GRAPHICS_API_OPENGL_ES3
 
 .PHONY:
 build-linux/${PROJECT_NAME}: build-linux/Makefile

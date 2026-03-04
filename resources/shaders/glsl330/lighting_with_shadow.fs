@@ -41,7 +41,7 @@ struct ShadowMap {
 };
 
 // Shadowmap inputs.
-uniform int useShadow;
+uniform int outputDepth;
 uniform ShadowMap shadowMaps[MAX_SHADOWMAPS];
 
 void main()
@@ -55,7 +55,13 @@ void main()
 
     vec4 tint = colDiffuse*fragColor;
 
-    // NOTE: Implement here your fragment shader code
+    // A bullet proof way to output depth values for the shadow pass, since
+    // the depth values do not get to the depth texture in all platforms.
+    if (outputDepth == 1) {
+        float depth = gl_FragCoord.z;
+        finalColor = vec4(depth, depth, depth, 1.0);
+        return;
+    }
 
     for (int i = 0; i < MAX_LIGHTS; i++)
     {
@@ -79,7 +85,7 @@ void main()
             if (NdotL > 0.0) specCo = pow(max(0.0, dot(viewD, reflect(-(light), normal))), 16.0); // 16 refers to shine
 
             // For the first light, use the shadow.
-            if ((i == 0) && (useShadow != 0)) {
+            if (i == 0) {
 
                 float total_shadow_intensity = 0.0;
                 for (int shadowmap_index = 0; shadowmap_index < MAX_SHADOWMAPS; shadowmap_index++) {
@@ -92,6 +98,11 @@ void main()
                     fragPosLightSpace.xyz = (fragPosLightSpace.xyz + 1.0)/2.0; // Transform from [-1, 1] range to [0, 1] range
                     vec2 sampleCoords = fragPosLightSpace.xy;
                     float curDepth = fragPosLightSpace.z;
+
+                    // To avoid artifacts outside the shadowmap, we make sure that we are within the shadowmap.
+                    if (sampleCoords.x < 0.0 || sampleCoords.x > 1.0 || sampleCoords.y < 0.0 || sampleCoords.y > 1.0) {
+                        continue;
+                    }
 
                     // Slope-scale depth bias: depth biasing reduces "shadow acne" artifacts, where dark stripes appear all over the scene
                     // The solution is adding a small bias to the depth

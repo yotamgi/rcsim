@@ -183,6 +183,7 @@ public:
     void shadow_pass(const std::shared_ptr<Light> &shadow_light,
                      raylib::Shader &shader);
     void write_shadowmap_to_shader(raylib::Shader &shader);
+    int texture_slot() const { return 8 + m_shadow_index; }
     raylib::RenderTexture2D m_shadowmap;
     std::vector<std::shared_ptr<Model>> m_models;
     const size_t m_size;

@@ -1,9 +1,13 @@
 #include "raylib_engine.h"
 
-#if defined(PLATFORM_DESKTOP)
-#define GLSL_VERSION 330
+#ifdef PLATFORM_DESKTOP
+const std::string LIGHTING_SHADER_PATH =
+    "resources/shaders/glsl330/lighting_with_shadow";
+const std::string SKYBOX_SHADER_PATH = "resources/shaders/glsl330/skybox";
 #else // PLATFORM_ANDROID, PLATFORM_WEB
-#define GLSL_VERSION 100
+const std::string LIGHTING_SHADER_PATH =
+    "resources/shaders/glsl300es/lighting_with_shadow";
+const std::string SKYBOX_SHADER_PATH = "resources/shaders/glsl100/skybox";
 #endif
 
 #include <GLFW/glfw3.h>
@@ -145,30 +149,35 @@ RenderTexture2D load_shadowmap_from_texture(int width, int height) {
   }
   rlEnableFramebuffer(target.id);
 
-  // 1. Create and Attach Dummy Color Texture (Required for FBO completeness)
-  target.texture.id = rlLoadTexture(NULL, width, height,
-                                    RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, 1);
+  // 1. Create and attach a 1D color texture, in which the the shader will store
+  // the depth values.
+  target.texture.id =
+      rlLoadTexture(NULL, width, height, RL_PIXELFORMAT_UNCOMPRESSED_R32, 1);
   target.texture.width = width;
   target.texture.height = height;
-  target.texture.format = RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+  target.texture.format = RL_PIXELFORMAT_UNCOMPRESSED_R32;
   target.texture.mipmaps = 1;
+  SetTextureWrap(target.texture, RL_TEXTURE_WRAP_CLAMP);
   rlFramebufferAttach(target.id, target.texture.id,
                       RL_ATTACHMENT_COLOR_CHANNEL0, RL_ATTACHMENT_TEXTURE2D, 0);
 
-  // 2. Create and Attach Depth Texture
-  target.depth.id = rlLoadTextureDepth(width, height, false);
+  // 2. Create and attach a depth texture, required for the 3D rendering in the
+  // shadow pass.
+  //
+  // Note: While on Linux, the depth texture is later a valid texture with depth
+  // values, and thus can be used directly for the shadowmap, on Web this is not
+  // the case, and no matter how hard I tried, the depth texture could not be
+  // used directly. Thus, in the shader, I output the depth values to the color
+  // texture, and use it as the shadowmap.
+  target.depth.id = rlLoadTextureDepth(width, height, true);
+  SetTextureWrap(target.depth, RL_TEXTURE_WRAP_CLAMP);
   target.depth.width = width;
   target.depth.height = height;
   target.depth.format = GL_DEPTH_COMPONENT24;
   target.depth.mipmaps = 1;
 
-  rlTextureParameters(target.depth.id, RL_TEXTURE_MAG_FILTER,
-                      RL_TEXTURE_FILTER_NEAREST);
-  rlTextureParameters(target.depth.id, RL_TEXTURE_MIN_FILTER,
-                      RL_TEXTURE_FILTER_NEAREST);
-
   rlFramebufferAttach(target.id, target.depth.id, RL_ATTACHMENT_DEPTH,
-                      RL_ATTACHMENT_TEXTURE2D, 0);
+                      RL_ATTACHMENT_RENDERBUFFER, 0);
 
   if (rlFramebufferComplete(target.id)) {
     TraceLog(LOG_INFO, "Shadowmap FBO created successfully.");
@@ -218,15 +227,18 @@ void RaylibDevice::ShadowGroup::shadow_pass(
                                 ? CAMERA_ORTHOGRAPHIC
                                 : CAMERA_PERSPECTIVE;
 
-  // In shadow pass, there is no need to calculate shadow logic.
-  int use_shadow = 0;
-  shader.SetValue(shader.GetLocation("useShadow"), &use_shadow,
+  // Make the shader output depth values to the color texture, to be used later
+  // for shadowmap calculation.
+  int output_depth = 1;
+  shader.SetValue(shader.GetLocation("outputDepth"), &output_depth,
                   SHADER_UNIFORM_INT);
+
+  rlActiveTextureSlot(texture_slot());
+  rlDisableTexture();
+  rlActiveTextureSlot(0);
 
   BeginTextureMode(m_shadowmap);
 
-  rlEnableDepthTest();
-  rlEnableDepthMask();
   ClearBackground(WHITE);
 
   BeginMode3D(light_camera);
@@ -237,6 +249,12 @@ void RaylibDevice::ShadowGroup::shadow_pass(
   }
   EndMode3D();
   EndTextureMode();
+
+  // Reset shader output to normal rendering.
+  output_depth = 0;
+  shader.SetValue(shader.GetLocation("outputDepth"), &output_depth,
+                  SHADER_UNIFORM_INT);
+
   mat4 light_view_proj = light_view * light_proj;
 
   shader.SetValue(
@@ -246,17 +264,14 @@ void RaylibDevice::ShadowGroup::shadow_pass(
 
 void RaylibDevice::ShadowGroup::write_shadowmap_to_shader(
     raylib::Shader &shader) {
+  int slot = texture_slot();
   rlEnableShader(shader.id);
-  int slot = 10 + m_shadow_index; // Can be anything 0 to 15, but 0 will
-                                  // probably be taken up
   rlActiveTextureSlot(slot);
-  rlEnableTexture(m_shadowmap.depth.id);
+  rlEnableTexture(m_shadowmap.texture.id);
 
   rlSetUniform(shader.GetLocation(
                    TextFormat("shadowMaps[%i].shadowMap", m_shadow_index)),
                &slot, SHADER_UNIFORM_INT, 1);
-  // rlSetUniform(shader.GetLocation("shadowMap"), &slot,
-  // SHADER_UNIFORM_INT, 1);
   shader.SetValue(shader.GetLocation(
                       TextFormat("shadowMaps[%i].resolution", m_shadow_index)),
                   &m_size, SHADER_UNIFORM_INT);
@@ -277,11 +292,8 @@ RaylibDevice::RaylibDevice(int screen_width, int screen_height,
   InitWindow(screen_width, screen_height,
              title.c_str()); // Create window and OpenGL context
 
-  m_lighting_shader = raylib::Shader(
-      TextFormat("resources/shaders/glsl%i/lighting_with_shadow.vs",
-                 GLSL_VERSION),
-      TextFormat("resources/shaders/glsl%i/lighting_with_shadow.fs",
-                 GLSL_VERSION));
+  m_lighting_shader = raylib::Shader(LIGHTING_SHADER_PATH + ".vs",
+                                     LIGHTING_SHADER_PATH + ".fs");
 
   m_camera.fovy = 45.0;
   m_camera.projection = CAMERA_PERSPECTIVE;
@@ -398,24 +410,20 @@ void RaylibDevice::add_skybox_from_image(const raylib::Image &image) {
   Mesh cube = GenMeshCube(1.0f, 1.0f, 1.0f);
   m_skybox_model = LoadModelFromMesh(cube);
 
+  Shader skyboxShader = LoadShader((SKYBOX_SHADER_PATH + ".vs").c_str(),
+                                   (SKYBOX_SHADER_PATH + ".fs").c_str());
+
   // Load skybox shader and set required locations
   // NOTE: Some locations are automatically set at shader loading
-  m_skybox_model->materials[0].shader = LoadShader(
-      TextFormat("resources/shaders/glsl%i/skybox.vs", GLSL_VERSION),
-      TextFormat("resources/shaders/glsl%i/skybox.fs", GLSL_VERSION));
+  m_skybox_model->materials[0].shader = skyboxShader;
 
-  SetShaderValue(
-      m_skybox_model->materials[0].shader,
-      GetShaderLocation(m_skybox_model->materials[0].shader, "environmentMap"),
-      (int[1]){MATERIAL_MAP_CUBEMAP}, SHADER_UNIFORM_INT);
-  SetShaderValue(
-      m_skybox_model->materials[0].shader,
-      GetShaderLocation(m_skybox_model->materials[0].shader, "doGamma"),
-      (int[1]){0}, SHADER_UNIFORM_INT);
-  SetShaderValue(
-      m_skybox_model->materials[0].shader,
-      GetShaderLocation(m_skybox_model->materials[0].shader, "vflipped"),
-      (int[1]){0}, SHADER_UNIFORM_INT);
+  SetShaderValue(skyboxShader,
+                 GetShaderLocation(skyboxShader, "environmentMap"),
+                 (int[1]){MATERIAL_MAP_CUBEMAP}, SHADER_UNIFORM_INT);
+  SetShaderValue(skyboxShader, GetShaderLocation(skyboxShader, "doGamma"),
+                 (int[1]){0}, SHADER_UNIFORM_INT);
+  SetShaderValue(skyboxShader, GetShaderLocation(skyboxShader, "vflipped"),
+                 (int[1]){0}, SHADER_UNIFORM_INT);
 
   m_skybox_model->materials[0].maps[MATERIAL_MAP_CUBEMAP].texture =
       LoadTextureCubemap(image,
@@ -464,8 +472,6 @@ void RaylibDevice::draw_frame() {
   m_lighting_shader.SetValue(m_lighting_shader.locs[SHADER_LOC_VECTOR_VIEW],
                              cameraPos.data(), SHADER_UNIFORM_VEC3);
 
-  int use_shadow = m_shadow_groups.size() > 0;
-
   // Update light values (actually, only enable/disable them)
   for (const auto &light : m_lights) {
     light->write_to_shader(m_lighting_shader);
@@ -475,9 +481,6 @@ void RaylibDevice::draw_frame() {
   for (auto shadow_group : m_shadow_groups) {
     shadow_group->shadow_pass(*m_lights.begin(), m_lighting_shader);
   }
-
-  m_lighting_shader.SetValue(m_lighting_shader.GetLocation("useShadow"),
-                             &use_shadow, SHADER_UNIFORM_INT);
 
   ClearBackground(RAYWHITE);
 

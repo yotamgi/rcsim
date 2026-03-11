@@ -108,8 +108,8 @@ int main() {
 
     // Draw.
     device.get_camera().SetTarget(model_conf.model->get_position());
-    // model_conf.dashboard->update_ui(model_conf.controls->get_telemetry(),
-    //                                 model_conf.model->get_telemetry());
+    model_conf.dashboard->update_ui(model_conf.controls->get_telemetry(),
+                                    model_conf.model->get_telemetry());
     device.draw_frame();
   }
 

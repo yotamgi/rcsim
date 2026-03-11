@@ -20,6 +20,7 @@ static raylib::Vector3 operator*(const float &scalar,
 namespace engine {
 
 typedef raylib::Vector3 vec3;
+typedef raylib::Vector2 vec2;
 typedef raylib::Rectangle rect2;
 typedef raylib::Matrix mat4;
 typedef raylib::Texture Texture;
@@ -123,9 +124,14 @@ class Image2D {
 public:
   const rect2 &get_position() const { return m_position; }
   void set_position(const rect2 &position) { m_position = position; }
+  const vec2 &get_origin() const { return m_origin; }
+  void set_origin(const vec2 &origin) { m_origin = origin; }
   const float &get_rotation() const { return m_rotation; }
   void set_rotation(float rotation) { m_rotation = rotation; }
+  const bool visible() const { return m_visible; }
+  void set_visible(bool visible) { m_visible = visible; } 
 
+  Color get_pixel_color(int x, int y);
   void set_pixel_color(int x, int y, Color color);
 private:
   Image2D(std::string file_name);
@@ -137,7 +143,9 @@ private:
   raylib::Texture2D m_texture;
   bool m_image_changed;
   rect2 m_position;
+  vec2 m_origin;
   float m_rotation;
+  bool m_visible;
 
   friend class RaylibDevice;
 };
@@ -162,6 +170,8 @@ public:
   std::shared_ptr<Light> create_light(LightType type, raylib::Vector3 position,
                                       raylib::Vector3 target,
                                       raylib::Color color);
+  int get_screen_width() const { return ::GetScreenWidth(); }
+  int get_screen_height() const { return ::GetScreenHeight(); }
 
   void add_skybox_from_single_image(std::string image_path);
   void add_skybox_from_6_images(std::string right, std::string left,

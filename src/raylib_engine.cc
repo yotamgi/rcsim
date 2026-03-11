@@ -111,11 +111,13 @@ vec3 Model::get_pos() { return get_world_transform() * vec3(0, 0, 0); }
 
 Image2D::Image2D(int x, int y)
     : m_image(x, y), m_image_changed(true),
-      m_position{0, 0, (float)x, (float)y} {}
+      m_position{0, 0, (float)x, (float)y}, m_rotation(0), m_origin(0, 0),
+      m_visible(true) {}
 
 Image2D::Image2D(std::string file_name)
     : m_image(file_name), m_image_changed(true),
-      m_position{0, 0, (float)m_image.width, (float)m_image.height} {}
+      m_position{0, 0, (float)m_image.width, (float)m_image.height},
+      m_rotation(0), m_origin(0, 0), m_visible(true) {}
 
 void Image2D::set_pixel_color(int x, int y, Color color) {
   if (x >= m_image.width || y >= m_image.height) {
@@ -126,14 +128,25 @@ void Image2D::set_pixel_color(int x, int y, Color color) {
   m_image_changed = true;
 }
 
+Color Image2D::get_pixel_color(int x, int y) {
+  if (x >= m_image.width || y >= m_image.height) {
+    throw std::out_of_range("Pixel coordinates are out of bounds.");
+  }
+
+  return m_image.GetColor(x, y);
+}
+
 void Image2D::draw() {
+  if (!m_visible) {
+    return;
+  }
   if (m_image_changed) {
     m_texture = m_image.LoadTexture();
     m_image_changed = false;
   }
 
   rect2 source_rect = {0, 0, (float)m_image.width, (float)m_image.height};
-  m_texture.Draw(source_rect, m_position, {0, 0}, m_rotation);
+  m_texture.Draw(source_rect, m_position, m_origin, m_rotation);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

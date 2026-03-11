@@ -38,6 +38,7 @@ add_executable(${PROJECT_NAME}
     src/flying_object.cc
     src/controls.cc
     src/model_configurations.cc
+    src/dashboard.cc
 )
 
 # 7. Link against raylib

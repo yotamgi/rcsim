@@ -335,6 +335,8 @@ CurvesInstrument::CurvesInstrument(
                  curve_colors[curve_group_index]);
     }
     m_curves_images.push_back(curves_image);
+    m_pin_images.push_back(create_circular_pin_image(
+        device, PIN_SIZE * 2, engine::Color(0xff, 0, 0, 0xff)));
   }
 
   // Create the curves vertical line.
@@ -344,8 +346,6 @@ CurvesInstrument::CurvesInstrument(
       m_curves_vertical_line->set_pixel_color(x, y,
                                               engine::Color(0, 0, 0, 0x80));
     }
-    m_pin_images.push_back(create_circular_pin_image(
-        device, PIN_SIZE * 2, engine::Color(0xff, 0, 0, 0xff)));
   }
 }
 

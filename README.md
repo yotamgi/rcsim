@@ -21,14 +21,15 @@ How to Compile Locally
 
 To complie and run for linux environment, just
 
-```
+```bash
 make run_linux
 ```
 
 To complie and run for the web environment, just
 
-```
+```bash
 make run_web
 ```
 
  Note:  The build platform uses CMake, where the head `Makefile` is only used for caching the build commands.
+

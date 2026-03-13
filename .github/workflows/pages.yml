@@ -23,7 +23,7 @@ jobs:
       - name: Organize files for website
         run: |
           mkdir _site
-          cp build-web/* _site/
+          cp -r build-web/* _site/
           mv _site/rcsim.html _site/index.html
 
       - name: Upload pages artifact

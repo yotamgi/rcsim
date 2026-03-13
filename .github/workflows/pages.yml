@@ -1,0 +1,43 @@
+name: Build & publish WASM game
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-html:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Install CMake
+        run: sudo apt-get update && sudo apt-get install -y cmake
+
+      - name: Setup emsdk (emscripten)
+        uses: mymindstorm/setup-emsdk@v14
+
+      - name: Build
+        run: make build_web
+
+      - name: Organize files for website
+        run: |
+          mkdir _site
+          cp build-web/* _site/
+          mv _site/rcsim.html _site/index.html
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+
+  deploy-html:
+    needs: [build-html]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

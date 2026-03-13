@@ -275,17 +275,27 @@ void BaseHeli::update_torbulation(float time_delta,
 
 void BaseHeli::calc_aerodynamic_drag(const engine::vec3 &wind_speed,
                                      engine::vec3 &out_force_in_world,
-                                     engine::vec3 &out_torque_in_world) {
+                                     engine::vec3 &out_torque_in_world)
+/** The helicopter aerodynamic drag force and torque.
+ *
+ * The drag force is calculated by the per-axis drag coefficients, as
+ * set in params.drag.
+ *
+ * The drag torque is heuristically calculated assuming the tail rotor applies a
+ * drag on the air proportional to the tail rotor force, and the main rotor
+ * applies a drag force which creates a torque.
+ */
+{
   engine::vec3 airspeed_in_world = -(m_v - wind_speed);
 
   // Calculate the drag force.
   engine::vec3 drag_vec = m_params.drag;
-  engine::mat4 world_to_heli = m_rotor_rotation.Transpose();
-  engine::vec3 airspeed_in_heli = world_to_heli * airspeed_in_world;
 
-  engine::vec3 aerodynamic_drag_force =
-      m_rotor_rotation * drag_vec *
-      airspeed_in_heli; // Back in world coord system.
+  // The drag force is calculated by:
+  // F_drag = - Rotation * diag(drag_vec) * Rotation^T * airspeed_in_world
+  out_force_in_world =
+      -(m_rotor_rotation *
+        (drag_vec * (m_rotor_rotation.Transpose() * airspeed_in_world)));
 
   // calculate the tail-drag torque.
   engine::vec3 heli_right_in_world(engine::mat_get(m_body_rotation, 0, 0),
@@ -299,8 +309,6 @@ void BaseHeli::calc_aerodynamic_drag(const engine::vec3 &wind_speed,
   engine::vec3 total_tail_torque_in_world =
       m_body_rotation * aerodynamic_drag_torque;
 
-  // Return;
-  out_force_in_world = -aerodynamic_drag_force;
   out_torque_in_world = -aerodynamic_drag_torque;
 }
 
@@ -613,8 +621,8 @@ RcBellHeli::RcBellHeli(engine::RaylibDevice *device)
   }
 
   // Create the main rotor mesh.
-  m_rotor_node = device->load_model(
-      "resources/media/Bell/source/bell_main_rotor.obj");
+  m_rotor_node =
+      device->load_model("resources/media/Bell/source/bell_main_rotor.obj");
   m_rotor_node->set_transform(engine::mat4::Translate(0.45, -1.4, 0));
   materials = m_rotor_node->get_materials();
   for (engine::Material *material : materials) {
@@ -622,9 +630,8 @@ RcBellHeli::RcBellHeli(engine::RaylibDevice *device)
   }
 
   // Create the tail rotor mesh.
-  m_tail_rotor_node =
-      device->load_model("resources/media/Bell/source/bell_tail_rotor.obj",
-                         m_body_node);
+  m_tail_rotor_node = device->load_model(
+      "resources/media/Bell/source/bell_tail_rotor.obj", m_body_node);
   m_tail_rotor_node->set_transform(engine::mat4::Translate(4.62, -1.54, 0));
   materials = m_tail_rotor_node->get_materials();
   for (engine::Material *material : materials) {
@@ -637,8 +644,8 @@ RcBellHeli::RcBellHeli(engine::RaylibDevice *device)
   m_main_rotor_angle = 0;
   m_tail_rotor_angle = 0;
 
-  device->add_shadow_group(
-    {m_body_node, m_tail_rotor_node, m_rotor_node}, 512, 3.0);
+  device->add_shadow_group({m_body_node, m_tail_rotor_node, m_rotor_node}, 512,
+                           3.0);
 
   update_ui(0);
 }

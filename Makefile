@@ -22,8 +22,11 @@ run_linux: build-linux/${PROJECT_NAME}
 	./build-linux/${PROJECT_NAME}
 
 .PHONY:
-run_web: build-web/${PROJECT_NAME}.html
+build_web: build-web/${PROJECT_NAME}.html
 	make -C build-web
+
+.PHONY:
+run_web: build_web
 	google-chrome http://0.0.0.0:8000/build-web/${PROJECT_NAME}.html
 	python3 -m http.server
 

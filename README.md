@@ -1,5 +1,7 @@
 # RCSIM
 
+[![Build & publish WASM game](https://github.com/yotamgi/rcsim/actions/workflows/pages.yml/badge.svg)](https://github.com/yotamgi/rcsim/actions/workflows/pages.yml)
+
 A free, realistic, opensource, cross platform remote controlled models flight simulator for both model helicopters and model airplane.
 
 ## Key Features

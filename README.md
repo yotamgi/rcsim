@@ -1,10 +1,8 @@
-RCSIM
--
+# RCSIM
 
 A free, realistic, opensource, cross platform remote controlled models flight simulator for both model helicopters and model airplane.
 
-Key Features
---
+## Key Features
 
 * Supports both Desktop and Web environments.
 
@@ -16,8 +14,7 @@ Key Features
 
 * Models the entire stack of RC components, including the input channel mixers, flight controller, gyro, servo filters and telemetry.
 
-How to Compile Locally
---
+## How to Compile Locally
 
 To complie and run for linux environment, just
 

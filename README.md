@@ -2,23 +2,23 @@
 
 [![Build & publish WASM game](https://github.com/yotamgi/rcsim/actions/workflows/pages.yml/badge.svg)](https://github.com/yotamgi/rcsim/actions/workflows/pages.yml)
 
-A free, realistic, opensource, cross platform remote controlled models flight simulator for both model helicopters and model airplane.
+A free, open-source, cross-platform flight simulator for remote-controlled (RC) helicopters and airplanes.
 
-The simulator is freely available on the web platform [here](https://yotamgi.github.io/rcsim/).
+The simulator is available to play directly in your web browser [here](https://yotamgi.github.io/rcsim/).
 
 ## Key Features
 
-* Supports both Desktop and Web environments.
+* **Cross-Platform**: Supports both desktop and web environments.
 
-* Supports game RC controllers / Joysticks.
+* **Hardware Support**: Compatible with RC controllers and joysticks.
 
-* For model helicopters, models a veriatiy of aearodynamic effects, including dissimetry of lift, ground effects, heuristics for torbulation, autorotation and more. In addition, it allows turning off the 6dof gyro system during flight.
+* **Realistic Helicopter Physics**: Models a variety of aerodynamic effects, including dissymmetry of lift, ground effect, turbulence heuristics, autorotation, and more. It also features a toggleable 6-DOF gyro system.
 
-* For model airplanes, the modular design allows experimenting with unorthdox wing configurations, while modeling complex aerodynamic behaviour.
+* **Modular Airplane Design**: Allows for experimentation with unorthodox wing configurations while maintaining complex aerodynamic modeling.
 
-* Models the entire stack of RC components, including the input channel mixers, flight controller, gyro, servo filters and telemetry.
+* **Comprehensive RC Stack**: Simulates the entire electronics chain, including input channel mixers, flight controllers, gyros, servo filters, and telemetry.
 
-## How to Compile Locally
+## Compiling and running locally
 
 To complie and run for linux environment, just
 
@@ -32,5 +32,5 @@ To complie and run for the web environment, just
 make run_web
 ```
 
- Note:  The build platform uses CMake, where the head `Makefile` is only used for caching the build commands.
+ Note: The project uses CMake for builds; the top-level Makefile is provided as a convenient wrapper for caching build commands.
 

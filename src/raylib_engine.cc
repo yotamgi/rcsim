@@ -111,13 +111,13 @@ vec3 Model::get_pos() { return get_world_transform() * vec3(0, 0, 0); }
 
 Image2D::Image2D(int x, int y)
     : m_image(x, y), m_image_changed(true),
-      m_position{0, 0, (float)x, (float)y}, m_rotation(0), m_origin(0, 0),
-      m_visible(true) {}
+      m_position{0, 0, (float)x, (float)y}, m_rotation(0), m_origin(0, 0)
+      {}
 
 Image2D::Image2D(std::string file_name)
     : m_image(file_name), m_image_changed(true),
       m_position{0, 0, (float)m_image.width, (float)m_image.height},
-      m_rotation(0), m_origin(0, 0), m_visible(true) {}
+      m_rotation(0), m_origin(0, 0) {}
 
 void Image2D::set_pixel_color(int x, int y, Color color) {
   if (x >= m_image.width || y >= m_image.height) {
@@ -136,10 +136,7 @@ Color Image2D::get_pixel_color(int x, int y) {
   return m_image.GetColor(x, y);
 }
 
-void Image2D::draw() {
-  if (!m_visible) {
-    return;
-  }
+void Image2D::_draw() {
   if (m_image_changed) {
     m_texture = m_image.LoadTexture();
     m_image_changed = false;
@@ -455,15 +452,15 @@ RaylibDevice::add_shadow_group(std::vector<std::shared_ptr<Model>> models,
 std::shared_ptr<Image2D> RaylibDevice::load_image2d(std::string file_name) {
   std::shared_ptr<Image2D> image2d =
       std::shared_ptr<Image2D>(new Image2D(file_name));
-  m_image2ds.push_back(image2d);
-  return m_image2ds.back();
+  m_2d_drawables.push_back(image2d);
+  return image2d;
 }
 
 std::shared_ptr<Image2D> RaylibDevice::create_image2d(int width, int height) {
   std::shared_ptr<Image2D> image2d =
       std::shared_ptr<Image2D>(new Image2D(width, height));
-  m_image2ds.push_back(image2d);
-  return m_image2ds.back();
+  m_2d_drawables.push_back(image2d);
+  return image2d;
 }
 
 void RaylibDevice::draw_frame() {
@@ -527,7 +524,7 @@ void RaylibDevice::draw_frame() {
   DrawFPS(10, 10);
   // DrawText("to be put...", 10, 40, 20, DARKGRAY);
 
-  for (const auto &image2d : m_image2ds) {
+  for (const auto &image2d : m_2d_drawables) {
     image2d->draw();
   }
   EndDrawing();

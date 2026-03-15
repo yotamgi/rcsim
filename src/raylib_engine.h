@@ -120,7 +120,23 @@ private:
   std::shared_ptr<::Mesh> m_mesh = nullptr;
 };
 
-class Image2D {
+class Drawable2D {
+public:
+  Drawable2D() : m_visible(true) {}
+  const bool visible() const { return m_visible; }
+  void set_visible(bool visible) { m_visible = visible; }
+private:
+  virtual void draw() {
+    if (m_visible) {
+      _draw();
+    }
+  }
+  virtual void _draw() = 0;
+  bool m_visible;
+  friend class RaylibDevice;
+};
+
+class Image2D : public Drawable2D {
 public:
   const rect2 &get_position() const { return m_position; }
   void set_position(const rect2 &position) { m_position = position; }
@@ -128,16 +144,15 @@ public:
   void set_origin(const vec2 &origin) { m_origin = origin; }
   const float &get_rotation() const { return m_rotation; }
   void set_rotation(float rotation) { m_rotation = rotation; }
-  const bool visible() const { return m_visible; }
-  void set_visible(bool visible) { m_visible = visible; } 
 
   Color get_pixel_color(int x, int y);
   void set_pixel_color(int x, int y, Color color);
+
 private:
   Image2D(std::string file_name);
   Image2D(int width, int height);
 
-  void draw();
+  virtual void _draw();
 
   raylib::Image m_image;
   raylib::Texture2D m_texture;
@@ -220,7 +235,7 @@ private:
   std::optional<raylib::Model> m_skybox_model;
   std::vector<std::shared_ptr<Model>> m_models;
   std::vector<std::shared_ptr<ShadowGroup>> m_shadow_groups;
-  std::vector<std::shared_ptr<Image2D>> m_image2ds;
+  std::vector<std::shared_ptr<Drawable2D>> m_2d_drawables;
 };
 
 class Joystick {

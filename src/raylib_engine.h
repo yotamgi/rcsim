@@ -165,6 +165,29 @@ private:
   friend class RaylibDevice;
 };
 
+class Text2D : public Drawable2D {
+public:
+  const vec2 &get_position() const { return m_position; }
+  void set_position(const vec2 &position) { m_position = position; }
+  const int &get_font_size() const { return m_font_size; }
+  void set_font_size(int font_size) { m_font_size = font_size; }
+  const Color &get_color() const { return m_color; }
+  void set_color(const Color &color) { m_color = color; }
+  std::string get_text() const { return m_text; }
+  void set_text(const std::string &text) { m_text = text; }
+private:
+  Text2D(std::string text, int font_size, Color color);
+
+  virtual void _draw();
+
+  std::string m_text;
+  int m_font_size;
+  Color m_color;
+  vec2 m_position;
+
+  friend class RaylibDevice;
+};
+
 class RaylibDevice {
 public:
   RaylibDevice(int screen_width, int screen_height, std::string title);
@@ -195,7 +218,7 @@ public:
 
   friend class Model;
   friend class Light;
-  friend class Image2D;
+  friend class Drawable2D;
 
   class ShadowGroup {
   public:
@@ -223,6 +246,8 @@ public:
 
   std::shared_ptr<Image2D> load_image2d(std::string file_name);
   std::shared_ptr<Image2D> create_image2d(int width, int height);
+  std::shared_ptr<Text2D> create_text2d(std::string text, int font_size, Color color);
+  void delete_drawable2d(std::shared_ptr<Drawable2D> drawable);
 
   void draw_frame();
 

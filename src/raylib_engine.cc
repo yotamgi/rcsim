@@ -147,6 +147,17 @@ void Image2D::_draw() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Text2D implementation
+////////////////////////////////////////////////////////////////////////////////
+
+Text2D::Text2D(std::string text, int font_size, Color color)
+    : m_text(text), m_font_size(font_size), m_color(color), m_position(0, 0) {}
+
+void Text2D::_draw() {
+  raylib::DrawText(m_text.c_str(), (int)m_position.x, (int)m_position.y, m_font_size, m_color);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // RaylibDevice implementation
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -461,6 +472,19 @@ std::shared_ptr<Image2D> RaylibDevice::create_image2d(int width, int height) {
       std::shared_ptr<Image2D>(new Image2D(width, height));
   m_2d_drawables.push_back(image2d);
   return image2d;
+}
+
+std::shared_ptr<Text2D> RaylibDevice::create_text2d(std::string text, int font_size, Color color) {
+  std::shared_ptr<Text2D> text2d =
+      std::shared_ptr<Text2D>(new Text2D(text, font_size, color));
+  m_2d_drawables.push_back(text2d);
+  return text2d;
+}
+
+void RaylibDevice::delete_drawable2d(std::shared_ptr<Drawable2D> drawable) {
+  m_2d_drawables.erase(
+      std::remove(m_2d_drawables.begin(), m_2d_drawables.end(), drawable),
+      m_2d_drawables.end());
 }
 
 void RaylibDevice::draw_frame() {

@@ -489,7 +489,7 @@ std::vector<BaseHeli::TouchPoint> BaseHeli::get_touchpoints_in_world() const {
 
 BaseHeli::Telemetry BaseHeli::get_telemetry() const {
   Telemetry telemetry;
-  telemetry.rps = m_main_rotor_vel / 360;
+  telemetry.rps = std::abs(m_main_rotor_vel / 360);
   telemetry.target_rps = m_main_rotor_target_rps;
   return telemetry;
 }

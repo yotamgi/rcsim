@@ -80,7 +80,8 @@ private:
 class SpeedometerInstrument {
 public:
   SpeedometerInstrument(engine::RaylibDevice *device, float pos_x, int pos_y,
-                        float max_value);
+                        float max_value, std::string headline,
+                        std::string value_template, std::string unit);
   void update(float value1, float value2);
 
 private:
@@ -88,9 +89,13 @@ private:
   std::shared_ptr<engine::Image2D> m_speedometer_image;
   std::shared_ptr<engine::Image2D> m_speedometer_hand_image;
   std::shared_ptr<engine::Image2D> m_speedometer_hand2_image;
+  std::shared_ptr<engine::Text2D> m_text_headline;
+  std::shared_ptr<engine::Text2D> m_text_value;
+  std::shared_ptr<engine::Text2D> m_text_unit;
   int m_pos_x;
   int m_pos_y;
   float m_max_value;
+  std::string m_text_value_template;
 };
 
 class Dashboard {

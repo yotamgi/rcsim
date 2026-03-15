@@ -1,6 +1,7 @@
 #include "dashboard.h"
 #include <cmath>
 
+#include <format>
 #include <iostream>
 #include <sstream>
 
@@ -380,11 +381,11 @@ void CurvesInstrument::update(unsigned long active_curve_index,
 //  SpeedometerInstrument class implementation
 ////////////////////////////////////////////////////////////////////////////////
 
-SpeedometerInstrument::SpeedometerInstrument(engine::RaylibDevice *device,
-                                             float pos_x, int pos_y,
-                                             float max_value)
+SpeedometerInstrument::SpeedometerInstrument(
+    engine::RaylibDevice *device, float pos_x, int pos_y, float max_value,
+    std::string headline, std::string value_template, std::string unit)
     : m_device(device), m_pos_x(POS_X(pos_x)), m_pos_y(POS_Y(pos_y)),
-      m_max_value(max_value) {
+      m_max_value(max_value), m_text_value_template(value_template) {
 
   // Create the main rotor indicator.
   m_speedometer_image =
@@ -398,6 +399,13 @@ SpeedometerInstrument::SpeedometerInstrument(engine::RaylibDevice *device,
   float origin_y = float(MAIN_ROTOR_INDICATOR_HAND_HEIGHT) * (286.6 / 329);
   m_speedometer_hand_image->set_origin({origin_x, origin_y});
   m_speedometer_hand2_image->set_origin({origin_x, origin_y});
+  m_text_headline =
+      m_device->create_text2d(headline, 30, engine::Color(0, 0, 0, 0xff),
+                              engine::TextAlignment::CENTER);
+  m_text_value = m_device->create_text2d("", 70, engine::Color(0, 0, 0, 0xff),
+                                         engine::TextAlignment::CENTER);
+  m_text_unit = m_device->create_text2d(unit, 20, engine::Color(0, 0, 0, 0xff),
+                                        engine::TextAlignment::CENTER);
 }
 
 void SpeedometerInstrument::update(float value1, float value2) {
@@ -418,6 +426,15 @@ void SpeedometerInstrument::update(float value1, float value2) {
       (float)hand_x, (float)hand_y, (float)(MAIN_ROTOR_INDICATOR_HAND_WIDTH),
       (float)(MAIN_ROTOR_INDICATOR_HAND_HEIGHT)});
   m_speedometer_hand_image->set_rotation(180. * value1 / m_max_value - 90.);
+
+  // The texts.
+  float text_pos_x = m_pos_x + MAIN_ROTOR_INDICATOR_WIDTH / 2;
+  m_text_headline->set_position(engine::vec2{(float)text_pos_x, (float)m_pos_y - 10});
+  char *output_text = new char[m_text_value_template.size() + 100];
+  sprintf(output_text, m_text_value_template.c_str(), value1, value2);
+  m_text_value->set_text(std::string(output_text));
+  m_text_value->set_position(engine::vec2{(float)text_pos_x, (float)m_pos_y + 70});
+  m_text_unit->set_position(engine::vec2{(float)text_pos_x, (float)m_pos_y + MAIN_ROTOR_INDICATOR_HEIGHT});
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -439,7 +456,8 @@ HeliDashboard::HeliDashboard(engine::RaylibDevice *device,
                           CURVES_IMAGE_POS_X, CURVES_IMAGE_POS_Y,
                           CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT),
       m_main_rotor_instrument(device, MAIN_ROTOR_INDICATOR_X,
-                              MAIN_ROTOR_INDICATOR_Y, max_rps) {
+                              MAIN_ROTOR_INDICATOR_Y, max_rps, "Main Rotor",
+                              "%1.1f", "RPS") {
 
   // Create the dashboard background
   for (int x = 0; x < 10; x++) {
@@ -485,7 +503,8 @@ PlaneDashboard::PlaneDashboard(engine::RaylibDevice *device, float max_speed)
       m_throttle_instrument(device, CONTROLS_POS_X * 0.8, CONTROLS_POS_Y,
                             CONTROLS_SIZE / 4, CONTROLS_SIZE),
       m_airspeed_instrument(device, MAIN_ROTOR_INDICATOR_X,
-                            MAIN_ROTOR_INDICATOR_Y, max_speed) {
+                            MAIN_ROTOR_INDICATOR_Y, max_speed, "Airspeed",
+                            "%.1f", "m/s") {
 
   // Create the dashboard background
   for (int x = 0; x < 10; x++) {

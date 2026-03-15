@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include <format>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 
@@ -307,9 +308,11 @@ CurvesInstrument::CurvesInstrument(
     engine::RaylibDevice *device,
     std::vector<std::vector<ControllerCurve>> curve_groups,
     std::vector<engine::Color> curve_colors, float pos_x, int pos_y, int width,
-    int height)
-    : m_device(device), m_curve_groups(curve_groups), m_pos_x(POS_X(pos_x)),
-      m_pos_y(POS_Y(pos_y)), m_width(width), m_height(height) {
+    int height, std::vector<std::string> curve_group_names,
+    std::vector<std::string> curve_names)
+    : m_device(device), m_curve_groups(curve_groups),
+      m_curve_names(curve_names), m_pos_x(POS_X(pos_x)), m_pos_y(POS_Y(pos_y)),
+      m_width(width), m_height(height) {
 
   size_t num_curves_in_group = curve_groups[0].size();
 
@@ -348,6 +351,18 @@ CurvesInstrument::CurvesInstrument(
                                               engine::Color(0, 0, 0, 0x80));
     }
   }
+
+  // Create the texts.
+  for (std::string curve_group_name : curve_group_names) {
+    m_headline_text.push_back(m_device->create_text2d(
+        "Throttle-Lift Curve - " + curve_group_name, 20,
+        engine::Color(0, 0, 0, 0xff), engine::TextAlignment::CENTER));
+  }
+
+  for (int curve_index = 0; curve_index < num_curves_in_group; curve_index++) {
+    m_curve_texts.push_back(m_device->create_text2d(
+        curve_names[curve_index], 20, curve_colors[curve_index]));
+  }
 }
 
 void CurvesInstrument::update(unsigned long active_curve_index,
@@ -374,6 +389,23 @@ void CurvesInstrument::update(unsigned long active_curve_index,
     m_pin_images[i]->set_position(engine::rect2{
         (float)(throttle_pin_x + m_pos_x), (float)(throttle_pin_y + m_pos_y),
         (float)pin_size, (float)pin_size});
+  }
+
+  // Update the texts.
+  for (size_t i = 0; i < m_headline_text.size(); i++) {
+    m_headline_text[i]->set_visible(i == active_curve_index);
+    m_headline_text[i]->set_position(
+        engine::vec2{(float)(m_pos_x + m_width / 2), (float)m_pos_y - 30});
+  }
+
+  float delta_x = m_width / m_curve_texts.size();
+  for (size_t i = 0; i < m_curve_texts.size(); i++) {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(0) << m_curve_names[i] << ": "
+       << y_levels[i] * 100 << "%";
+    m_curve_texts[i]->set_text(ss.str());
+    m_curve_texts[i]->set_position(engine::vec2{
+        (float)(m_pos_x + delta_x * i), (float)(m_pos_y + m_height + 5)});
   }
 }
 
@@ -456,9 +488,10 @@ HeliDashboard::HeliDashboard(engine::RaylibDevice *device,
                               CONTROLS_SIZE),
       m_curves_instrument(device, {throttle_curves, lift_curves},
                           {engine::Color(0x8c, 0x2a, 0xde, 0xb0),
-                           engine::Color(0x42, 0x9e, 0xff, 0xb0)},
+                           engine::Color(0x42/2, 0x9e/2, 0xff/2, 0xb0)},
                           CURVES_IMAGE_POS_X, CURVES_IMAGE_POS_Y,
-                          CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT),
+                          CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT,
+                          {"Normal", "Idle-up"}, {"Thr", "Lift"}),
       m_main_rotor_instrument(device, MAIN_ROTOR_INDICATOR_X,
                               MAIN_ROTOR_INDICATOR_Y, max_rps, "Main Rotor",
                               "%2.1f", "RPS") {

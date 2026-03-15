@@ -61,7 +61,9 @@ public:
   CurvesInstrument(engine::RaylibDevice *device,
                    std::vector<std::vector<ControllerCurve>> curve_groups,
                    std::vector<engine::Color> curve_colors, float pos_x,
-                   int pos_y, int width, int height);
+                   int pos_y, int width, int height,
+                   std::vector<std::string> curve_group_names,
+                   std::vector<std::string> curve_names);
   void update(unsigned long active_curve_index, float x_stick_level,
               std::vector<float> y_levels);
 
@@ -71,6 +73,9 @@ private:
   std::vector<std::shared_ptr<engine::Image2D>> m_pin_images;
   std::shared_ptr<engine::Image2D> m_curves_vertical_line;
   std::vector<std::vector<ControllerCurve>> m_curve_groups;
+  std::vector<std::shared_ptr<engine::Text2D>> m_headline_text;
+  std::vector<std::shared_ptr<engine::Text2D>> m_curve_texts;
+  std::vector<std::string> m_curve_names;
   int m_pos_x;
   int m_pos_y;
   int m_width;

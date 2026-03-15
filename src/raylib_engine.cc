@@ -111,8 +111,7 @@ vec3 Model::get_pos() { return get_world_transform() * vec3(0, 0, 0); }
 
 Image2D::Image2D(int x, int y)
     : m_image(x, y), m_image_changed(true),
-      m_position{0, 0, (float)x, (float)y}, m_rotation(0), m_origin(0, 0)
-      {}
+      m_position{0, 0, (float)x, (float)y}, m_rotation(0), m_origin(0, 0) {}
 
 Image2D::Image2D(std::string file_name)
     : m_image(file_name), m_image_changed(true),
@@ -150,11 +149,20 @@ void Image2D::_draw() {
 // Text2D implementation
 ////////////////////////////////////////////////////////////////////////////////
 
-Text2D::Text2D(std::string text, int font_size, Color color)
-    : m_text(text), m_font_size(font_size), m_color(color), m_position(0, 0) {}
+Text2D::Text2D(std::string text, int font_size, Color color,
+               TextAlignment alignment)
+    : m_text(text), m_font_size(font_size), m_color(color), m_position(0, 0),
+      m_alignment(alignment) {}
 
 void Text2D::_draw() {
-  raylib::DrawText(m_text.c_str(), (int)m_position.x, (int)m_position.y, m_font_size, m_color);
+  float text_pos_x = m_position.x;
+  if (m_alignment == TextAlignment::CENTER) {
+    text_pos_x -= MeasureText(m_text.c_str(), m_font_size) / 2.0f;
+  } else if (m_alignment == TextAlignment::RIGHT) {
+    text_pos_x -= MeasureText(m_text.c_str(), m_font_size);
+  }
+  raylib::DrawText(m_text.c_str(), (int)text_pos_x, (int)m_position.y,
+                   m_font_size, m_color);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -474,9 +482,11 @@ std::shared_ptr<Image2D> RaylibDevice::create_image2d(int width, int height) {
   return image2d;
 }
 
-std::shared_ptr<Text2D> RaylibDevice::create_text2d(std::string text, int font_size, Color color) {
+std::shared_ptr<Text2D> RaylibDevice::create_text2d(std::string text,
+                                                    int font_size, Color color,
+                                                    TextAlignment alignment) {
   std::shared_ptr<Text2D> text2d =
-      std::shared_ptr<Text2D>(new Text2D(text, font_size, color));
+      std::shared_ptr<Text2D>(new Text2D(text, font_size, color, alignment));
   m_2d_drawables.push_back(text2d);
   return text2d;
 }

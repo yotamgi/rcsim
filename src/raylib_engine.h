@@ -125,6 +125,7 @@ public:
   Drawable2D() : m_visible(true) {}
   const bool visible() const { return m_visible; }
   void set_visible(bool visible) { m_visible = visible; }
+
 private:
   virtual void draw() {
     if (m_visible) {
@@ -165,6 +166,8 @@ private:
   friend class RaylibDevice;
 };
 
+enum class TextAlignment { LEFT, CENTER, RIGHT };
+
 class Text2D : public Drawable2D {
 public:
   const vec2 &get_position() const { return m_position; }
@@ -175,8 +178,10 @@ public:
   void set_color(const Color &color) { m_color = color; }
   std::string get_text() const { return m_text; }
   void set_text(const std::string &text) { m_text = text; }
+
 private:
-  Text2D(std::string text, int font_size, Color color);
+  Text2D(std::string text, int font_size, Color color,
+         TextAlignment alignment = TextAlignment::LEFT);
 
   virtual void _draw();
 
@@ -184,6 +189,7 @@ private:
   int m_font_size;
   Color m_color;
   vec2 m_position;
+  TextAlignment m_alignment;
 
   friend class RaylibDevice;
 };
@@ -246,7 +252,9 @@ public:
 
   std::shared_ptr<Image2D> load_image2d(std::string file_name);
   std::shared_ptr<Image2D> create_image2d(int width, int height);
-  std::shared_ptr<Text2D> create_text2d(std::string text, int font_size, Color color);
+  std::shared_ptr<Text2D>
+  create_text2d(std::string text, int font_size, Color color,
+                TextAlignment alignment = TextAlignment::LEFT);
   void delete_drawable2d(std::shared_ptr<Drawable2D> drawable);
 
   void draw_frame();

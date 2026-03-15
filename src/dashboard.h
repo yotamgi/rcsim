@@ -124,6 +124,7 @@ private:
   Controls2dInstrument m_pitch_roll_instrument;
   CurvesInstrument m_curves_instrument;
   SpeedometerInstrument m_main_rotor_instrument;
+  std::shared_ptr<engine::Text2D> m_input_text;
 
   // // Texts.
   // std::shared_ptr<engine::Image2D> m_throttle_text;

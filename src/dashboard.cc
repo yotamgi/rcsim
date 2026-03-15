@@ -488,13 +488,16 @@ HeliDashboard::HeliDashboard(engine::RaylibDevice *device,
                               CONTROLS_SIZE),
       m_curves_instrument(device, {throttle_curves, lift_curves},
                           {engine::Color(0x8c, 0x2a, 0xde, 0xb0),
-                           engine::Color(0x42/2, 0x9e/2, 0xff/2, 0xb0)},
+                           engine::Color(0x42 / 2, 0x9e / 2, 0xff / 2, 0xb0)},
                           CURVES_IMAGE_POS_X, CURVES_IMAGE_POS_Y,
                           CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT,
                           {"Normal", "Idle-up"}, {"Thr", "Lift"}),
       m_main_rotor_instrument(device, MAIN_ROTOR_INDICATOR_X,
                               MAIN_ROTOR_INDICATOR_Y, max_rps, "Main Rotor",
-                              "%2.1f", "RPS") {
+                              "%2.1f", "RPS"),
+      m_input_text(device->create_text2d("Stick Input", 20,
+                                         engine::Color(0, 0, 0, 0xff),
+                                         engine::TextAlignment::RIGHT)) {
 
   // Create the dashboard background
   for (int x = 0; x < 10; x++) {
@@ -525,6 +528,10 @@ void HeliDashboard::update_ui(const Controls::Telemetry &controls_telemetry,
 
   // Draw the main rotor indicator.
   m_main_rotor_instrument.update(telemetry.rps, telemetry.target_rps);
+
+  // The input text.
+  m_input_text->set_position(
+      engine::vec2{POS_X(CONTROLS_POS_X), POS_Y(CONTROLS_POS_Y)});
 }
 
 ////////////////////////////////////////////////////////////////////////////////

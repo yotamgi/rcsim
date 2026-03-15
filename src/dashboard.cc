@@ -429,12 +429,16 @@ void SpeedometerInstrument::update(float value1, float value2) {
 
   // The texts.
   float text_pos_x = m_pos_x + MAIN_ROTOR_INDICATOR_WIDTH / 2;
-  m_text_headline->set_position(engine::vec2{(float)text_pos_x, (float)m_pos_y - 10});
+  m_text_headline->set_position(
+      engine::vec2{(float)text_pos_x, (float)m_pos_y - 10});
   char *output_text = new char[m_text_value_template.size() + 100];
   sprintf(output_text, m_text_value_template.c_str(), value1, value2);
   m_text_value->set_text(std::string(output_text));
-  m_text_value->set_position(engine::vec2{(float)text_pos_x, (float)m_pos_y + 70});
-  m_text_unit->set_position(engine::vec2{(float)text_pos_x, (float)m_pos_y + MAIN_ROTOR_INDICATOR_HEIGHT});
+  m_text_value->set_position(
+      engine::vec2{(float)text_pos_x, (float)m_pos_y + 70});
+  m_text_unit->set_position(
+      engine::vec2{(float)text_pos_x + MAIN_ROTOR_INDICATOR_WIDTH / 5,
+                   (float)m_pos_y + MAIN_ROTOR_INDICATOR_HEIGHT - 20});
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -457,7 +461,7 @@ HeliDashboard::HeliDashboard(engine::RaylibDevice *device,
                           CURVES_IMAGE_WIDTH, CURVES_IMAGE_HEIGHT),
       m_main_rotor_instrument(device, MAIN_ROTOR_INDICATOR_X,
                               MAIN_ROTOR_INDICATOR_Y, max_rps, "Main Rotor",
-                              "%1.1f", "RPS") {
+                              "%2.1f", "RPS") {
 
   // Create the dashboard background
   for (int x = 0; x < 10; x++) {
@@ -504,7 +508,7 @@ PlaneDashboard::PlaneDashboard(engine::RaylibDevice *device, float max_speed)
                             CONTROLS_SIZE / 4, CONTROLS_SIZE),
       m_airspeed_instrument(device, MAIN_ROTOR_INDICATOR_X,
                             MAIN_ROTOR_INDICATOR_Y, max_speed, "Airspeed",
-                            "%.1f", "m/s") {
+                            "%2.1f", "m/s") {
 
   // Create the dashboard background
   for (int x = 0; x < 10; x++) {

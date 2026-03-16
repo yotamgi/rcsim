@@ -7,6 +7,7 @@
 #include <sstream>
 
 const int BACKGROUND_HEIGHT = 220;
+const engine::Color BACKGROUND_COLOR = engine::Color(0, 0, 0, 0x30);
 
 const int CONTROLS_SIZE = 160;
 const int YAW_VIEW_HEIGHT = 25;
@@ -481,7 +482,11 @@ HeliDashboard::HeliDashboard(engine::RaylibDevice *device,
                              std::vector<ControllerCurve> throttle_curves,
                              std::vector<ControllerCurve> lift_curves,
                              float max_rps)
-    : m_device(device), m_dashboard_background(device->create_image2d(10, 10)),
+    : m_device(device),
+      m_dashboard_background(device->create_square2d(
+          {0, POS_Y(BACKGROUND_HEIGHT), (float)device->get_screen_width(),
+           (float)device->get_screen_height()},
+          BACKGROUND_COLOR)),
       m_yaw_instrument(device, YAW_VIEW_POS_X, YAW_VIEW_POS_Y, CONTROLS_SIZE,
                        YAW_VIEW_HEIGHT),
       m_pitch_roll_instrument(device, CONTROLS_POS_X, CONTROLS_POS_Y,
@@ -498,17 +503,6 @@ HeliDashboard::HeliDashboard(engine::RaylibDevice *device,
       m_input_text(device->create_text2d("Stick Input", 20,
                                          engine::Color(0, 0, 0, 0xff),
                                          engine::TextAlignment::RIGHT)) {
-
-  // Create the dashboard background
-  for (int x = 0; x < 10; x++) {
-    for (int y = 0; y < 10; y++) {
-      m_dashboard_background->set_pixel_color(x, y,
-                                              engine::Color(0, 0, 0, 0x30));
-    }
-  }
-  m_dashboard_background->set_position({0, POS_Y(BACKGROUND_HEIGHT),
-                                        (float)device->get_screen_width(),
-                                        (float)device->get_screen_height()});
 }
 
 void HeliDashboard::update_ui(const Controls::Telemetry &controls_telemetry,

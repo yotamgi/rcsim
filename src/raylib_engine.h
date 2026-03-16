@@ -149,7 +149,7 @@ public:
   Color get_pixel_color(int x, int y);
   void set_pixel_color(int x, int y, Color color);
 
-private:
+protected:
   Image2D(std::string file_name);
   Image2D(int width, int height);
 
@@ -163,6 +163,15 @@ private:
   float m_rotation;
   bool m_visible;
 
+  friend class RaylibDevice;
+};
+
+class Square2D : public Image2D {
+public:
+  void set_color(Color color) { set_pixel_color(0, 0, color); }
+
+protected:
+  Square2D() : Image2D(1, 1) {}
   friend class RaylibDevice;
 };
 
@@ -255,6 +264,7 @@ public:
   std::shared_ptr<Text2D>
   create_text2d(std::string text, int font_size, Color color,
                 TextAlignment alignment = TextAlignment::LEFT);
+  std::shared_ptr<Square2D> create_square2d(rect2 position, Color color);
   void delete_drawable2d(std::shared_ptr<Drawable2D> drawable);
 
   void draw_frame();

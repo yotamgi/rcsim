@@ -125,15 +125,7 @@ private:
   CurvesInstrument m_curves_instrument;
   SpeedometerInstrument m_main_rotor_instrument;
   std::shared_ptr<engine::Text2D> m_input_text;
-
-  // // Texts.
-  // std::shared_ptr<engine::Image2D> m_throttle_text;
-  // std::shared_ptr<engine::Image2D> m_throttle_hold_text;
-  // std::shared_ptr<engine::Image2D> m_curves_text;
-  // std::shared_ptr<engine::Image2D> m_switch_curves_text;
-  // std::shared_ptr<engine::Image2D> m_controls_and_gyro_view_text;
-
-  std::shared_ptr<engine::Image2D> m_dashboard_background;
+  std::shared_ptr<engine::Square2D> m_dashboard_background;
 };
 
 class PlaneDashboard : public Dashboard {

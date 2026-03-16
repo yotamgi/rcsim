@@ -491,6 +491,16 @@ std::shared_ptr<Text2D> RaylibDevice::create_text2d(std::string text,
   return text2d;
 }
 
+std::shared_ptr<Square2D> RaylibDevice::create_square2d(rect2 position,
+                                                        Color color) {
+  std::shared_ptr<Square2D> square2d =
+      std::shared_ptr<Square2D>(new Square2D());
+  square2d->set_position(position);
+  square2d->set_color(color);
+  m_2d_drawables.push_back(square2d);
+  return square2d;
+}
+
 void RaylibDevice::delete_drawable2d(std::shared_ptr<Drawable2D> drawable) {
   m_2d_drawables.erase(
       std::remove(m_2d_drawables.begin(), m_2d_drawables.end(), drawable),

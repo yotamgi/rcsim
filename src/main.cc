@@ -11,6 +11,15 @@
 #include <emscripten.h>
 #endif
 
+const std::string FULL_HELP =
+    "Arrows - Pitch ad roll\n"
+    "a / d - Yaw\n"
+    "w / s - Throttle\n"
+    "g - Toggle 6dof gyro (helicopter) / Flappron (airplane)\n"
+    "t - Throttle hold\n"
+    "i - Switch throttle/lift curves\n"
+    "h - Toggle this help text\n";
+
 class Game {
 public:
   Game();
@@ -25,6 +34,9 @@ private:
   UserInputReciever m_input_receiver;
   Configuration m_model_conf;
   raylib::Texture m_stadium_texture;
+  std::shared_ptr<engine::Text2D> m_help_text;
+  std::shared_ptr<engine::Square2D> m_full_help_text_background;
+  std::shared_ptr<engine::Text2D> m_full_help_text;
 };
 
 std::shared_ptr<engine::Model> Game::add_banana(const engine::vec3 &pos,
@@ -42,7 +54,16 @@ std::shared_ptr<engine::Model> Game::add_banana(const engine::vec3 &pos,
   return banana_model;
 }
 
-Game::Game() : m_device(1440, 900, "rcsim - RC Simulator"), m_input_receiver() {
+Game::Game()
+    : m_device(1440, 900, "rcsim - RC Simulator"), m_input_receiver(),
+      m_help_text(m_device.create_text2d("Press 'h' for help", 20,
+                                         engine::Color(0, 0, 0, 0xff),
+                                         engine::TextAlignment::RIGHT)),
+      m_full_help_text_background(m_device.create_square2d(
+          {0, 0, 0, 0}, engine::Color(255, 255, 255, 128))),
+      m_full_help_text(m_device.create_text2d(FULL_HELP, 20,
+                                              engine::Color(0, 0, 0, 0xff),
+                                              engine::TextAlignment::CENTER)) {
 
   m_device.create_light(
       engine::LIGHT_DIRECTIONAL, raylib::Vector3(100, 200, -50),
@@ -109,6 +130,17 @@ void Game::frame() {
       m_model_conf.model->add_force(i, tp_force);
     }
   }
+
+  // Help texts.
+  m_help_text->set_position({(float)m_device.get_screen_width() - 20, 0});
+  m_full_help_text->set_position(
+      {(float)m_device.get_screen_width() / 2,
+       (float)m_device.get_screen_height() / 2 - 100});
+  m_full_help_text->set_visible(::IsKeyDown(KEY_H));
+  m_full_help_text_background->set_position(
+      {0, 0, (float)m_device.get_screen_width(),
+       (float)m_device.get_screen_height()});
+  m_full_help_text_background->set_visible(::IsKeyDown(KEY_H));
 
   // Draw.
   m_device.get_camera().SetTarget(m_model_conf.model->get_position());

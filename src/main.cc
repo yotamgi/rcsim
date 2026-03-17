@@ -71,12 +71,12 @@ Game::Game()
                                 (float)m_device.get_screen_height()},
                                engine::Color(230, 230, 230, 255));
   auto loading_headline =
-      m_device.create_text2d("Loading...", 40, engine::Color(0, 0, 0, 0xff));
+      m_device.create_text2d("Loading...", 80, engine::Color(0, 0, 0, 0xff));
   loading_headline->set_position({10, 10});
   auto loading_text = m_device.create_text2d("\n\nLoading setting...\n", 20,
                                              engine::Color(0, 0, 0, 0xff),
                                              engine::TextAlignment::LEFT);
-  loading_text->set_position({40, 40});
+  loading_text->set_position({40, 80});
   m_device.draw_frame();
 
   m_device.create_light(

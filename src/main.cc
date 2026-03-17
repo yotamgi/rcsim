@@ -65,6 +65,20 @@ Game::Game()
                                               engine::Color(0, 0, 0, 0xff),
                                               engine::TextAlignment::CENTER)) {
 
+  // Update Loading texture.
+  auto loading_bg =
+      m_device.create_square2d({0, 0, (float)m_device.get_screen_width(),
+                                (float)m_device.get_screen_height()},
+                               engine::Color(230, 230, 230, 255));
+  auto loading_headline =
+      m_device.create_text2d("Loading...", 40, engine::Color(0, 0, 0, 0xff));
+  loading_headline->set_position({10, 10});
+  auto loading_text = m_device.create_text2d("\n\nLoading setting...", 30,
+                                             engine::Color(0, 0, 0, 0xff),
+                                             engine::TextAlignment::LEFT);
+  loading_text->set_position({40, 40});
+  m_device.draw_frame();
+
   m_device.create_light(
       engine::LIGHT_DIRECTIONAL, raylib::Vector3(100, 200, -50),
       raylib::Vector3(0, 0, 0), raylib::Color(150, 150, 150, 255));
@@ -90,13 +104,23 @@ Game::Game()
       512, 2);
 
   // Add skybox.
+  loading_text->set_text(loading_text->get_text() + "\n\nLoading skies...");
+  m_device.draw_frame();
+
   m_device.add_skybox_from_6_images(
       "resources/media/skybox/px.png", "resources/media/skybox/nx.png",
       "resources/media/skybox/py.png", "resources/media/skybox/ny.png",
       "resources/media/skybox/pz.png", "resources/media/skybox/nz.png");
 
   m_device.get_camera().SetPosition(raylib::Vector3(0.5f, 1.6f, -5.0f));
-  m_model_conf = MODEL_CONFIGURATIONS[0].create(&m_device);
+
+  loading_text->set_text(loading_text->get_text() + "\n\nLoading model...");
+  m_device.draw_frame();
+  m_model_conf = MODEL_CONFIGURATIONS[2].create(&m_device);
+
+  m_device.delete_drawable2d(loading_headline);
+  m_device.delete_drawable2d(loading_text);
+  m_device.delete_drawable2d(loading_bg);
 }
 
 void Game::frame() {

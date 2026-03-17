@@ -28,6 +28,7 @@ FetchContent_MakeAvailable(raylib_cpp)
 # 6. Define your executable
 add_executable(${PROJECT_NAME} 
     src/main.cc
+    src/game.cc
     src/raylib_engine.cc
     src/input_event_reciever.cc
     src/airplane.cc

@@ -32,16 +32,14 @@ Configuration create_rc_bell_heli(engine::RaylibDevice *device) {
       }),
   };
 
-  std::shared_ptr<BaseHeli> heli_model =
-      std::make_shared<RcBellHeli>(device);
+  std::shared_ptr<BaseHeli> heli_model = std::make_shared<RcBellHeli>(device);
   std::shared_ptr<HeliFlightController> flight_controller =
       std::make_shared<HeliFlightController>(heli_model);
 
   Configuration conf;
   conf.model = heli_model;
   conf.controls = std::make_shared<HeliControls>(flight_controller,
-                                                 throttle_curves,
-                                                 lift_curves);
+                                                 throttle_curves, lift_curves);
   conf.dashboard = std::make_shared<HeliDashboard>(
       device, throttle_curves, lift_curves, heli_model->get_max_rps());
   return conf;
@@ -61,17 +59,13 @@ Configuration create_rc_glider(engine::RaylibDevice *device) {
 }
 
 Configuration create_rc_trainer(engine::RaylibDevice *device) {
-  std::shared_ptr<FlyingObject> airplane =
-      std::make_shared<Trainer>(device);
+  std::shared_ptr<FlyingObject> airplane = std::make_shared<Trainer>(device);
   std::shared_ptr<AirplaneControls> controls =
       std::make_shared<AirplaneControls>(true);
-    std::shared_ptr<Dashboard> dashboard = std::make_shared<PlaneDashboard>(
-        device, 30);
+  std::shared_ptr<Dashboard> dashboard =
+      std::make_shared<PlaneDashboard>(device, 30);
   return Configuration{
-      .model = airplane,
-      .controls = controls,
-         .dashboard = dashboard
-  };
+      .model = airplane, .controls = controls, .dashboard = dashboard};
 }
 
 std::vector<ModelConfiguration> MODEL_CONFIGURATIONS = {

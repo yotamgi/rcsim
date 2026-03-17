@@ -1,6 +1,5 @@
 # Blender 4.2.0
 # www.blender.org
-mtllib banana.mtl
 o mesh
 v 0.351333 0.457649 0.026002
 v 0.432558 0.392785 0.013662

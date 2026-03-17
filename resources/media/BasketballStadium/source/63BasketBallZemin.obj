@@ -1,6 +1,5 @@
 # Blender v3.1.2 OBJ File: '63BasketBall.blend'
 # www.blender.org
-mtllib 63BasketBallZemin.mtl
 o Plane
 v -5.000000 0.000000 3.750000
 v 5.000000 0.000000 3.750000

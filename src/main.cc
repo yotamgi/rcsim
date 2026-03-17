@@ -73,7 +73,7 @@ Game::Game()
   auto loading_headline =
       m_device.create_text2d("Loading...", 40, engine::Color(0, 0, 0, 0xff));
   loading_headline->set_position({10, 10});
-  auto loading_text = m_device.create_text2d("\n\nLoading setting...", 30,
+  auto loading_text = m_device.create_text2d("\n\nLoading setting...\n", 20,
                                              engine::Color(0, 0, 0, 0xff),
                                              engine::TextAlignment::LEFT);
   loading_text->set_position({40, 40});
@@ -104,7 +104,7 @@ Game::Game()
       512, 2);
 
   // Add skybox.
-  loading_text->set_text(loading_text->get_text() + "\n\nLoading skies...");
+  loading_text->set_text(loading_text->get_text() + "Loading skies...\n");
   m_device.draw_frame();
 
   m_device.add_skybox_from_6_images(
@@ -114,7 +114,7 @@ Game::Game()
 
   m_device.get_camera().SetPosition(raylib::Vector3(0.5f, 1.6f, -5.0f));
 
-  loading_text->set_text(loading_text->get_text() + "\n\nLoading model...");
+  loading_text->set_text(loading_text->get_text() + "Loading model...\n");
   m_device.draw_frame();
   m_model_conf = MODEL_CONFIGURATIONS[2].create(&m_device);
 

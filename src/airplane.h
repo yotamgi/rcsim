@@ -196,6 +196,7 @@ public:
 
   virtual Telemetry get_telemetry() const;
   virtual double get_max_rps() const { return 100; }
+  virtual void set_visible(bool visible);
 
 protected:
   void init_ui(engine::RaylibDevice *device);

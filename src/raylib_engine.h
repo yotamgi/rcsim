@@ -97,6 +97,9 @@ public:
 
   std::vector<raylib::Material *> get_materials();
   vec3 get_pos();
+  bool get_visible() const { return m_visible; }
+  bool get_world_visible() const;
+  void set_visible(bool visible) { m_visible = visible; }
 
   friend class RaylibDevice;
 
@@ -118,6 +121,7 @@ private:
   raylib::Model m_model;
   bool m_changed;
   std::shared_ptr<::Mesh> m_mesh = nullptr;
+  bool m_visible = true;
 };
 
 class Drawable2D {

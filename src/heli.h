@@ -161,6 +161,8 @@ class RcBellHeli : public BaseHeli {
 public:
   RcBellHeli(engine::RaylibDevice *device);
 
+  void set_visible(bool visible) override;
+
 private:
   virtual void update_ui(float time_delta);
 

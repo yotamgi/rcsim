@@ -67,6 +67,10 @@ void Light::write_to_shader(raylib::Shader &shader) const {
 // Model implementation
 ////////////////////////////////////////////////////////////////////////////////
 
+bool Model::get_world_visible() const {
+  return (m_parent ? m_parent->get_world_visible() : true) && m_visible;
+}
+
 bool Model::changed() const {
   return m_changed || (m_parent && m_parent->changed());
 }
@@ -90,6 +94,9 @@ mat4 Model::get_world_transform() {
 }
 
 void Model::draw() {
+  if (!get_world_visible()) {
+    return;
+  }
   m_model.SetTransform(get_world_transform());
   DrawModel(m_model, (Vector3){0, 0, 0}, 1.0f, WHITE);
 }

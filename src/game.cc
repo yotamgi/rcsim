@@ -61,6 +61,7 @@ void LoadingScreen::frame(float time_delta) {
   loading_text->set_text(loading_text->get_text() + "Loading model...\n");
   m_game->m_device.draw_frame();
   m_game->m_model_conf = MODEL_CONFIGURATIONS[2].create(&m_game->m_device);
+  m_game->m_model_conf.model->set_visible(false);
 
   m_game->m_device.delete_drawable2d(loading_headline);
   m_game->m_device.delete_drawable2d(loading_text);
@@ -92,7 +93,9 @@ SimulatorScreen::SimulatorScreen(Game *game)
           {0, 0, 0, 0}, engine::Color(255, 255, 255, 128))),
       m_full_help_text(m_game->m_device.create_text2d(
           FULL_HELP, 20, engine::Color(0, 0, 0, 0xff),
-          engine::TextAlignment::CENTER)) {}
+          engine::TextAlignment::CENTER)) {
+  m_game->m_model_conf.model->set_visible(true);
+}
 
 SimulatorScreen::~SimulatorScreen() {
   m_game->m_device.delete_drawable2d(m_help_text);

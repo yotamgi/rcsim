@@ -650,6 +650,12 @@ RcBellHeli::RcBellHeli(engine::RaylibDevice *device)
   update_ui(0);
 }
 
+void RcBellHeli::set_visible(bool visible) {
+  m_body_node->set_visible(visible);
+  m_rotor_node->set_visible(visible);
+  m_tail_rotor_node->set_visible(visible);
+}
+
 void RcBellHeli::update_ui(float time_delta) {
   m_body_node->set_transform(
       engine::mat4::Scale(1. / 5, 1. / 5, 1. / 5) *

@@ -419,3 +419,7 @@ Airplane::Telemetry Airplane::get_telemetry() const {
   telemetry.airspeed = m_airspeed;
   return telemetry;
 }
+
+void Airplane::set_visible(bool visible) {
+  m_ui_node->set_visible(visible);
+}

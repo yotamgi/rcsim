@@ -63,6 +63,7 @@ public:
 
   virtual Telemetry get_telemetry() const = 0;
   virtual double get_max_rps() const = 0;
+  virtual void set_visible(bool visible) = 0;
 };
 
 #endif // __FLYING_OBJ__

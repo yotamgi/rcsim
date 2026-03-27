@@ -116,6 +116,7 @@ class Dashboard {
 public:
   virtual void update_ui(const Controls::Telemetry &controls_telemetry,
                          const FlyingObject::Telemetry &telemetry) = 0;
+  virtual void set_visible(bool visible) = 0;
 };
 
 class HeliDashboard : public Dashboard {
@@ -126,6 +127,8 @@ public:
 
   void update_ui(const Controls::Telemetry &controls_telemetry,
                  const FlyingObject::Telemetry &telemetry);
+
+  void set_visible(bool visible) { m_dashboard->set_visible(visible); }
 
 private:
   engine::RaylibDevice *m_device;
@@ -143,6 +146,7 @@ public:
 
   void update_ui(const Controls::Telemetry &controls_telemetry,
                  const FlyingObject::Telemetry &telemetry);
+  void set_visible(bool visible) { m_dashboard->set_visible(visible); }
 
 private:
   engine::RaylibDevice *m_device;

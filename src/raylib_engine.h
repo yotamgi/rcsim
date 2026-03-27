@@ -159,6 +159,7 @@ class Drawable2D {
 public:
   const bool visible() const { return m_visible; }
   void set_visible(bool visible) { m_visible = visible; }
+  bool get_screen_visible();
   const Rect2D &get_position() const { return m_rect; }
   void set_position(const Rect2D &rect) { m_rect = rect; }
   void set_position(Coord2D x, Coord2D y) {
@@ -177,7 +178,7 @@ protected:
   Drawable2D(std::shared_ptr<Drawable2D> parent = nullptr)
       : m_parent(parent), m_visible(true) {}
   virtual void draw() {
-    if (m_visible)
+    if (get_screen_visible())
       _draw();
   }
   raylib::Rectangle get_screen_rect() const;

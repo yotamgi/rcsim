@@ -64,6 +64,7 @@ void LoadingScreen::frame(float time_delta) {
   m_game->m_device.draw_frame();
   m_game->m_model_conf = MODEL_CONFIGURATIONS[0].create(&m_game->m_device);
   m_game->m_model_conf.model->set_visible(false);
+  m_game->m_model_conf.dashboard->set_visible(false);
 
   m_game->m_device.delete_drawable2d(loading_headline);
   m_game->m_device.delete_drawable2d(loading_text);
@@ -96,6 +97,7 @@ SimulatorScreen::SimulatorScreen(Game *game)
           FULL_HELP, engine::Text2D::FontOptions{20},
           m_full_help_text_background)) {
   m_game->m_model_conf.model->set_visible(true);
+  m_game->m_model_conf.dashboard->set_visible(true);
   m_help_text->set_position(1.0f, 20, Origin::MAX, Origin::MIN);
   m_full_help_text_background->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
   m_full_help_text->set_position(0.5f, 0.3f, Origin::MID, Origin::MIN);

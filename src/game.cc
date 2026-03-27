@@ -60,11 +60,20 @@ void LoadingScreen::frame(float time_delta) {
 
   m_game->m_device.get_camera().SetPosition(raylib::Vector3(0.5f, 1.6f, -5.0f));
 
-  loading_text->set_text(loading_text->get_text() + "Loading model...\n");
+  loading_text->set_text(loading_text->get_text() + "Loading helicopter...\n");
   m_game->m_device.draw_frame();
-  m_game->m_model_conf = MODEL_CONFIGURATIONS[0].create(&m_game->m_device);
-  m_game->m_model_conf.model->set_visible(false);
-  m_game->m_model_conf.dashboard->set_visible(false);
+  Configuration heli_conf = MODEL_CONFIGURATIONS[0].create(&m_game->m_device);
+  heli_conf.model->set_visible(false);
+  heli_conf.dashboard->set_visible(false);
+  m_game->m_model_confs.push_back(heli_conf);
+  loading_text->set_text(loading_text->get_text() + "Loading airplane...\n");
+  m_game->m_device.draw_frame();
+  Configuration plane_conf = MODEL_CONFIGURATIONS[2].create(&m_game->m_device);
+  plane_conf.model->set_visible(false);
+  plane_conf.dashboard->set_visible(false);
+  m_game->m_model_confs.push_back(plane_conf);
+
+  m_game->m_chosen_model = 0;
 
   m_game->m_device.delete_drawable2d(loading_headline);
   m_game->m_device.delete_drawable2d(loading_text);
@@ -96,8 +105,9 @@ SimulatorScreen::SimulatorScreen(Game *game)
       m_full_help_text(m_game->m_device.create_text2d(
           FULL_HELP, engine::Text2D::FontOptions{20},
           m_full_help_text_background)) {
-  m_game->m_model_conf.model->set_visible(true);
-  m_game->m_model_conf.dashboard->set_visible(true);
+  Configuration conf = m_game->m_model_confs[m_game->m_chosen_model];
+  conf.model->set_visible(true);
+  conf.dashboard->set_visible(true);
   m_help_text->set_position(1.0f, 20, Origin::MAX, Origin::MIN);
   m_full_help_text_background->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
   m_full_help_text->set_position(0.5f, 0.3f, Origin::MID, Origin::MIN);
@@ -111,20 +121,20 @@ SimulatorScreen::~SimulatorScreen() {
 
 void SimulatorScreen::frame(float time_delta) {
   // Update the model.
+  Configuration conf = m_game->m_model_confs[m_game->m_chosen_model];
   UserInput user_input = m_game->m_input_receiver.update_input(time_delta);
-  ServoData servo_data = m_game->m_model_conf.controls->get_servo_data(
-      user_input.controls_input, time_delta);
+  ServoData servo_data =
+      conf.controls->get_servo_data(user_input.controls_input, time_delta);
   for (size_t channel = 0; channel < servo_data.size(); channel++) {
-    m_game->m_model_conf.model->get_servo(channel).update(servo_data[channel],
-                                                          time_delta);
+    conf.model->get_servo(channel).update(servo_data[channel], time_delta);
   }
-  m_game->m_model_conf.model->update(time_delta, engine::vec3(0, 0, 0));
+  conf.model->update(time_delta, engine::vec3(0, 0, 0));
 
   // Apply external force on the helicopter touch points.
-  float model_mass = m_game->m_model_conf.model->get_mass();
-  m_game->m_model_conf.model->reset_force();
+  float model_mass = conf.model->get_mass();
+  conf.model->reset_force();
   std::vector<FlyingObject::TouchPoint> touchpoints =
-      m_game->m_model_conf.model->get_touchpoints_in_world();
+      conf.model->get_touchpoints_in_world();
   for (unsigned int i = 0; i < touchpoints.size(); i++) {
     FlyingObject::TouchPoint tp = touchpoints[i];
     if (tp.pos.y < 0) {
@@ -133,7 +143,7 @@ void SimulatorScreen::frame(float time_delta) {
       friction_force = tp.friction_coeff * tp.vel;
       friction_force.y = 10.0f * tp.vel.y;
       tp_force += -friction_force * (-tp.pos.y / 0.03) * model_mass;
-      m_game->m_model_conf.model->add_force(i, tp_force);
+      conf.model->add_force(i, tp_force);
     }
   }
 
@@ -142,11 +152,9 @@ void SimulatorScreen::frame(float time_delta) {
   m_full_help_text_background->set_visible(::IsKeyDown(KEY_H));
 
   // Draw.
-  m_game->m_device.get_camera().SetTarget(
-      m_game->m_model_conf.model->get_position());
-  m_game->m_model_conf.dashboard->update_ui(
-      m_game->m_model_conf.controls->get_telemetry(),
-      m_game->m_model_conf.model->get_telemetry());
+  m_game->m_device.get_camera().SetTarget(conf.model->get_position());
+  conf.dashboard->update_ui(conf.controls->get_telemetry(),
+                            conf.model->get_telemetry());
   m_game->m_device.draw_frame();
 }
 

@@ -52,8 +52,9 @@ private:
   // Global Game state.
   engine::RaylibDevice m_device;
   UserInputReciever m_input_receiver;
-  Configuration m_model_conf;
+  std::vector<Configuration> m_model_confs;
   raylib::Texture m_stadium_texture;
+  size_t m_chosen_model;
 
   std::shared_ptr<GameScreen> m_current_screen;
   friend class LoadingScreen;

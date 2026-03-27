@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <vector>
 
 static raylib::Vector3 operator*(const raylib::Matrix &m,
@@ -21,11 +22,41 @@ namespace engine {
 
 typedef raylib::Vector3 vec3;
 typedef raylib::Vector2 vec2;
-typedef raylib::Rectangle rect2;
 typedef raylib::Matrix mat4;
 typedef raylib::Texture Texture;
 typedef raylib::Material Material;
 typedef raylib::Color Color;
+
+struct Coord2D {
+  Coord2D() : val{.pixel = 0}, type(Type::PIXEL) {}
+  Coord2D(int pixel) : val{.pixel = pixel}, type(Type::PIXEL) {}
+  Coord2D(float ratio) : val{.ratio = ratio}, type(Type::RATIO) {}
+  union {
+    int pixel;
+    float ratio;
+  } val;
+  enum class Type { PIXEL, RATIO } type;
+
+  std::string to_str() {
+    std::stringstream ss;
+    if (type == Type::PIXEL) {
+      ss << val.pixel << " pixels";
+    } else {
+      ss << val.ratio << " ratio";
+    }
+    return ss.str();
+  }
+};
+
+struct Rect2D {
+  Coord2D x;
+  Coord2D y;
+  Coord2D width;
+  Coord2D height;
+  enum class Origin { MIN, MID, MAX };
+  Origin x_orig = Origin::MIN;
+  Origin y_orig = Origin::MIN;
+};
 
 static float &mat_get(mat4 &m, int row, int col) {
   size_t index = row * 4 + col;
@@ -126,44 +157,56 @@ private:
 
 class Drawable2D {
 public:
-  Drawable2D() : m_visible(true) {}
   const bool visible() const { return m_visible; }
   void set_visible(bool visible) { m_visible = visible; }
-
-private:
-  virtual void draw() {
-    if (m_visible) {
-      _draw();
-    }
+  const Rect2D &get_position() const { return m_rect; }
+  void set_position(const Rect2D &rect) { m_rect = rect; }
+  void set_position(Coord2D x, Coord2D y) {
+    m_rect.x = x;
+    m_rect.y = y;
   }
+  void set_position(Coord2D x, Coord2D y, Rect2D::Origin x_orig,
+                    Rect2D::Origin y_orig) {
+    m_rect.x = x;
+    m_rect.y = y;
+    m_rect.x_orig = x_orig;
+    m_rect.y_orig = y_orig;
+  }
+
+protected:
+  Drawable2D(std::shared_ptr<Drawable2D> parent = nullptr)
+      : m_parent(parent), m_visible(true) {}
+  virtual void draw() {
+    if (m_visible)
+      _draw();
+  }
+  raylib::Rectangle get_screen_rect() const;
+  std::shared_ptr<Drawable2D> m_parent = nullptr;
   virtual void _draw() = 0;
   bool m_visible;
+  Rect2D m_rect;
   friend class RaylibDevice;
 };
 
 class Image2D : public Drawable2D {
 public:
-  const rect2 &get_position() const { return m_position; }
-  void set_position(const rect2 &position) { m_position = position; }
-  const vec2 &get_origin() const { return m_origin; }
-  void set_origin(const vec2 &origin) { m_origin = origin; }
   const float &get_rotation() const { return m_rotation; }
   void set_rotation(float rotation) { m_rotation = rotation; }
-
+  const vec2 &get_rotation_axis() const { return m_rotation_axis; }
+  void set_rotation_axis(const vec2 &axis) { m_rotation_axis = axis; }
   Color get_pixel_color(int x, int y);
   void set_pixel_color(int x, int y, Color color);
 
 protected:
-  Image2D(std::string file_name);
-  Image2D(int width, int height);
+  Image2D(std::string file_name, std::shared_ptr<Drawable2D> parent = nullptr);
+  Image2D(int width, int height, std::shared_ptr<Drawable2D> parent = nullptr);
 
   virtual void _draw();
 
   raylib::Image m_image;
   raylib::Texture2D m_texture;
   bool m_image_changed;
-  rect2 m_position;
-  vec2 m_origin;
+  vec2 m_rotation_axis;
   float m_rotation;
   bool m_visible;
 
@@ -175,34 +218,33 @@ public:
   void set_color(Color color) { set_pixel_color(0, 0, color); }
 
 protected:
-  Square2D() : Image2D(1, 1) {}
+  Square2D(std::shared_ptr<Drawable2D> parent = nullptr)
+      : Image2D(1, 1, parent) {}
   friend class RaylibDevice;
 };
 
-enum class TextAlignment { LEFT, CENTER, RIGHT };
-
 class Text2D : public Drawable2D {
 public:
-  const vec2 &get_position() const { return m_position; }
-  void set_position(const vec2 &position) { m_position = position; }
-  const int &get_font_size() const { return m_font_size; }
-  void set_font_size(int font_size) { m_font_size = font_size; }
-  const Color &get_color() const { return m_color; }
-  void set_color(const Color &color) { m_color = color; }
-  std::string get_text() const { return m_text; }
-  void set_text(const std::string &text) { m_text = text; }
+  struct FontOptions {
+    int font_size = 20;
+    Color color = {0, 0, 0, 255};
+    float line_spacing = 1.15;
+  };
+  const FontOptions &get_font_options() const { return m_font_options; }
+  void set_font_options(const FontOptions &options) {
+    m_font_options = options;
+  }
+  std::string get_text() const;
+  void set_text(const std::string &text);
 
 private:
-  Text2D(std::string text, int font_size, Color color,
-         TextAlignment alignment = TextAlignment::LEFT);
+  Text2D(std::string text, const FontOptions &options,
+         std::shared_ptr<Drawable2D> parent = nullptr);
 
   virtual void _draw();
 
-  std::string m_text;
-  int m_font_size;
-  Color m_color;
-  vec2 m_position;
-  TextAlignment m_alignment;
+  std::vector<std::string> m_lines;
+  FontOptions m_font_options;
 
   friend class RaylibDevice;
 };
@@ -263,12 +305,17 @@ public:
   add_shadow_group(std::vector<std::shared_ptr<Model>> models, size_t size,
                    float fov);
 
-  std::shared_ptr<Image2D> load_image2d(std::string file_name);
-  std::shared_ptr<Image2D> create_image2d(int width, int height);
+  std::shared_ptr<Image2D>
+  load_image2d(std::string file_name,
+               std::shared_ptr<Drawable2D> parent = nullptr);
+  std::shared_ptr<Image2D>
+  create_image2d(int width, int height,
+                 std::shared_ptr<Drawable2D> parent = nullptr);
   std::shared_ptr<Text2D>
-  create_text2d(std::string text, int font_size, Color color,
-                TextAlignment alignment = TextAlignment::LEFT);
-  std::shared_ptr<Square2D> create_square2d(rect2 position, Color color);
+  create_text2d(std::string text, Text2D::FontOptions options,
+                std::shared_ptr<Drawable2D> parent = nullptr);
+  std::shared_ptr<Square2D>
+  create_square2d(Color color, std::shared_ptr<Drawable2D> parent = nullptr);
   void delete_drawable2d(std::shared_ptr<Drawable2D> drawable);
 
   void draw_frame();

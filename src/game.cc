@@ -1,5 +1,7 @@
 #include "game.h"
 
+using Origin = engine::Rect2D::Origin;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Loading Screen implementation.
 ////////////////////////////////////////////////////////////////////////////////
@@ -7,17 +9,17 @@
 void LoadingScreen::frame(float time_delta) {
 
   // Update Loading texture.
-  auto loading_bg = m_game->m_device.create_square2d(
-      {0, 0, (float)m_game->m_device.get_screen_width(),
-       (float)m_game->m_device.get_screen_height()},
-      engine::Color(230, 230, 230, 255));
+  auto loading_bg =
+      m_game->m_device.create_square2d(engine::Color(230, 230, 230, 255));
+  loading_bg->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
   auto loading_headline = m_game->m_device.create_text2d(
-      "Loading...", 80, engine::Color(0, 0, 0, 0xff));
-  loading_headline->set_position({10, 10});
+      "Loading...",
+      engine::Text2D::FontOptions{80, engine::Color(0, 0, 0, 0xff)});
+  loading_headline->set_position(0.5f, 0.1f, Origin::MID, Origin::MID);
   auto loading_text = m_game->m_device.create_text2d(
-      "\n\nLoading setting...\n", 20, engine::Color(0, 0, 0, 0xff),
-      engine::TextAlignment::LEFT);
-  loading_text->set_position({40, 80});
+      "\n\nLoading setting...\n",
+      engine::Text2D::FontOptions{20, engine::Color(0, 0, 0, 0xff)});
+  loading_text->set_position(0.5f, 0.2f, Origin::MID, Origin::MIN);
   m_game->m_device.draw_frame();
 
   m_game->m_device.create_light(
@@ -60,7 +62,7 @@ void LoadingScreen::frame(float time_delta) {
 
   loading_text->set_text(loading_text->get_text() + "Loading model...\n");
   m_game->m_device.draw_frame();
-  m_game->m_model_conf = MODEL_CONFIGURATIONS[2].create(&m_game->m_device);
+  m_game->m_model_conf = MODEL_CONFIGURATIONS[0].create(&m_game->m_device);
   m_game->m_model_conf.model->set_visible(false);
 
   m_game->m_device.delete_drawable2d(loading_headline);
@@ -79,22 +81,24 @@ const std::string FULL_HELP =
     "Arrows - Pitch ad roll\n"
     "a / d - Yaw\n"
     "w / s - Throttle\n"
-    "g - Toggle 6dof gyro (helicopter) / Flappron (airplane)\n"
+    "g - Toggle 6-dof gyro (helicopter) / Flappron (airplane)\n"
     "t - Throttle hold\n"
-    "i - Switch throttle/lift curves\n"
+    "i - Switch throttle-lift curves\n"
     "h - Toggle this help text\n";
 
 SimulatorScreen::SimulatorScreen(Game *game)
     : GameScreen(game),
-      m_help_text(m_game->m_device.create_text2d("Press 'h' for help", 20,
-                                                 engine::Color(0, 0, 0, 0xff),
-                                                 engine::TextAlignment::RIGHT)),
-      m_full_help_text_background(m_game->m_device.create_square2d(
-          {0, 0, 0, 0}, engine::Color(255, 255, 255, 128))),
+      m_help_text(m_game->m_device.create_text2d(
+          "Press 'h' for help", engine::Text2D::FontOptions{20})),
+      m_full_help_text_background(
+          m_game->m_device.create_square2d(engine::Color(0, 0, 0, 50))),
       m_full_help_text(m_game->m_device.create_text2d(
-          FULL_HELP, 20, engine::Color(0, 0, 0, 0xff),
-          engine::TextAlignment::CENTER)) {
+          FULL_HELP, engine::Text2D::FontOptions{20},
+          m_full_help_text_background)) {
   m_game->m_model_conf.model->set_visible(true);
+  m_help_text->set_position(1.0f, 20, Origin::MAX, Origin::MIN);
+  m_full_help_text_background->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
+  m_full_help_text->set_position(0.5f, 0.3f, Origin::MID, Origin::MIN);
 }
 
 SimulatorScreen::~SimulatorScreen() {
@@ -132,15 +136,7 @@ void SimulatorScreen::frame(float time_delta) {
   }
 
   // Help texts.
-  m_help_text->set_position(
-      {(float)m_game->m_device.get_screen_width() - 20, 0});
-  m_full_help_text->set_position(
-      {(float)m_game->m_device.get_screen_width() / 2,
-       (float)m_game->m_device.get_screen_height() / 2 - 100});
   m_full_help_text->set_visible(::IsKeyDown(KEY_H));
-  m_full_help_text_background->set_position(
-      {0, 0, (float)m_game->m_device.get_screen_width(),
-       (float)m_game->m_device.get_screen_height()});
   m_full_help_text_background->set_visible(::IsKeyDown(KEY_H));
 
   // Draw.

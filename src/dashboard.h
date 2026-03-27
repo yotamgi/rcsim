@@ -8,42 +8,47 @@
 
 class HorizontalControlsInstrument {
 public:
-  HorizontalControlsInstrument(engine::RaylibDevice *device, float pos_x,
-                               int pos_y, int width, int height);
+  HorizontalControlsInstrument(
+      engine::RaylibDevice *device, engine::Coord2D pos_x,
+      engine::Coord2D pos_y, int width, int height,
+      std::shared_ptr<engine::Drawable2D> parent = nullptr);
   void update(float pin1, float pin2);
 
 private:
   engine::RaylibDevice *m_device;
-  std::shared_ptr<engine::Image2D> m_yaw_image;
+  std::shared_ptr<engine::Image2D> m_control_image;
   std::shared_ptr<engine::Image2D> m_pin_image;
   std::shared_ptr<engine::Image2D> m_second_pin_image;
-  int m_pos_x;
-  int m_pos_y;
+  engine::Coord2D m_pos_x;
+  engine::Coord2D m_pos_y;
   int m_width;
   int m_height;
 };
 
 class VerticalControlsInstrument {
 public:
-  VerticalControlsInstrument(engine::RaylibDevice *device, float pos_x,
-                             int pos_y, int width, int height);
+  VerticalControlsInstrument(
+      engine::RaylibDevice *device, engine::Coord2D pos_x,
+      engine::Coord2D pos_y, int width, int height,
+      std::shared_ptr<engine::Drawable2D> parent = nullptr);
   void update(float pin1, float pin2);
 
 private:
   engine::RaylibDevice *m_device;
-  std::shared_ptr<engine::Image2D> m_yaw_image;
+  std::shared_ptr<engine::Image2D> m_control_image;
   std::shared_ptr<engine::Image2D> m_pin_image;
   std::shared_ptr<engine::Image2D> m_second_pin_image;
-  int m_pos_x;
-  int m_pos_y;
+  engine::Coord2D m_pos_x;
+  engine::Coord2D m_pos_y;
   int m_width;
   int m_height;
 };
 
 class Controls2dInstrument {
 public:
-  Controls2dInstrument(engine::RaylibDevice *device, float pos_x, int pos_y,
-                       int size);
+  Controls2dInstrument(engine::RaylibDevice *device, engine::Coord2D pos_x,
+                       engine::Coord2D pos_y, int size,
+                       std::shared_ptr<engine::Drawable2D> parent);
   void update(float pin1_y, float pin1_x, float pin2_y, float pin2_x);
 
 private:
@@ -51,8 +56,8 @@ private:
   std::shared_ptr<engine::Image2D> m_controls_image;
   std::shared_ptr<engine::Image2D> m_pin_image;
   std::shared_ptr<engine::Image2D> m_second_pin_image;
-  int m_pos_x;
-  int m_pos_y;
+  engine::Coord2D m_pos_x;
+  engine::Coord2D m_pos_y;
   int m_size;
 };
 
@@ -60,15 +65,17 @@ class CurvesInstrument {
 public:
   CurvesInstrument(engine::RaylibDevice *device,
                    std::vector<std::vector<ControllerCurve>> curve_groups,
-                   std::vector<engine::Color> curve_colors, float pos_x,
-                   int pos_y, int width, int height,
-                   std::vector<std::string> curve_group_names,
-                   std::vector<std::string> curve_names);
+                   std::vector<engine::Color> curve_colors,
+                   engine::Coord2D pos_x, engine::Coord2D pos_y, int width,
+                   int height, std::vector<std::string> curve_group_names,
+                   std::vector<std::string> curve_names,
+                   std::shared_ptr<engine::Drawable2D> parent);
   void update(unsigned long active_curve_index, float x_stick_level,
               std::vector<float> y_levels);
 
 private:
   engine::RaylibDevice *m_device;
+  std::shared_ptr<engine::Square2D> m_main_node;
   std::vector<std::shared_ptr<engine::Image2D>> m_curves_images;
   std::vector<std::shared_ptr<engine::Image2D>> m_pin_images;
   std::shared_ptr<engine::Image2D> m_curves_vertical_line;
@@ -76,17 +83,19 @@ private:
   std::vector<std::shared_ptr<engine::Text2D>> m_headline_text;
   std::vector<std::shared_ptr<engine::Text2D>> m_curve_texts;
   std::vector<std::string> m_curve_names;
-  int m_pos_x;
-  int m_pos_y;
+  engine::Coord2D m_pos_x;
+  engine::Coord2D m_pos_y;
   int m_width;
   int m_height;
 };
 
 class SpeedometerInstrument {
 public:
-  SpeedometerInstrument(engine::RaylibDevice *device, float pos_x, int pos_y,
-                        float max_value, std::string headline,
-                        std::string value_template, std::string unit);
+  SpeedometerInstrument(engine::RaylibDevice *device, engine::Coord2D pos_x,
+                        engine::Coord2D pos_y, float max_value,
+                        std::string headline, std::string value_template,
+                        std::string unit,
+                        std::shared_ptr<engine::Drawable2D> parent);
   void update(float value1, float value2);
 
 private:
@@ -97,8 +106,8 @@ private:
   std::shared_ptr<engine::Text2D> m_text_headline;
   std::shared_ptr<engine::Text2D> m_text_value;
   std::shared_ptr<engine::Text2D> m_text_unit;
-  int m_pos_x;
-  int m_pos_y;
+  engine::Coord2D m_pos_x;
+  engine::Coord2D m_pos_y;
   float m_max_value;
   std::string m_text_value_template;
 };
@@ -120,12 +129,12 @@ public:
 
 private:
   engine::RaylibDevice *m_device;
+  std::shared_ptr<engine::Square2D> m_dashboard;
   HorizontalControlsInstrument m_yaw_instrument;
   Controls2dInstrument m_pitch_roll_instrument;
   CurvesInstrument m_curves_instrument;
   SpeedometerInstrument m_main_rotor_instrument;
   std::shared_ptr<engine::Text2D> m_input_text;
-  std::shared_ptr<engine::Square2D> m_dashboard_background;
 };
 
 class PlaneDashboard : public Dashboard {
@@ -137,11 +146,11 @@ public:
 
 private:
   engine::RaylibDevice *m_device;
+  std::shared_ptr<engine::Square2D> m_dashboard;
   HorizontalControlsInstrument m_yaw_instrument;
   Controls2dInstrument m_pitch_roll_instrument;
   VerticalControlsInstrument m_throttle_instrument;
   SpeedometerInstrument m_airspeed_instrument;
-  std::shared_ptr<engine::Image2D> m_dashboard_background;
 };
 
 #endif // __DASHBOARD_H__

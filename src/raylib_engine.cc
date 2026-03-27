@@ -1,4 +1,5 @@
 #include "raylib_engine.h"
+#include <iostream>
 
 #ifdef PLATFORM_DESKTOP
 const std::string LIGHTING_SHADER_PATH =
@@ -23,6 +24,35 @@ namespace engine {
 // Values aligned with the shader.
 const size_t MAX_LIGHTS = 4;
 const size_t MAX_SHADOW_GROUPS = 4;
+
+int coord2d_to_screen_pixel(const Coord2D &coord, int parent_size,
+                            Rect2D::Origin origin, float size) {
+  int pixel_value = (coord.type == Coord2D::Type::PIXEL)
+                        ? coord.val.pixel
+                        : (int)(coord.val.ratio * parent_size);
+
+  if (origin == Rect2D::Origin::MID) {
+    pixel_value -= size / 2;
+  } else if (origin == Rect2D::Origin::MAX) {
+    pixel_value -= size;
+  }
+
+  return pixel_value;
+}
+
+static raylib::Rectangle to_raylib_rect(const Rect2D &rect,
+                                        raylib::Rectangle parent_rect) {
+  float width = float(coord2d_to_screen_pixel(rect.width, parent_rect.width,
+                                              Rect2D::Origin::MIN, 0));
+  float height = float(coord2d_to_screen_pixel(rect.height, parent_rect.height,
+                                               Rect2D::Origin::MIN, 0));
+  return raylib::Rectangle{
+      parent_rect.x + float(coord2d_to_screen_pixel(rect.x, parent_rect.width,
+                                                    rect.x_orig, width)),
+      parent_rect.y + float(coord2d_to_screen_pixel(rect.y, parent_rect.height,
+                                                    rect.y_orig, height)),
+      width, height};
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Light implementation
@@ -113,17 +143,35 @@ std::vector<raylib::Material *> Model::get_materials() {
 vec3 Model::get_pos() { return get_world_transform() * vec3(0, 0, 0); }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Drawable2D implementation
+////////////////////////////////////////////////////////////////////////////////
+
+raylib::Rectangle Drawable2D::get_screen_rect() const {
+  if (m_parent) {
+    raylib::Rectangle parent_rect = m_parent->get_screen_rect();
+    return to_raylib_rect(m_rect, parent_rect);
+  } else {
+    raylib::Rectangle screen_rect(0, 0, (float)::GetScreenWidth(),
+                                  (float)::GetScreenHeight());
+    return to_raylib_rect(m_rect, screen_rect);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Image2D implementation
 ////////////////////////////////////////////////////////////////////////////////
 
-Image2D::Image2D(int x, int y)
-    : m_image(x, y), m_image_changed(true),
-      m_position{0, 0, (float)x, (float)y}, m_rotation(0), m_origin(0, 0) {}
+Image2D::Image2D(int width, int height, std::shared_ptr<Drawable2D> parent)
+    : Drawable2D(parent), m_image(width, height), m_image_changed(true),
+      m_rotation(0), m_rotation_axis(0, 0) {
+  m_rect = {0, 0, float(width), float(height)};
+}
 
-Image2D::Image2D(std::string file_name)
-    : m_image(file_name), m_image_changed(true),
-      m_position{0, 0, (float)m_image.width, (float)m_image.height},
-      m_rotation(0), m_origin(0, 0) {}
+Image2D::Image2D(std::string file_name, std::shared_ptr<Drawable2D> parent)
+    : Drawable2D(parent), m_image(file_name), m_image_changed(true),
+      m_rotation(0), m_rotation_axis(0, 0) {
+  m_rect = {0, 0, float(m_image.width), float(m_image.height)};
+}
 
 void Image2D::set_pixel_color(int x, int y, Color color) {
   if (x >= m_image.width || y >= m_image.height) {
@@ -148,28 +196,97 @@ void Image2D::_draw() {
     m_image_changed = false;
   }
 
-  rect2 source_rect = {0, 0, (float)m_image.width, (float)m_image.height};
-  m_texture.Draw(source_rect, m_position, m_origin, m_rotation);
+  raylib::Rectangle source_rect = {0, 0, (float)m_image.width,
+                                   (float)m_image.height};
+  raylib::Rectangle screen_rect = get_screen_rect();
+
+  // In raylib, the rotation axis is also shared with the object origin.
+  // To decouple those, the rotation axis is added to the position.
+  screen_rect.x += m_rotation_axis.x;
+  screen_rect.y += m_rotation_axis.y;
+  m_texture.Draw(source_rect, screen_rect, m_rotation_axis, m_rotation);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Text2D implementation
 ////////////////////////////////////////////////////////////////////////////////
 
-Text2D::Text2D(std::string text, int font_size, Color color,
-               TextAlignment alignment)
-    : m_text(text), m_font_size(font_size), m_color(color), m_position(0, 0),
-      m_alignment(alignment) {}
+Text2D::Text2D(std::string text, const FontOptions &options,
+               std::shared_ptr<Drawable2D> parent)
+    : Drawable2D(parent), m_font_options(options) {
+  m_rect = {0, 0, 0, 0};
+  set_text(text);
+}
+
+void Text2D::set_text(const std::string &text) {
+  m_lines.clear();
+
+  // Split the text into lines by '\n'.
+  size_t start = 0;
+  size_t end = text.find('\n');
+  while (end != std::string::npos) {
+    m_lines.push_back(text.substr(start, end - start));
+    start = end + 1;
+    end = text.find('\n', start);
+  }
+  m_lines.push_back(text.substr(start));
+
+  // Calulate the width and height of the text.
+  int max_line_width = 0;
+  for (const auto &line : m_lines) {
+    int line_width = MeasureText(line.c_str(), m_font_options.font_size);
+    if (line_width > max_line_width) {
+      max_line_width = line_width;
+    }
+  }
+  m_rect.width = max_line_width;
+  m_rect.height = int(m_lines.size() * m_font_options.font_size *
+                      m_font_options.line_spacing);
+}
+
+std::string Text2D::get_text() const {
+  std::string text;
+  for (size_t i = 0; i < m_lines.size(); i++) {
+    text += m_lines[i];
+    if (i != m_lines.size() - 1) {
+      text += '\n';
+    }
+  }
+  return text;
+}
 
 void Text2D::_draw() {
-  float text_pos_x = m_position.x;
-  if (m_alignment == TextAlignment::CENTER) {
-    text_pos_x -= MeasureText(m_text.c_str(), m_font_size) / 2.0f;
-  } else if (m_alignment == TextAlignment::RIGHT) {
-    text_pos_x -= MeasureText(m_text.c_str(), m_font_size);
+  raylib::Rectangle text_rect = get_screen_rect();
+
+  for (int i = 0; i < m_lines.size(); i++) {
+    // Calculate the line x coordinate per line, according to the x origin.
+    float line_x;
+    float line_width =
+        MeasureText(m_lines[i].c_str(), m_font_options.font_size);
+    float rect_left = text_rect.x;
+    float rect_right = text_rect.x + text_rect.width;
+    float rect_mid = text_rect.x + text_rect.width / 2;
+
+    switch (m_rect.x_orig) {
+    case Rect2D::Origin::MIN:
+      line_x = rect_left;
+      break;
+    case Rect2D::Origin::MID:
+      line_x = rect_mid - line_width / 2;
+      break;
+    case Rect2D::Origin::MAX:
+      line_x = rect_right - line_width;
+      break;
+    }
+
+    // Calculate the line y coordinate using the line spacing and font size.
+    float line_y = text_rect.y +
+                   i * m_font_options.font_size * m_font_options.line_spacing;
+
+    // Draw the line.
+    raylib::DrawText(m_lines[i].c_str(), (int)line_x, (int)line_y,
+                     m_font_options.font_size, m_font_options.color);
   }
-  raylib::DrawText(m_text.c_str(), (int)text_pos_x, (int)m_position.y,
-                   m_font_size, m_color);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -475,34 +592,37 @@ RaylibDevice::add_shadow_group(std::vector<std::shared_ptr<Model>> models,
   return m_shadow_groups.back();
 }
 
-std::shared_ptr<Image2D> RaylibDevice::load_image2d(std::string file_name) {
+std::shared_ptr<Image2D>
+RaylibDevice::load_image2d(std::string file_name,
+                           std::shared_ptr<Drawable2D> parent) {
   std::shared_ptr<Image2D> image2d =
-      std::shared_ptr<Image2D>(new Image2D(file_name));
+      std::shared_ptr<Image2D>(new Image2D(file_name, parent));
   m_2d_drawables.push_back(image2d);
   return image2d;
 }
 
-std::shared_ptr<Image2D> RaylibDevice::create_image2d(int width, int height) {
+std::shared_ptr<Image2D>
+RaylibDevice::create_image2d(int width, int height,
+                             std::shared_ptr<Drawable2D> parent) {
   std::shared_ptr<Image2D> image2d =
-      std::shared_ptr<Image2D>(new Image2D(width, height));
+      std::shared_ptr<Image2D>(new Image2D(width, height, parent));
   m_2d_drawables.push_back(image2d);
   return image2d;
 }
 
-std::shared_ptr<Text2D> RaylibDevice::create_text2d(std::string text,
-                                                    int font_size, Color color,
-                                                    TextAlignment alignment) {
+std::shared_ptr<Text2D>
+RaylibDevice::create_text2d(std::string text, Text2D::FontOptions options,
+                            std::shared_ptr<Drawable2D> parent) {
   std::shared_ptr<Text2D> text2d =
-      std::shared_ptr<Text2D>(new Text2D(text, font_size, color, alignment));
+      std::shared_ptr<Text2D>(new Text2D(text, options, parent));
   m_2d_drawables.push_back(text2d);
   return text2d;
 }
 
-std::shared_ptr<Square2D> RaylibDevice::create_square2d(rect2 position,
-                                                        Color color) {
+std::shared_ptr<Square2D>
+RaylibDevice::create_square2d(Color color, std::shared_ptr<Drawable2D> parent) {
   std::shared_ptr<Square2D> square2d =
-      std::shared_ptr<Square2D>(new Square2D());
-  square2d->set_position(position);
+      std::shared_ptr<Square2D>(new Square2D(parent));
   square2d->set_color(color);
   m_2d_drawables.push_back(square2d);
   return square2d;
@@ -598,8 +718,8 @@ RaylibDevice::~RaylibDevice() {
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(PLATFORM_DESKTOP)
-// Speial handling for platform desktop, since raylib doesn't seem to be able to
-// recognize simple joysticks.
+// Speial handling for platform desktop, since raylib doesn't seem to be able
+// to recognize simple joysticks.
 
 static int is_rc_control_heuristic(int jid) {
 

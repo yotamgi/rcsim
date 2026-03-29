@@ -37,8 +37,9 @@ protected:
   float m_target_angle = 0;
   std::vector<float> m_model_base_angles;
 
-  const engine::vec3 MODEL_WHEEL_POS{0, 1, 0};
-  const float MODEL_WHEEL_RADIUS = 2.0f;
+  const engine::vec3 MODEL_WHEEL_POS{0, 1, -2};
+  const engine::vec3 CAMERA_POS{0, 2, -2};
+  const float MODEL_WHEEL_RADIUS = 3.0f;
 };
 
 class SimulatorScreen : public GameScreen {

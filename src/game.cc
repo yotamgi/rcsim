@@ -58,8 +58,6 @@ void LoadingScreen::frame(float time_delta) {
       "resources/media/skybox/py.png", "resources/media/skybox/ny.png",
       "resources/media/skybox/pz.png", "resources/media/skybox/nz.png");
 
-  m_game->m_device.get_camera().SetPosition(raylib::Vector3(0.5f, 1.6f, -5.0f));
-
   loading_text->set_text(loading_text->get_text() + "Loading helicopter...\n");
   m_game->m_device.draw_frame();
   Configuration heli_conf = MODEL_CONFIGURATIONS[0].create(&m_game->m_device);
@@ -93,6 +91,11 @@ ModelChooseScreen::ModelChooseScreen(Game *game) : GameScreen(game) {
     m_model_base_angles.push_back(i * angles_delta);
     m_game->m_model_confs[i].model->set_visible(true);
   }
+
+  // Set the camera.
+  m_game->m_device.get_camera().SetPosition(CAMERA_POS);
+  m_game->m_device.get_camera().SetTarget(
+      MODEL_WHEEL_POS + engine::vec3(0, 0, 1) * MODEL_WHEEL_RADIUS);
 }
 
 void ModelChooseScreen::frame(float time_delta) {
@@ -110,7 +113,7 @@ void ModelChooseScreen::frame(float time_delta) {
     confs[i].model->update(time_delta, engine::vec3(0, 0, 0));
     confs[i].model->set_position(pos);
     confs[i].model->set_velocity(engine::vec3(0, 0, 0));
-    confs[i].model->set_rotation(engine::mat4::RotateY(PI/2));
+    confs[i].model->set_rotation(engine::mat4::RotateY(PI / 2));
   }
 
   // Update chosen model.
@@ -149,7 +152,7 @@ SimulatorScreen::SimulatorScreen(Game *game)
       m_full_help_text(m_game->m_device.create_text2d(
           FULL_HELP, engine::Text2D::FontOptions{20},
           m_full_help_text_background)) {
-  for (int i=0; i<m_game->m_model_confs.size(); i++) {
+  for (int i = 0; i < m_game->m_model_confs.size(); i++) {
     Configuration conf = m_game->m_model_confs[i];
     bool visible = (i == m_game->m_chosen_model);
     conf.model->set_visible(visible);
@@ -158,6 +161,9 @@ SimulatorScreen::SimulatorScreen(Game *game)
   m_help_text->set_position(1.0f, 20, Origin::MAX, Origin::MIN);
   m_full_help_text_background->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
   m_full_help_text->set_position(0.5f, 0.3f, Origin::MID, Origin::MIN);
+
+  // Set the camera
+  m_game->m_device.get_camera().SetPosition(raylib::Vector3(0.5f, 1.6f, -5.0f));
 }
 
 SimulatorScreen::~SimulatorScreen() {

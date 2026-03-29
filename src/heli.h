@@ -67,6 +67,8 @@ public:
   virtual void set_position(const engine::vec3 new_pos) { m_pos = new_pos; }
   virtual engine::vec3 get_velocity() const { return m_v; }
   virtual void set_velocity(const engine::vec3 new_v) { m_v = new_v; }
+  virtual engine::mat4 get_rotation() const { return m_body_rotation; }
+  virtual void set_rotation(engine::mat4 new_rotation);
   virtual engine::vec3 get_gyro_angularv() const {
     return m_body_angularv_in_body_coords;
   }

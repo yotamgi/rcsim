@@ -193,6 +193,10 @@ public:
   virtual void set_velocity(const engine::vec3 new_v) {
     m_velocity_in_world = new_v;
   }
+  virtual engine::mat4 get_rotation() const { return m_rotation_in_world; }
+  virtual void set_rotation(engine::mat4 new_rotation) {
+    m_rotation_in_world = new_rotation;
+  }
 
   virtual Telemetry get_telemetry() const;
   virtual double get_max_rps() const { return 100; }

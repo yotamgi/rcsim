@@ -44,6 +44,12 @@ void print_vec(const std::string str, const engine::vec3 &vec) {
   std::cout << "Vec " << str << vec.ToString() << std::endl;
 }
 
+void BaseHeli::set_rotation(engine::mat4 new_rotation) {
+  m_body_rotation = new_rotation;
+  m_rotor_rotation = new_rotation;
+  m_body_angularv_in_body_coords = engine::vec3(0, 0, 0);
+}
+
 void BaseHeli::update_body_moments(float time_delta,
                                    const engine::vec3 &moment_in_world) {
   engine::vec3 moment_in_body = m_body_rotation.Transpose() * moment_in_world;

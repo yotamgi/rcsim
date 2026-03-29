@@ -53,6 +53,9 @@ public:
   virtual void set_position(const engine::vec3 new_pos) = 0;
   virtual engine::vec3 get_velocity() const = 0;
   virtual void set_velocity(const engine::vec3 new_v) = 0;
+  virtual engine::mat4 get_rotation() const = 0;
+  virtual void set_rotation(engine::mat4 new_rotation) = 0;
+
   // For telemetry.
   struct Telemetry {
     float rps;

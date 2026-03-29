@@ -26,6 +26,21 @@ public:
   void frame(float time_delta);
 };
 
+class ModelChooseScreen : public GameScreen {
+  /** Loads the global game state and presents a loading screen while doing so.
+   */
+public:
+  ModelChooseScreen(Game *game);
+  void frame(float time_delta);
+protected:
+  float m_current_angle = 0;
+  float m_target_angle = 0;
+  std::vector<float> m_model_base_angles;
+
+  const engine::vec3 MODEL_WHEEL_POS{0, 1, 0};
+  const float MODEL_WHEEL_RADIUS = 2.0f;
+};
+
 class SimulatorScreen : public GameScreen {
   /** The main screen for the simulator. */
 public:
@@ -33,7 +48,7 @@ public:
   ~SimulatorScreen();
   void frame(float time_delta);
 
-private:
+protected:
   std::shared_ptr<engine::Text2D> m_help_text;
   std::shared_ptr<engine::Square2D> m_full_help_text_background;
   std::shared_ptr<engine::Text2D> m_full_help_text;
@@ -45,7 +60,7 @@ public:
 
   void frame();
 
-private:
+protected:
   std::shared_ptr<engine::Model> add_banana(const engine::vec3 &pos,
                                             const engine::vec3 &rotation);
 
@@ -58,6 +73,7 @@ private:
 
   std::shared_ptr<GameScreen> m_current_screen;
   friend class LoadingScreen;
+  friend class ModelChooseScreen;
   friend class SimulatorScreen;
 };
 

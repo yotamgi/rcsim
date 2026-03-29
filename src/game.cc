@@ -80,7 +80,51 @@ void LoadingScreen::frame(float time_delta) {
   m_game->m_device.delete_drawable2d(loading_bg);
 
   // Change to next screen - the simulator.
-  m_game->m_current_screen = std::make_shared<SimulatorScreen>(m_game);
+  m_game->m_current_screen = std::make_shared<ModelChooseScreen>(m_game);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Model Choose Screen implementation
+////////////////////////////////////////////////////////////////////////////////
+
+ModelChooseScreen::ModelChooseScreen(Game *game) : GameScreen(game) {
+  int angles_delta = 360.0f / m_game->m_model_confs.size();
+  for (int i = 0; i < m_game->m_model_confs.size(); i++) {
+    m_model_base_angles.push_back(i * angles_delta);
+    m_game->m_model_confs[i].model->set_visible(true);
+  }
+}
+
+void ModelChooseScreen::frame(float time_delta) {
+  auto &confs = m_game->m_model_confs;
+
+  // Update the angle
+  m_current_angle += 4 * time_delta * (m_target_angle - m_current_angle);
+
+  // Set the models positions.
+  for (int i = 0; i < confs.size(); i++) {
+    float angle = (m_current_angle + m_model_base_angles[i]) / 180. * PI;
+    engine::vec3 pos =
+        MODEL_WHEEL_POS + engine::vec3(std::sin(angle) * MODEL_WHEEL_RADIUS, 0,
+                                       std::cos(angle) * MODEL_WHEEL_RADIUS);
+    confs[i].model->update(time_delta, engine::vec3(0, 0, 0));
+    confs[i].model->set_position(pos);
+    confs[i].model->set_velocity(engine::vec3(0, 0, 0));
+    confs[i].model->set_rotation(engine::mat4::RotateY(PI/2));
+  }
+
+  // Update chosen model.
+  if (engine::IsKeyPressed(KEY_SPACE)) {
+    m_game->m_chosen_model = (m_game->m_chosen_model + 1) % confs.size();
+    m_target_angle = m_model_base_angles[m_game->m_chosen_model];
+  }
+
+  // Start game on "Enter"
+  if (engine::IsKeyPressed(KEY_ENTER)) {
+    m_game->m_current_screen = std::make_shared<SimulatorScreen>(m_game);
+  }
+
+  m_game->m_device.draw_frame();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,9 +149,12 @@ SimulatorScreen::SimulatorScreen(Game *game)
       m_full_help_text(m_game->m_device.create_text2d(
           FULL_HELP, engine::Text2D::FontOptions{20},
           m_full_help_text_background)) {
-  Configuration conf = m_game->m_model_confs[m_game->m_chosen_model];
-  conf.model->set_visible(true);
-  conf.dashboard->set_visible(true);
+  for (int i=0; i<m_game->m_model_confs.size(); i++) {
+    Configuration conf = m_game->m_model_confs[i];
+    bool visible = (i == m_game->m_chosen_model);
+    conf.model->set_visible(visible);
+    conf.dashboard->set_visible(visible);
+  }
   m_help_text->set_position(1.0f, 20, Origin::MAX, Origin::MIN);
   m_full_help_text_background->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
   m_full_help_text->set_position(0.5f, 0.3f, Origin::MID, Origin::MIN);

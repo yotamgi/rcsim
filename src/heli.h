@@ -18,9 +18,6 @@ enum Channels {
 };
 
 struct HeliParams {
-  engine::vec3 init_pos;
-  engine::vec3 init_rotation;
-
   double mass;              //  [Kg]
   engine::vec3 drag;        // [N / (M / SEC)]
   float torbulant_airspeed; // [M / SEC]
@@ -85,6 +82,7 @@ public:
   virtual Telemetry get_telemetry() const;
   virtual double get_max_rps() const { return m_params.main_rotor_max_vel; }
   virtual double get_mass() const { return m_params.mass; }
+  virtual void set_rotor_rps(float rps);
 
 protected:
   virtual void update_ui(float time_delta) = 0;

@@ -24,6 +24,7 @@ public:
 
   // Values are expected to be in [-1, 1] range.
   float update(float value, float time_delta);
+  void reset(float value) {m_current_status = value; }
   float get() const { return m_current_status; }
 
 private:

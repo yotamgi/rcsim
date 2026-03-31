@@ -166,11 +166,6 @@ public:
     std::vector<float> servo_max_rps;
     std::vector<float> servo_init_values;
 
-    // Initial parameters.
-    engine::vec3 init_position;
-    engine::vec3 init_velocity;
-    engine::vec3 init_rotation;
-
     // Debug shape.
     bool show_skeleton = true;
   };

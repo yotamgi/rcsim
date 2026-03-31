@@ -32,6 +32,7 @@ class ModelChooseScreen : public GameScreen {
 public:
   ModelChooseScreen(Game *game);
   void frame(float time_delta);
+
 protected:
   float m_current_angle = 0;
   float m_target_angle = 0;
@@ -68,7 +69,7 @@ protected:
   // Global Game state.
   engine::RaylibDevice m_device;
   UserInputReciever m_input_receiver;
-  std::vector<Configuration> m_model_confs;
+  std::vector<std::shared_ptr<Configuration>> m_model_confs;
   raylib::Texture m_stadium_texture;
   size_t m_chosen_model;
 

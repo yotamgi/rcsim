@@ -11,11 +11,10 @@ const float AIR_DENSITY = 1.2;
 float sign(float value) { return (value > 0) ? 1 : -1; }
 
 BaseHeli::BaseHeli(const HeliParams &params)
-    : m_v(0, 0, 0), m_pos(params.init_pos), m_main_rotor_vel(0),
+    : m_v(0, 0, 0), m_pos(engine::vec3(0, 0, 0)), m_main_rotor_vel(0),
       m_external_torque(0, 0, 0), m_external_force(0, 0, 0),
-      m_rotor_angular_momentum_in_world(0, 0, 0),
-      m_rotor_rotation(
-          engine::mat4::RotateXYZ(params.init_rotation / 180 * PI)),
+      m_rotor_angular_momentum_in_world(0, 0., 0),
+      m_rotor_rotation(engine::mat4::Identity()),
       m_body_rotation(engine::mat4::Identity()),
       m_body_angularv_in_body_coords(0, 0, 0), m_torbulant_rand_front(3., 0.6),
       m_torbulant_rand_back(3., 0.6), m_torbulant_rand_left(3., 0.6),
@@ -493,6 +492,14 @@ std::vector<BaseHeli::TouchPoint> BaseHeli::get_touchpoints_in_world() const {
   return touchpoints_in_world;
 }
 
+void BaseHeli::set_rotor_rps(float rps) {
+  float angular_momentum = 2 * PI * rps * m_params.rotor_moment_of_inertia;
+  engine::vec3 rotor_y(engine::mat_get(m_rotor_rotation, 1, 0),
+                       engine::mat_get(m_rotor_rotation, 1, 1),
+                       engine::mat_get(m_rotor_rotation, 1, 2));
+  m_rotor_angular_momentum_in_world = rotor_y.Normalize() * angular_momentum;
+}
+
 BaseHeli::Telemetry BaseHeli::get_telemetry() const {
   Telemetry telemetry;
   telemetry.rps = std::abs(m_main_rotor_vel / 360);
@@ -579,8 +586,6 @@ BaseHeli::Telemetry BaseHeli::get_telemetry() const {
 // };
 
 const struct HeliParams RC_BELL_AERODYNAMICS = {
-    .init_pos = engine::vec3(0, 0.13 + -0.019, 0),
-    .init_rotation = engine::vec3(0, 0, 0),
     .mass = 2.,
     .drag = engine::vec3(1, 0.6, 0.2),
     .torbulant_airspeed = 7,

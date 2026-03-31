@@ -60,15 +60,17 @@ void LoadingScreen::frame(float time_delta) {
 
   loading_text->set_text(loading_text->get_text() + "Loading helicopter...\n");
   m_game->m_device.draw_frame();
-  Configuration heli_conf = MODEL_CONFIGURATIONS[0].create(&m_game->m_device);
-  heli_conf.model->set_visible(false);
-  heli_conf.dashboard->set_visible(false);
+  std::shared_ptr<Configuration> heli_conf =
+      std::make_shared<BellHeliConf>(&m_game->m_device);
+  heli_conf->model()->set_visible(false);
+  heli_conf->dashboard()->set_visible(false);
   m_game->m_model_confs.push_back(heli_conf);
   loading_text->set_text(loading_text->get_text() + "Loading airplane...\n");
   m_game->m_device.draw_frame();
-  Configuration plane_conf = MODEL_CONFIGURATIONS[2].create(&m_game->m_device);
-  plane_conf.model->set_visible(false);
-  plane_conf.dashboard->set_visible(false);
+  std::shared_ptr<Configuration> plane_conf =
+      std::make_shared<CessnaConf>(&m_game->m_device);
+  plane_conf->model()->set_visible(false);
+  plane_conf->dashboard()->set_visible(false);
   m_game->m_model_confs.push_back(plane_conf);
 
   m_game->m_chosen_model = 0;
@@ -89,31 +91,41 @@ ModelChooseScreen::ModelChooseScreen(Game *game) : GameScreen(game) {
   int angles_delta = 360.0f / m_game->m_model_confs.size();
   for (int i = 0; i < m_game->m_model_confs.size(); i++) {
     m_model_base_angles.push_back(i * angles_delta);
-    m_game->m_model_confs[i].model->set_visible(true);
+    m_game->m_model_confs[i]->model()->set_visible(true);
   }
 
   // Set the camera.
   m_game->m_device.get_camera().SetPosition(CAMERA_POS);
   m_game->m_device.get_camera().SetTarget(
       MODEL_WHEEL_POS + engine::vec3(0, 0, 1) * MODEL_WHEEL_RADIUS);
+
+  // Rotate the models to look right.
+  auto &confs = m_game->m_model_confs;
+  for (int i = 0; i < confs.size(); i++) {
+    confs[i]->reset_for_animation();
+  }
 }
 
 void ModelChooseScreen::frame(float time_delta) {
   auto &confs = m_game->m_model_confs;
 
-  // Update the angle
+  // Update the models wheel angle.
   m_current_angle += 4 * time_delta * (m_target_angle - m_current_angle);
+
+  UserInput user_input = m_game->m_input_receiver.update_input(time_delta);
 
   // Set the models positions.
   for (int i = 0; i < confs.size(); i++) {
-    float angle = (m_current_angle + m_model_base_angles[i]) / 180. * PI;
+    float angle_deg = m_current_angle + m_model_base_angles[i];
+    float angle = angle_deg / 180. * PI;
     engine::vec3 pos =
         MODEL_WHEEL_POS + engine::vec3(std::sin(angle) * MODEL_WHEEL_RADIUS, 0,
                                        std::cos(angle) * MODEL_WHEEL_RADIUS);
-    confs[i].model->update(time_delta, engine::vec3(0, 0, 0));
-    confs[i].model->set_position(pos);
-    confs[i].model->set_velocity(engine::vec3(0, 0, 0));
-    confs[i].model->set_rotation(engine::mat4::RotateY(PI / 2));
+    confs[i]->model()->set_position(pos);
+    confs[i]->animate(time_delta, user_input);
+    if (pos.z < 0) {
+      confs[i]->reset_for_animation();
+    }
   }
 
   // Update chosen model.
@@ -153,10 +165,16 @@ SimulatorScreen::SimulatorScreen(Game *game)
           FULL_HELP, engine::Text2D::FontOptions{20},
           m_full_help_text_background)) {
   for (int i = 0; i < m_game->m_model_confs.size(); i++) {
-    Configuration conf = m_game->m_model_confs[i];
+    std::shared_ptr<Configuration> conf = m_game->m_model_confs[i];
     bool visible = (i == m_game->m_chosen_model);
-    conf.model->set_visible(visible);
-    conf.dashboard->set_visible(visible);
+    conf->model()->set_visible(visible);
+    conf->dashboard()->set_visible(visible);
+    if (visible) {
+      conf->reset_for_simulation();
+      conf->model()->set_position(conf->INIT_POSITION);
+      conf->model()->set_velocity(conf->INIT_VELOCITY);
+      conf->model()->set_rotation(engine::mat4::RotateXYZ(conf->INIT_ROTATION));
+    }
   }
   m_help_text->set_position(1.0f, 20, Origin::MAX, Origin::MIN);
   m_full_help_text_background->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
@@ -174,20 +192,21 @@ SimulatorScreen::~SimulatorScreen() {
 
 void SimulatorScreen::frame(float time_delta) {
   // Update the model.
-  Configuration conf = m_game->m_model_confs[m_game->m_chosen_model];
+  std::shared_ptr<Configuration> conf =
+      m_game->m_model_confs[m_game->m_chosen_model];
   UserInput user_input = m_game->m_input_receiver.update_input(time_delta);
   ServoData servo_data =
-      conf.controls->get_servo_data(user_input.controls_input, time_delta);
+      conf->controls()->get_servo_data(user_input.controls_input, time_delta);
   for (size_t channel = 0; channel < servo_data.size(); channel++) {
-    conf.model->get_servo(channel).update(servo_data[channel], time_delta);
+    conf->model()->get_servo(channel).update(servo_data[channel], time_delta);
   }
-  conf.model->update(time_delta, engine::vec3(0, 0, 0));
+  conf->model()->update(time_delta, engine::vec3(0, 0, 0));
 
   // Apply external force on the helicopter touch points.
-  float model_mass = conf.model->get_mass();
-  conf.model->reset_force();
+  float model_mass = conf->model()->get_mass();
+  conf->model()->reset_force();
   std::vector<FlyingObject::TouchPoint> touchpoints =
-      conf.model->get_touchpoints_in_world();
+      conf->model()->get_touchpoints_in_world();
   for (unsigned int i = 0; i < touchpoints.size(); i++) {
     FlyingObject::TouchPoint tp = touchpoints[i];
     if (tp.pos.y < 0) {
@@ -196,7 +215,7 @@ void SimulatorScreen::frame(float time_delta) {
       friction_force = tp.friction_coeff * tp.vel;
       friction_force.y = 10.0f * tp.vel.y;
       tp_force += -friction_force * (-tp.pos.y / 0.03) * model_mass;
-      conf.model->add_force(i, tp_force);
+      conf->model()->add_force(i, tp_force);
     }
   }
 
@@ -205,9 +224,9 @@ void SimulatorScreen::frame(float time_delta) {
   m_full_help_text_background->set_visible(::IsKeyDown(KEY_H));
 
   // Draw.
-  m_game->m_device.get_camera().SetTarget(conf.model->get_position());
-  conf.dashboard->update_ui(conf.controls->get_telemetry(),
-                            conf.model->get_telemetry());
+  m_game->m_device.get_camera().SetTarget(conf->model()->get_position());
+  conf->dashboard()->update_ui(conf->controls()->get_telemetry(),
+                               conf->model()->get_telemetry());
   m_game->m_device.draw_frame();
 }
 

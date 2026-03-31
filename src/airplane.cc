@@ -253,10 +253,9 @@ Airplane::Airplane(const Airplane::Params &params, engine::RaylibDevice *device)
     m_propellants.push_back(prop);
   }
 
-  m_position_in_world = m_params.init_position;
-  m_velocity_in_world = m_params.init_velocity;
-  m_rotation_in_world =
-      engine::mat4::RotateXYZ(m_params.init_rotation / 180 * M_PI);
+  m_position_in_world = engine::vec3(0, 0, 0);
+  m_velocity_in_world = engine::vec3(0, 0, 0);
+  m_rotation_in_world = engine::mat4::Identity();
   m_angular_velocity_in_airplane = engine::vec3(0, 0, 0);
   m_external_force_in_world = engine::vec3(0, 0, 0);
   m_external_torque_in_airplane = engine::vec3(0, 0, 0);
@@ -397,8 +396,8 @@ std::vector<Airplane::TouchPoint> Airplane::get_touchpoints_in_world() const {
       engine::mat4 wheel_rot = engine::mat4::RotateY(-angle / 180 * M_PI);
       friction_in_body = wheel_rot * friction_in_body * wheel_rot.Transpose();
     }
-    tp.friction_coeff = (engine::mat4)m_rotation_in_world.Transpose() * friction_in_body *
-                        m_rotation_in_world;
+    tp.friction_coeff = (engine::mat4)m_rotation_in_world.Transpose() *
+                        friction_in_body * m_rotation_in_world;
     touchpoints_in_world.push_back(tp);
   }
   return touchpoints_in_world;
@@ -420,6 +419,4 @@ Airplane::Telemetry Airplane::get_telemetry() const {
   return telemetry;
 }
 
-void Airplane::set_visible(bool visible) {
-  m_ui_node->set_visible(visible);
-}
+void Airplane::set_visible(bool visible) { m_ui_node->set_visible(visible); }

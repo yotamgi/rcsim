@@ -6,18 +6,19 @@
 
 class HeliFlightController {
 public:
-  HeliFlightController(std::shared_ptr<const BaseHeli> heli)
-      : m_heli(heli), m_heli_angles(0, 0, 0), m_wanted_angles(0, 0, 0),
-        m_prev_error(0, 0, 0), m_error_integral(0, 0, 0), m_six_axis(true) {}
+  HeliFlightController(std::shared_ptr<const BaseHeli> heli) : m_heli(heli) {
+    reset(engine::vec3(0, 0, 0));
+  }
   std::vector<float> translate(const std::vector<float> &servo_data,
                                float time_delta);
 
   void set_six_axis(bool set) { m_six_axis = set; }
+  void reset(const engine::vec3 &angles);
 
 private:
   std::shared_ptr<const BaseHeli> m_heli;
   engine::vec3 m_heli_angles;
-  engine::vec3 m_wanted_angles;
+  engine::vec3 m_target_angles;
   engine::vec3 m_prev_error;
   engine::vec3 m_error_integral;
 

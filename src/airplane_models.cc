@@ -111,9 +111,6 @@ SimpleGlider::SimpleGlider(engine::RaylibDevice *device)
                   },
               .servo_max_rps = {1, 1, 1, 1, 1, 1},
               .servo_init_values = {-1, 0, 0, 0, 0, 0},
-              .init_position = engine::vec3(1, 10, -1),
-              .init_velocity = engine::vec3(0, 0, 10),
-              .init_rotation = engine::vec3(0, 0, 0),
           },
           device) {}
 
@@ -288,9 +285,6 @@ Trainer::Trainer(engine::RaylibDevice *device)
                   },
               .servo_max_rps = {1, 3, 3, 3, 3, 3},
               .servo_init_values = {-1, 0, 0, 0, 0, 0},
-              .init_position = engine::vec3(0, 0.3, 0),
-              .init_velocity = engine::vec3(0, 0, 0),
-              .init_rotation = engine::vec3(0, 0, 0),
               .show_skeleton = false,
           },
           device) {

@@ -22,8 +22,12 @@ void LoadingScreen::frame(float time_delta) {
   loading_text->set_position(0.5f, 0.2f, Origin::MID, Origin::MIN);
   m_game->m_device.draw_frame();
 
-  m_game->m_device.create_light(
+  m_game->m_sun_light = m_game->m_device.create_light(
       engine::LIGHT_DIRECTIONAL, raylib::Vector3(100, 200, -50),
+      raylib::Vector3(0, 0, 0), raylib::Color(130, 130, 130, 255));
+
+  m_game->m_light_bulb = m_game->m_device.create_light(
+      engine::LIGHT_POINT, raylib::Vector3(0.0, 1.5, 0.8),
       raylib::Vector3(0, 0, 0), raylib::Color(150, 150, 150, 255));
 
   // Load the stadium model.
@@ -104,6 +108,12 @@ ModelChooseScreen::ModelChooseScreen(Game *game) : GameScreen(game) {
   for (int i = 0; i < confs.size(); i++) {
     confs[i]->reset_for_animation();
   }
+
+  // Set the lighting.
+  m_game->m_device.set_ambient_light(engine::Color(5, 5, 5, 255));
+  m_game->m_sun_light->set_enabled(true);
+  m_game->m_sun_light->set_color(engine::Color(5, 5, 5, 255));
+  m_game->m_light_bulb->set_enabled(true);
 }
 
 void ModelChooseScreen::frame(float time_delta) {
@@ -182,6 +192,12 @@ SimulatorScreen::SimulatorScreen(Game *game)
 
   // Set the camera
   m_game->m_device.get_camera().SetPosition(raylib::Vector3(0.5f, 1.6f, -5.0f));
+
+  // Set the lighting.
+  m_game->m_device.set_ambient_light(engine::Color(75, 75, 75, 255));
+  m_game->m_sun_light->set_enabled(true);
+  m_game->m_sun_light->set_color(engine::Color(150, 150, 150, 255));
+  m_game->m_light_bulb->set_enabled(false);
 }
 
 SimulatorScreen::~SimulatorScreen() {

@@ -99,6 +99,11 @@ public:
     m_enabled = enabled ? 1 : 0;
     m_changed = true;
   }
+  const Color &get_color() const { return m_color; }
+  const void set_color(const Color &color) {
+    m_color = color;
+    m_changed = true;
+  }
 
   LightType get_type() const { return m_type; }
 
@@ -270,6 +275,8 @@ public:
   std::shared_ptr<Light> create_light(LightType type, raylib::Vector3 position,
                                       raylib::Vector3 target,
                                       raylib::Color color);
+  Color get_ambient_light() const { return m_ambient_light; }
+  void set_ambient_light(Color color);
   int get_screen_width() const { return ::GetScreenWidth(); }
   int get_screen_height() const { return ::GetScreenHeight(); }
 
@@ -331,6 +338,7 @@ private:
   std::vector<std::shared_ptr<Model>> m_models;
   std::vector<std::shared_ptr<ShadowGroup>> m_shadow_groups;
   std::vector<std::shared_ptr<Drawable2D>> m_2d_drawables;
+  Color m_ambient_light;
 };
 
 class Joystick {

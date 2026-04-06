@@ -459,13 +459,19 @@ RaylibDevice::RaylibDevice(int screen_width, int screen_height,
   m_lighting_shader.locs[SHADER_LOC_VECTOR_VIEW] =
       m_lighting_shader.GetLocation("viewPos");
 
-  // Ambient light level (some basic lighting)
-  int ambientLoc = m_lighting_shader.GetLocation("ambient");
-  std::array<float, 4> ambientValues = {0.3f, 0.3f, 0.3f, 0.3f};
-  m_lighting_shader.SetValue(ambientLoc, ambientValues.data(),
-                             SHADER_UNIFORM_VEC4);
+  set_ambient_light((Color){20, 20, 20, 255});
 
   SetTargetFPS(60); // Set our game to run at 60 frames-per-second
+}
+
+void RaylibDevice::set_ambient_light(Color color) {
+  m_ambient_light = color;
+  // Ambient light level (some basic lighting)
+  int ambientLoc = m_lighting_shader.GetLocation("ambient");
+  std::array<float, 4> ambientValues = {color.r / 255.0f, color.g / 255.0f,
+                                        color.b / 255.0f, color.a / 255.0f};
+  m_lighting_shader.SetValue(ambientLoc, ambientValues.data(),
+                             SHADER_UNIFORM_VEC4);
 }
 
 std::shared_ptr<Light> RaylibDevice::create_light(LightType type,

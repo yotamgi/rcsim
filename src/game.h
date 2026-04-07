@@ -40,7 +40,34 @@ protected:
 
   const engine::vec3 MODEL_WHEEL_POS{0, 1, -2};
   const engine::vec3 CAMERA_POS{0, 2, -2};
+  const engine::Color LIGHTBULB_COLOR{150, 150, 150, 255};
   const float MODEL_WHEEL_RADIUS = 3.0f;
+};
+
+class TransitionToSimulatorScreen : public GameScreen {
+  /** A transition screen between the model choose screen and the simulator
+   * screen. */
+public:
+  TransitionToSimulatorScreen(Game *game);
+  void frame(float time_delta);
+
+protected:
+  float get_alpha() const;
+  engine::vec3 m_model_position_from;
+  engine::vec3 m_model_position_to;
+  engine::vec3 m_model_rotation_from;
+  engine::vec3 m_model_rotation_to;
+  engine::vec3 m_camera_position_from;
+  engine::vec3 m_camera_position_to;
+  engine::Color m_ambient_color_from;
+  engine::Color m_ambient_color_to;
+  engine::Color m_sun_light_color_from;
+  engine::Color m_sun_light_color_to;
+  engine::Color m_lightbulb_color_from;
+  engine::Color m_lightbulb_color_to;
+
+  float m_timer;
+  float m_transition_time = 0.5f;
 };
 
 class SimulatorScreen : public GameScreen {
@@ -49,6 +76,11 @@ public:
   SimulatorScreen(Game *game);
   ~SimulatorScreen();
   void frame(float time_delta);
+
+  static const engine::vec3 CAMERA_POSITION;
+  static const engine::Color AMBIENT_LIGHT_COLOR;
+  static const engine::Color SUN_LIGHT_COLOR;
+  static const engine::Color LIGHTBULB_COLOR;
 
 protected:
   std::shared_ptr<engine::Text2D> m_help_text;
@@ -78,6 +110,7 @@ protected:
   std::shared_ptr<GameScreen> m_current_screen;
   friend class LoadingScreen;
   friend class ModelChooseScreen;
+  friend class TransitionToSimulatorScreen;
   friend class SimulatorScreen;
 };
 

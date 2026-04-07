@@ -18,6 +18,13 @@ static raylib::Vector3 operator*(const float &scalar,
   return v * scalar;
 }
 
+static raylib::Color operator*(const float &scalar, const raylib::Color &v) {
+  return raylib::Color(v.r * scalar, v.g * scalar, v.b * scalar, v.a * scalar);
+}
+static raylib::Color operator*(const raylib::Color &v, const float &scalar) {
+  return raylib::Color(v.r * scalar, v.g * scalar, v.b * scalar, v.a * scalar);
+}
+
 namespace engine {
 
 typedef raylib::Vector3 vec3;
@@ -26,6 +33,16 @@ typedef raylib::Matrix mat4;
 typedef raylib::Texture Texture;
 typedef raylib::Material Material;
 typedef raylib::Color Color;
+
+static raylib::Vector3 mat_to_angles_zyx(const raylib::Matrix &m) {
+  ::Quaternion q = ::QuaternionFromMatrix(m);
+  return ::QuaternionToEuler(q);
+}
+
+static raylib::Matrix angles_zyx_to_mat(const raylib::Vector3 &angles) {
+  ::Quaternion q = ::QuaternionFromEuler(angles.x, angles.y, angles.z);
+  return ::QuaternionToMatrix(q);
+}
 
 struct Coord2D {
   Coord2D() : val{.pixel = 0}, type(Type::PIXEL) {}

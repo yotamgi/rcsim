@@ -46,6 +46,11 @@ void print_vec(const std::string str, const engine::vec3 &vec) {
 void BaseHeli::set_rotation(engine::mat4 new_rotation) {
   m_body_rotation = new_rotation;
   m_rotor_rotation = new_rotation;
+  engine::vec3 up(engine::mat_get(new_rotation, 1, 0),
+                  engine::mat_get(new_rotation, 1, 1),
+                  engine::mat_get(new_rotation, 1, 2));
+  m_rotor_angular_momentum_in_world =
+      up * m_rotor_angular_momentum_in_world.Length();
   m_body_angularv_in_body_coords = engine::vec3(0, 0, 0);
 }
 

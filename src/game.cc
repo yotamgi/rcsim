@@ -113,6 +113,7 @@ ModelChooseScreen::ModelChooseScreen(Game *game) : GameScreen(game) {
   m_game->m_device.set_ambient_light(engine::Color(5, 5, 5, 255));
   m_game->m_sun_light->set_enabled(true);
   m_game->m_sun_light->set_color(engine::Color(5, 5, 5, 255));
+  m_game->m_light_bulb->set_color(LIGHTBULB_COLOR);
   m_game->m_light_bulb->set_enabled(true);
 }
 
@@ -146,15 +147,94 @@ void ModelChooseScreen::frame(float time_delta) {
 
   // Start game on "Enter"
   if (engine::IsKeyPressed(KEY_ENTER)) {
-    m_game->m_current_screen = std::make_shared<SimulatorScreen>(m_game);
+    m_game->m_current_screen =
+        std::make_shared<TransitionToSimulatorScreen>(m_game);
   }
 
   m_game->m_device.draw_frame();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Transition To Simulator Screen implementation
+////////////////////////////////////////////////////////////////////////////////
+
+TransitionToSimulatorScreen::TransitionToSimulatorScreen(Game *game)
+    : GameScreen(game),
+      m_model_position_from(
+          game->m_model_confs[game->m_chosen_model]->model()->get_position()),
+      m_model_position_to(
+          game->m_model_confs[game->m_chosen_model]->INIT_POSITION),
+      m_model_rotation_from(engine::mat_to_angles_zyx(
+          game->m_model_confs[game->m_chosen_model]->model()->get_rotation())),
+      m_model_rotation_to(engine::mat_to_angles_zyx(engine::mat4::RotateXYZ(
+          game->m_model_confs[game->m_chosen_model]->INIT_ROTATION))),
+      m_camera_position_from(game->m_device.get_camera().GetPosition()),
+      m_camera_position_to(SimulatorScreen::CAMERA_POSITION),
+      m_ambient_color_from(game->m_device.get_ambient_light()),
+      m_ambient_color_to(SimulatorScreen::AMBIENT_LIGHT_COLOR),
+      m_sun_light_color_from(game->m_sun_light->get_color()),
+      m_sun_light_color_to(SimulatorScreen::SUN_LIGHT_COLOR),
+      m_lightbulb_color_from(game->m_light_bulb->get_color()),
+      m_lightbulb_color_to(SimulatorScreen::LIGHTBULB_COLOR), m_timer(0) {}
+
+float TransitionToSimulatorScreen::get_alpha() const {
+  float linear_alpha = m_timer / m_transition_time;
+  return std::sin((linear_alpha - 0.5) * PI) / 2 +
+         0.5; // Ease in-out with sine.
+}
+
+void TransitionToSimulatorScreen::frame(float time_delta) {
+  m_timer += time_delta;
+  float alpha = get_alpha();
+
+  if (m_timer >= m_transition_time) {
+    m_game->m_current_screen = std::make_shared<SimulatorScreen>(m_game);
+    return;
+  }
+
+  // Model and Camera.
+  engine::vec3 model_pos =
+      m_model_position_from * (1 - alpha) + m_model_position_to * alpha;
+  engine::vec3 camera_pos =
+      m_camera_position_from * (1 - alpha) + m_camera_position_to * alpha;
+  m_game->m_device.get_camera().SetPosition(camera_pos);
+  m_game->m_device.get_camera().SetTarget(model_pos);
+  auto &conf = m_game->m_model_confs[m_game->m_chosen_model];
+  conf->model()->set_position(model_pos);
+  conf->model()->set_rotation(engine::angles_zyx_to_mat(
+      m_model_rotation_from * (1 - alpha) + m_model_rotation_to * alpha));
+  conf->model()->update(time_delta, engine::vec3(0, 0, 0));
+  
+  // Lighting.
+  engine::Color ambient_color =
+      m_ambient_color_from * (1 - alpha) + m_ambient_color_to * alpha;
+  m_game->m_device.set_ambient_light(ambient_color);
+  std::cout << "Ambient: " << (int)ambient_color.r << "," << (int)ambient_color.g << ","
+            << (int)ambient_color.b << std::endl;
+  engine::Color sun_light_color =
+      m_sun_light_color_from * (1 - alpha) + m_sun_light_color_to * alpha;
+  m_game->m_sun_light->set_color(sun_light_color);
+  engine::Color lightbulb_color =
+      m_lightbulb_color_from * (1 - alpha) + m_lightbulb_color_to * alpha;
+  m_game->m_light_bulb->set_color(lightbulb_color);
+  m_game->m_device.draw_frame();
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Simulator Screen implementation.
 ////////////////////////////////////////////////////////////////////////////////
+
+const engine::vec3 SimulatorScreen::CAMERA_POSITION =
+    engine::vec3(0.5f, 1.6f, -5.0f);
+
+const engine::Color SimulatorScreen::AMBIENT_LIGHT_COLOR =
+    engine::Color(75, 75, 75, 255);
+
+const engine::Color SimulatorScreen::SUN_LIGHT_COLOR =
+    engine::Color(150, 150, 150, 255);
+
+const engine::Color SimulatorScreen::LIGHTBULB_COLOR =
+    engine::Color(0, 0, 0, 0);
 
 const std::string FULL_HELP =
     "Arrows - Pitch ad roll\n"
@@ -191,13 +271,14 @@ SimulatorScreen::SimulatorScreen(Game *game)
   m_full_help_text->set_position(0.5f, 0.3f, Origin::MID, Origin::MIN);
 
   // Set the camera
-  m_game->m_device.get_camera().SetPosition(raylib::Vector3(0.5f, 1.6f, -5.0f));
+  m_game->m_device.get_camera().SetPosition(CAMERA_POSITION);
 
   // Set the lighting.
-  m_game->m_device.set_ambient_light(engine::Color(75, 75, 75, 255));
+  m_game->m_device.set_ambient_light(AMBIENT_LIGHT_COLOR);
   m_game->m_sun_light->set_enabled(true);
-  m_game->m_sun_light->set_color(engine::Color(150, 150, 150, 255));
-  m_game->m_light_bulb->set_enabled(false);
+  m_game->m_sun_light->set_color(SUN_LIGHT_COLOR);
+  m_game->m_light_bulb->set_enabled(true);
+  m_game->m_light_bulb->set_color(LIGHTBULB_COLOR);
 }
 
 SimulatorScreen::~SimulatorScreen() {

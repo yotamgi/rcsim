@@ -209,8 +209,6 @@ void TransitionToSimulatorScreen::frame(float time_delta) {
   engine::Color ambient_color =
       m_ambient_color_from * (1 - alpha) + m_ambient_color_to * alpha;
   m_game->m_device.set_ambient_light(ambient_color);
-  std::cout << "Ambient: " << (int)ambient_color.r << "," << (int)ambient_color.g << ","
-            << (int)ambient_color.b << std::endl;
   engine::Color sun_light_color =
       m_sun_light_color_from * (1 - alpha) + m_sun_light_color_to * alpha;
   m_game->m_sun_light->set_color(sun_light_color);

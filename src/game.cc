@@ -91,7 +91,20 @@ void LoadingScreen::frame(float time_delta) {
 // Model Choose Screen implementation
 ////////////////////////////////////////////////////////////////////////////////
 
-ModelChooseScreen::ModelChooseScreen(Game *game) : GameScreen(game) {
+ModelChooseScreen::ModelChooseScreen(Game *game)
+    : GameScreen(game), m_text_background(m_game->m_device.create_square2d(
+                            engine::Color(255, 255, 255, 128))),
+      m_separator_line(m_game->m_device.create_square2d(
+          engine::Color(0, 0, 0, 255), m_text_background)),
+      m_model_name_text(m_game->m_device.create_text2d(
+          "", engine::Text2D::FontOptions{40, engine::Color(0, 0, 0, 255)},
+          m_text_background)),
+      m_model_summary_text(m_game->m_device.create_text2d(
+          "", engine::Text2D::FontOptions{20, engine::Color(0, 0, 0, 255), 1.5},
+          m_text_background)),
+      m_help_text(m_game->m_device.create_text2d(
+          "Press 'Space' for next model, 'Enter' to start",
+          engine::Text2D::FontOptions{30, engine::Color(0, 0, 0, 255)})) {
   int angles_delta = 360.0f / m_game->m_model_confs.size();
   for (int i = 0; i < m_game->m_model_confs.size(); i++) {
     m_model_base_angles.push_back(i * angles_delta);
@@ -101,7 +114,8 @@ ModelChooseScreen::ModelChooseScreen(Game *game) : GameScreen(game) {
   // Set the camera.
   m_game->m_device.get_camera().SetPosition(CAMERA_POS);
   m_game->m_device.get_camera().SetTarget(
-      MODEL_WHEEL_POS + engine::vec3(0, 0, 1) * MODEL_WHEEL_RADIUS);
+      MODEL_WHEEL_POS + engine::vec3(0, 0, 1) * MODEL_WHEEL_RADIUS +
+      engine::vec3(0.5, 0, 0));
 
   // Rotate the models to look right.
   auto &confs = m_game->m_model_confs;
@@ -115,6 +129,20 @@ ModelChooseScreen::ModelChooseScreen(Game *game) : GameScreen(game) {
   m_game->m_sun_light->set_color(engine::Color(5, 5, 5, 255));
   m_game->m_light_bulb->set_color(LIGHTBULB_COLOR);
   m_game->m_light_bulb->set_enabled(true);
+
+  // The texts.
+  m_text_background->set_position(engine::Rect2D{0, 0.1f, 0.35f, 0.8f});
+  m_model_name_text->set_position(0.5f, 0.05f, Origin::MID, Origin::MIN);
+  m_separator_line->set_position(engine::Rect2D{0.1f, 0.15f, 0.8f, 3});
+  m_model_summary_text->set_position(0.05f, 0.5f, Origin::MIN, Origin::MID);
+  m_help_text->set_position(0.5f, 0.98f, Origin::MID, Origin::MAX);
+  update_model_texts();
+}
+
+void ModelChooseScreen::update_model_texts() {
+  auto &conf = m_game->m_model_confs[m_game->m_chosen_model];
+  m_model_name_text->set_text(conf->get_name());
+  m_model_summary_text->set_text(conf->get_summary());
 }
 
 void ModelChooseScreen::frame(float time_delta) {
@@ -143,12 +171,18 @@ void ModelChooseScreen::frame(float time_delta) {
   if (engine::IsKeyPressed(KEY_SPACE)) {
     m_game->m_chosen_model = (m_game->m_chosen_model + 1) % confs.size();
     m_target_angle = m_model_base_angles[m_game->m_chosen_model];
+    update_model_texts();
   }
 
   // Start game on "Enter"
   if (engine::IsKeyPressed(KEY_ENTER)) {
     m_game->m_current_screen =
         std::make_shared<TransitionToSimulatorScreen>(m_game);
+    m_game->m_device.delete_drawable2d(m_model_name_text);
+    m_game->m_device.delete_drawable2d(m_model_summary_text);
+    m_game->m_device.delete_drawable2d(m_separator_line);
+    m_game->m_device.delete_drawable2d(m_help_text);
+    m_game->m_device.delete_drawable2d(m_text_background);
   }
 
   m_game->m_device.draw_frame();
@@ -204,7 +238,7 @@ void TransitionToSimulatorScreen::frame(float time_delta) {
   conf->model()->set_rotation(engine::angles_zyx_to_mat(
       m_model_rotation_from * (1 - alpha) + m_model_rotation_to * alpha));
   conf->model()->update(time_delta, engine::vec3(0, 0, 0));
-  
+
   // Lighting.
   engine::Color ambient_color =
       m_ambient_color_from * (1 - alpha) + m_ambient_color_to * alpha;

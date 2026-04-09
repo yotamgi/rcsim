@@ -1,6 +1,7 @@
 #include "model_configurations.h"
 #include "airplane_models.h"
 #include "flight_controller.h"
+#include <sstream>
 
 BellHeliConf::BellHeliConf(engine::RaylibDevice *device)
     : Configuration(engine::vec3(0, 0.13 + -0.019, 0), engine::vec3(0, 0, 0),
@@ -43,6 +44,18 @@ BellHeliConf::BellHeliConf(engine::RaylibDevice *device)
       device, throttle_curves, lift_curves, m_model->get_max_rps());
 }
 
+std::string BellHeliConf::get_name() const { return "RC Bell Helicopter"; }
+
+std::string BellHeliConf::get_summary() const {
+  std::stringstream ss;
+  ss << "- 450 sized flybarless RC helicopter\n"
+     << "- Toggle-able 6dof gyro\n"
+     << "- Normal and idle-up throttle/lift curves\n"
+     << "- Mass: " << m_model->get_mass() << " kg\n"
+     << "- Rotor max RPS: " << m_model->get_max_rps();
+  return ss.str();
+}
+
 void BellHeliConf::reset_for_animation() {
   m_model->get_servo(HELI_CHANNEL_THROTTLE).reset(0.3);
   m_model->set_rotor_rps(15.);
@@ -77,6 +90,19 @@ CessnaConf::CessnaConf(engine::RaylibDevice *device)
   m_dashboard = std::make_shared<PlaneDashboard>(device, 30);
 }
 
+std::string CessnaConf::get_name() const { return "Cessna 172 Trainer"; }
+
+std::string CessnaConf::get_summary() const {
+  std::stringstream ss;
+  ss << "- Cessna 172 trainer model\n"
+     << "- 4 control channels\n"
+     << "- Flappron supported.\n"
+     << "- low (1 degree) dihedral angle\n"
+     << "- [-10, 15] degrees stall angle\n"
+     << "- Mass: " << m_model->get_mass() << " kg\n";
+  return ss.str();
+}
+
 void CessnaConf::reset_for_animation() {
   m_model->set_rotation(engine::mat4::RotateY(PI / 2));
 }
@@ -103,6 +129,15 @@ GliderConf::GliderConf(engine::RaylibDevice *device)
   m_model = std::make_shared<SimpleGlider>(device);
   m_controls = std::make_shared<AirplaneControls>(true);
   m_dashboard = std::make_shared<PlaneDashboard>(device, 20);
+}
+
+std::string GliderConf::get_name() const { return "Simple Glider"; }
+
+std::string GliderConf::get_summary() const {
+  std::stringstream ss;
+  ss << "A simple glider model, shouldn't be visibile for now.\n"
+     << "Mass: " << m_model->get_mass() << " kg\n";
+  return ss.str();
 }
 
 void GliderConf::reset_for_animation() {

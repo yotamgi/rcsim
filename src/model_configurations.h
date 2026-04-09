@@ -23,6 +23,9 @@ public:
 
   virtual void reset_for_simulation() = 0;
 
+  virtual std::string get_name() const = 0;
+  virtual std::string get_summary() const = 0;
+
   const engine::vec3 INIT_POSITION;
   const engine::vec3 INIT_VELOCITY;
   const engine::vec3 INIT_ROTATION;
@@ -39,6 +42,9 @@ public:
   virtual void reset_for_animation();
   virtual void animate(float time_delta, UserInput user_input);
   virtual void reset_for_simulation();
+
+  virtual std::string get_name() const;
+  virtual std::string get_summary() const;
 
 protected:
   std::shared_ptr<BaseHeli> m_model;
@@ -59,6 +65,9 @@ public:
   virtual void animate(float time_delta, UserInput user_input);
   virtual void reset_for_simulation();
 
+  virtual std::string get_name() const;
+  virtual std::string get_summary() const;
+
 protected:
   std::shared_ptr<Airplane> m_model;
   std::shared_ptr<AirplaneControls> m_controls;
@@ -76,6 +85,9 @@ public:
   virtual void reset_for_animation();
   virtual void animate(float time_delta, UserInput user_input);
   virtual void reset_for_simulation();
+
+  virtual std::string get_name() const;
+  virtual std::string get_summary() const;
 
 protected:
   std::shared_ptr<Airplane> m_model;

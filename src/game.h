@@ -34,6 +34,7 @@ public:
   void frame(float time_delta);
 
 protected:
+  void update_model_texts();
   float m_current_angle = 0;
   float m_target_angle = 0;
   std::vector<float> m_model_base_angles;
@@ -42,6 +43,12 @@ protected:
   const engine::vec3 CAMERA_POS{0, 2, -2};
   const engine::Color LIGHTBULB_COLOR{150, 150, 150, 255};
   const float MODEL_WHEEL_RADIUS = 3.0f;
+
+  std::shared_ptr<engine::Square2D> m_text_background;
+  std::shared_ptr<engine::Square2D> m_separator_line;
+  std::shared_ptr<engine::Text2D> m_model_name_text;
+  std::shared_ptr<engine::Text2D> m_model_summary_text;
+  std::shared_ptr<engine::Text2D> m_help_text;
 };
 
 class TransitionToSimulatorScreen : public GameScreen {

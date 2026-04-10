@@ -2,9 +2,8 @@
 
 const int NUM_AVAILABLE_CURVES = 2;
 
-UserInputReciever::UserInputReciever() {
-  m_joystick = engine::Joystick::get_available();
-
+UserInputReciever::UserInputReciever()
+    : m_joysticks(engine::Joystick::get_available()) {
   m_user_input.controls_input.pitch_stick = 0;
   m_user_input.controls_input.roll_stick = 0;
   m_user_input.controls_input.yaw_stick = 0;
@@ -12,11 +11,15 @@ UserInputReciever::UserInputReciever() {
   m_user_input.controls_input.active_curve_index = 0;
   m_user_input.controls_input.gyro_6dof = true;
   m_user_input.controls_input.throttle_hold = false;
+
+  if (m_joysticks.size() == 1) {
+    m_config.active_joystick_name = m_joysticks.begin()->first;
+  }
 }
 
 UserInput UserInputReciever::update_input(float time_delta) {
   update_buttons();
-  if (m_joystick) {
+  if (!m_config.active_joystick_name.empty()) {
     update_controls_from_joystick();
   } else {
     update_controls_from_keyboard(time_delta);
@@ -24,12 +27,27 @@ UserInput UserInputReciever::update_input(float time_delta) {
   return m_user_input;
 }
 
+static float
+get_channel(const UserInputReciever::Config::Channel &channel_config,
+            const std::vector<float> &axes) {
+  if (channel_config.joystick_channel >= axes.size()) {
+    return 0;
+  }
+  return axes[channel_config.joystick_channel] *
+         (channel_config.reverse ? -1 : 1);
+}
+
 void UserInputReciever::update_controls_from_joystick() {
-  std::vector<float> axes = m_joystick->get_axes();
-  m_user_input.controls_input.pitch_stick = -axes[1];
-  m_user_input.controls_input.roll_stick = -axes[0];
-  m_user_input.controls_input.yaw_stick = axes[5];
-  m_user_input.controls_input.throttle_stick = -axes[2];
+  std::vector<float> axes =
+      m_joysticks.at(m_config.active_joystick_name).get_axes();
+  m_user_input.controls_input.pitch_stick =
+      get_channel(m_config.pitch_channel, axes);
+  m_user_input.controls_input.roll_stick =
+      get_channel(m_config.roll_channel, axes);
+  m_user_input.controls_input.yaw_stick =
+      get_channel(m_config.yaw_channel, axes);
+  m_user_input.controls_input.throttle_stick =
+      get_channel(m_config.throttle_channel, axes);
 }
 
 void UserInputReciever::update_controls_from_keyboard(float time_delta) {

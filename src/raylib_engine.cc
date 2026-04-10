@@ -353,8 +353,8 @@ RaylibDevice::ShadowGroup::ShadowGroup(
   m_shadowmap = load_shadowmap_from_texture(m_size, m_size);
 }
 
-void RaylibDevice::ShadowGroup::shadow_pass(
-    const std::shared_ptr<Light> &shadow_light, raylib::Shader &shader) {
+void RaylibDevice::ShadowGroup::shadow_pass(std::shared_ptr<Light> shadow_light,
+                                            raylib::Shader &shader) {
 
   // Don't calculate the shadowmap if nothing changed.
   bool changed = shadow_light->changed();
@@ -486,7 +486,7 @@ std::shared_ptr<Light> RaylibDevice::create_light(LightType type,
   std::shared_ptr<Light> light(
       new Light(position, target, color, type, light_index));
   m_lights.push_back(light);
-  return m_lights.back();
+  return light;
 }
 
 std::shared_ptr<Model>
@@ -670,7 +670,7 @@ void RaylibDevice::draw_frame() {
   BeginDrawing();
 
   for (auto shadow_group : m_shadow_groups) {
-    shadow_group->shadow_pass(*m_lights.begin(), m_lighting_shader);
+    shadow_group->shadow_pass(m_lights[0], m_lighting_shader);
   }
 
   ClearBackground(RAYWHITE);
@@ -783,12 +783,16 @@ static std::vector<int> get_rc_controllers() {
   return result;
 }
 
-std::optional<Joystick> Joystick::get_available() {
+std::map<std::string, Joystick> Joystick::get_available() {
   auto jids = get_rc_controllers();
   if (jids.empty()) {
-    return std::nullopt;
+    return {};
   }
-  return Joystick{jids[0]};
+  std::map<std::string, Joystick> joysticks;
+  for (int jid : jids) {
+    joysticks.insert({glfwGetJoystickName(jid), Joystick{jid}});
+  }
+  return joysticks;
 }
 
 std::vector<float> Joystick::get_axes() const {
@@ -800,13 +804,14 @@ std::vector<float> Joystick::get_axes() const {
 #else
 // For other platforms, use raylib's joystick handling.
 
-std::optional<Joystick> Joystick::get_available() {
+std::map<std::string, Joystick> Joystick::get_available() {
+  std::map<std::string, Joystick> joysticks;
   for (int jid = 0; jid < 4; jid++) {
     if (IsGamepadAvailable(jid)) {
-      return Joystick{jid};
+      joysticks.insert({GetGamepadName(jid), Joystick{jid}});
     }
   }
-  return std::nullopt;
+  return joysticks;
 }
 
 std::vector<float> Joystick::get_axes() const {

@@ -7,6 +7,7 @@
 #include <optional>
 #include <sstream>
 #include <vector>
+#include <map>
 
 static raylib::Vector3 operator*(const raylib::Matrix &m,
                                  const raylib::Vector3 &v) {
@@ -314,7 +315,7 @@ public:
     ShadowGroup() = delete;
     ShadowGroup(std::vector<std::shared_ptr<Model>> models, size_t size,
                 float fov, int shader_index);
-    void shadow_pass(const std::shared_ptr<Light> &shadow_light,
+    void shadow_pass(std::shared_ptr<Light> shadow_light,
                      raylib::Shader &shader);
     void write_shadowmap_to_shader(raylib::Shader &shader);
     int texture_slot() const { return 8 + m_shadow_index; }
@@ -360,7 +361,7 @@ private:
 
 class Joystick {
 public:
-  static std::optional<Joystick> get_available();
+  static std::map<std::string, Joystick> get_available();
 
   std::vector<float> get_axes() const;
 

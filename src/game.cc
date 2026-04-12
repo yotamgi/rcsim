@@ -176,13 +176,16 @@ void ModelChooseScreen::frame(float time_delta) {
 
   // Start game on "Enter"
   if (engine::IsKeyPressed(KEY_ENTER)) {
-    m_game->m_current_screen =
-        std::make_shared<TransitionToSimulatorScreen>(m_game);
-    m_game->m_device.delete_drawable2d(m_model_name_text);
-    m_game->m_device.delete_drawable2d(m_model_summary_text);
-    m_game->m_device.delete_drawable2d(m_separator_line);
-    m_game->m_device.delete_drawable2d(m_help_text);
-    m_game->m_device.delete_drawable2d(m_text_background);
+    m_game->m_current_screen = std::make_shared<SimulatorScreen>(m_game);
+
+    // For some reason, deleting the texts causes a crash. Hiding them instead.
+    // m_game->m_device.delete_drawable2d(m_model_name_text);
+    // m_game->m_device.delete_drawable2d(m_model_summary_text);
+    // m_game->m_device.delete_drawable2d(m_separator_line);
+    // m_game->m_device.delete_drawable2d(m_help_text);
+    // m_game->m_device.delete_drawable2d(m_text_background);
+    m_text_background->set_visible(false);
+    m_help_text->set_visible(false);
   }
 
   m_game->m_device.draw_frame();

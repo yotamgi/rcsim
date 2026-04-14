@@ -91,6 +91,7 @@ public:
 
 protected:
   std::shared_ptr<engine::Text2D> m_help_text;
+  std::shared_ptr<engine::Text2D> m_input_status_text;
   std::shared_ptr<engine::Square2D> m_full_help_text_background;
   std::shared_ptr<engine::Text2D> m_full_help_text;
 };

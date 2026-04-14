@@ -278,12 +278,15 @@ const std::string FULL_HELP =
     "g - Toggle 6-dof gyro (helicopter) / Flappron (airplane)\n"
     "t - Throttle hold\n"
     "i - Switch throttle-lift curves\n"
+    "c - Open controller configuration\n"
     "h - Toggle this help text\n";
 
 SimulatorScreen::SimulatorScreen(Game *game)
     : GameScreen(game),
       m_help_text(m_game->m_device.create_text2d(
           "Press 'h' for help", engine::Text2D::FontOptions{20})),
+      m_input_status_text(m_game->m_device.create_text2d(
+          "", engine::Text2D::FontOptions{20})),
       m_full_help_text_background(
           m_game->m_device.create_square2d(engine::Color(0, 0, 0, 50))),
       m_full_help_text(m_game->m_device.create_text2d(
@@ -301,9 +304,10 @@ SimulatorScreen::SimulatorScreen(Game *game)
       conf->model()->set_rotation(engine::mat4::RotateXYZ(conf->INIT_ROTATION));
     }
   }
-  m_help_text->set_position(1.0f, 20, Origin::MAX, Origin::MIN);
+  m_help_text->set_position(0.99f, 20, Origin::MAX, Origin::MIN);
   m_full_help_text_background->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
   m_full_help_text->set_position(0.5f, 0.3f, Origin::MID, Origin::MIN);
+  m_input_status_text->set_position(10, 0.74f, Origin::MIN, Origin::MAX);
 
   // Set the camera
   m_game->m_device.get_camera().SetPosition(CAMERA_POSITION);
@@ -361,6 +365,18 @@ void SimulatorScreen::frame(float time_delta) {
   // Help texts.
   m_full_help_text->set_visible(::IsKeyDown(KEY_H));
   m_full_help_text_background->set_visible(::IsKeyDown(KEY_H));
+
+  // Input status text.
+  std::string input_status = "Input: ";
+  if (m_game->m_input_receiver.get_config().active_joystick_name == "") {
+    input_status += "Keyboard";
+  } else {
+    input_status += m_game->m_input_receiver.get_config().active_joystick_name;
+  }
+  if (m_game->m_input_receiver.get_available_joysticks().size() > 1) {
+    input_status += " (Press 'c' to configure RC Controller / Gamepad)";
+  }
+  m_input_status_text->set_text(input_status);
 
   // Draw.
   m_game->m_device.get_camera().SetTarget(conf->model()->get_position());

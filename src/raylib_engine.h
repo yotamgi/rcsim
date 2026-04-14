@@ -260,6 +260,9 @@ public:
   }
   std::string get_text() const;
   void set_text(const std::string &text);
+  void set_color(Color color) {
+    m_font_options.color = color;
+  }
 
 private:
   Text2D(std::string text, const FontOptions &options,

@@ -95,6 +95,40 @@ protected:
   std::shared_ptr<engine::Text2D> m_full_help_text;
 };
 
+class ControllerConfigScreen : public GameScreen {
+public:
+  ControllerConfigScreen(Game *game, std::shared_ptr<GameScreen> return_to_screen);
+  ~ControllerConfigScreen();
+  void frame(float time_delta);
+
+private:
+  void update_from_input_config(const UserInputReciever::Config &input_config, const UserInput &user_input);
+  void
+  update_channel_config(const UserInputReciever::Config::Channel &channel_config, size_t channel_index, float value);
+  void cycle_active_joystick(int amount);
+
+  const int CONFIG_FONT_SIZE = 30;
+
+  std::shared_ptr<engine::Square2D> m_background;
+  std::shared_ptr<engine::Text2D> m_title;
+  std::shared_ptr<engine::Square2D> m_choose_gamepad_text_background;
+  std::shared_ptr<engine::Text2D> m_choose_gamepad_text;
+  std::shared_ptr<engine::Square2D> m_channel_config_background;
+
+  struct ChannelConfig {
+    std::shared_ptr<engine::Square2D> background;
+    std::shared_ptr<engine::Text2D> channel_name_text;
+    std::shared_ptr<engine::Text2D> channel_number_text;
+    std::shared_ptr<engine::Text2D> reverse_text;
+    std::shared_ptr<engine::Square2D> channel_value_background;
+    std::shared_ptr<engine::Square2D> channel_value_bar;
+  };
+  std::vector<ChannelConfig> m_channel_configs;
+  std::shared_ptr<engine::Text2D> m_help_text;
+  size_t m_user_focus = 0;
+  std::shared_ptr<GameScreen> m_return_to_screen;
+};
+
 class Game {
 public:
   Game();
@@ -119,6 +153,7 @@ protected:
   friend class ModelChooseScreen;
   friend class TransitionToSimulatorScreen;
   friend class SimulatorScreen;
+  friend class ControllerConfigScreen;
 };
 
 #endif // __GAME_H__

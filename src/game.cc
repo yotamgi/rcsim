@@ -1,4 +1,5 @@
 #include "game.h"
+#include <algorithm>
 
 using Origin = engine::Rect2D::Origin;
 
@@ -322,6 +323,13 @@ SimulatorScreen::~SimulatorScreen() {
 }
 
 void SimulatorScreen::frame(float time_delta) {
+
+  if (engine::IsKeyPressed(KEY_C)) {
+    m_game->m_current_screen = std::make_shared<ControllerConfigScreen>(
+        m_game, m_game->m_current_screen);
+    return;
+  }
+
   // Update the model.
   std::shared_ptr<Configuration> conf =
       m_game->m_model_confs[m_game->m_chosen_model];
@@ -359,6 +367,255 @@ void SimulatorScreen::frame(float time_delta) {
   conf->dashboard()->update_ui(conf->controls()->get_telemetry(),
                                conf->model()->get_telemetry());
   m_game->m_device.draw_frame();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ControllerConfigScreen implementation.
+////////////////////////////////////////////////////////////////////////////////
+
+ControllerConfigScreen::ControllerConfigScreen(
+    Game *game, std::shared_ptr<GameScreen> return_to_screen)
+    : GameScreen(game), m_background(m_game->m_device.create_square2d(
+                            engine::Color(255, 255, 255, 180))),
+      m_title(m_game->m_device.create_text2d(
+          "Controller Configuration",
+          engine::Text2D::FontOptions{60, engine::Color(0, 0, 0, 255)},
+          m_background)),
+      m_choose_gamepad_text_background(m_game->m_device.create_square2d(
+          engine::Color(255, 255, 255, 20), m_background)),
+      m_choose_gamepad_text(m_game->m_device.create_text2d(
+          "",
+          engine::Text2D::FontOptions{CONFIG_FONT_SIZE,
+                                      engine::Color(0, 0, 0, 255)},
+          m_choose_gamepad_text_background)),
+      m_channel_config_background(m_game->m_device.create_square2d(
+          engine::Color(255, 255, 255, 20), m_background)),
+      m_help_text(m_game->m_device.create_text2d(
+          "", engine::Text2D::FontOptions{20, engine::Color(0, 0, 0, 255), 1.5},
+          m_background)),
+      m_return_to_screen(return_to_screen) {
+  // Set elements positions.
+  m_background->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
+  m_title->set_position(0.5f, 0.1f, Origin::MID, Origin::MID);
+  m_choose_gamepad_text_background->set_position(
+      engine::Rect2D{0.05f, 0.2f, 0.9f, CONFIG_FONT_SIZE + 10});
+  m_choose_gamepad_text->set_position(0.05f, 0.1f, Origin::MIN, Origin::MIN);
+  m_channel_config_background->set_position(
+      engine::Rect2D{0.1f, 0.35f, 0.8f, 0.4f});
+  m_help_text->set_position(0.5f, 0.9f, Origin::MID, Origin::MID);
+
+  // Create the channel configs UI elements.
+  std::string channel_names[]{"Throttle:", "Pitch:", "Roll:", "Yaw:"};
+  for (int i = 0; i < 4; i++) {
+    ChannelConfig channel_config;
+    channel_config.background = m_game->m_device.create_square2d(
+        engine::Color(255, 255, 255, 20), m_channel_config_background);
+    channel_config.channel_name_text = m_game->m_device.create_text2d(
+        channel_names[i],
+        engine::Text2D::FontOptions{CONFIG_FONT_SIZE,
+                                    engine::Color(0, 0, 0, 255)},
+        channel_config.background);
+    channel_config.channel_number_text = m_game->m_device.create_text2d(
+        "",
+        engine::Text2D::FontOptions{CONFIG_FONT_SIZE,
+                                    engine::Color(0, 0, 0, 255)},
+        channel_config.background);
+    channel_config.reverse_text = m_game->m_device.create_text2d(
+        "Reverse",
+        engine::Text2D::FontOptions{CONFIG_FONT_SIZE,
+                                    engine::Color(0, 0, 0, 255)},
+        channel_config.background);
+    channel_config.channel_value_background = m_game->m_device.create_square2d(
+        engine::Color(255, 255, 255, 255), channel_config.background);
+    channel_config.channel_value_bar = m_game->m_device.create_square2d(
+        engine::Color(0, 255, 0, 255), channel_config.channel_value_background);
+    m_channel_configs.push_back(channel_config);
+
+    // Set per-channel positions:
+    channel_config.background->set_position(engine::Rect2D{
+        0.05f, 1.0f / 8 + float(i) / 4, 0.9f, CONFIG_FONT_SIZE + 10});
+    channel_config.channel_name_text->set_position(5, 0.5f, Origin::MIN,
+                                                   Origin::MID);
+    channel_config.channel_number_text->set_position(0.25f, 0.5f, Origin::MIN,
+                                                     Origin::MID);
+    channel_config.reverse_text->set_position(0.5f, 0.57f, Origin::MIN,
+                                              Origin::MID);
+    channel_config.channel_value_background->set_position(
+        engine::Rect2D{0.75f, 0.05f, 0.24f, 0.9f});
+    channel_config.channel_value_bar->set_position(
+        engine::Rect2D{0.05f, 0.1f, 0.9f, 0.8f});
+  }
+}
+
+void ControllerConfigScreen::frame(float time_delta) {
+  UserInput user_input = m_game->m_input_receiver.update_input(time_delta);
+
+  // Update from user keyboard input.
+  if (engine::IsKeyPressed(KEY_UP)) {
+    m_user_focus = (m_user_focus + 5 - 1) % 5;
+  } else if (engine::IsKeyPressed(KEY_DOWN)) {
+    m_user_focus = (m_user_focus + 1) % 5;
+  }
+
+  if (engine::IsKeyPressed(KEY_LEFT)) {
+    switch (m_user_focus) {
+    case 0:
+      cycle_active_joystick(-1);
+      break;
+    case 1:
+      m_game->m_input_receiver.get_config().throttle_channel.joystick_channel--;
+      break;
+    case 2:
+      m_game->m_input_receiver.get_config().pitch_channel.joystick_channel--;
+      break;
+    case 3:
+      m_game->m_input_receiver.get_config().roll_channel.joystick_channel--;
+      break;
+    case 4:
+      m_game->m_input_receiver.get_config().yaw_channel.joystick_channel--;
+      break;
+    }
+  } else if (engine::IsKeyPressed(KEY_RIGHT)) {
+    switch (m_user_focus) {
+    case 0:
+      cycle_active_joystick(1);
+      break;
+    case 1:
+      m_game->m_input_receiver.get_config().throttle_channel.joystick_channel++;
+      break;
+    case 2:
+      m_game->m_input_receiver.get_config().pitch_channel.joystick_channel++;
+      break;
+    case 3:
+      m_game->m_input_receiver.get_config().roll_channel.joystick_channel++;
+      break;
+    case 4:
+      m_game->m_input_receiver.get_config().yaw_channel.joystick_channel++;
+      break;
+    }
+  }
+
+  if (IsKeyPressed(KEY_R)) {
+    switch (m_user_focus) {
+    case 1:
+      m_game->m_input_receiver.get_config().throttle_channel.reverse =
+          !m_game->m_input_receiver.get_config().throttle_channel.reverse;
+      break;
+    case 2:
+      m_game->m_input_receiver.get_config().pitch_channel.reverse =
+          !m_game->m_input_receiver.get_config().pitch_channel.reverse;
+      break;
+    case 3:
+      m_game->m_input_receiver.get_config().roll_channel.reverse =
+          !m_game->m_input_receiver.get_config().roll_channel.reverse;
+      break;
+    case 4:
+      m_game->m_input_receiver.get_config().yaw_channel.reverse =
+          !m_game->m_input_receiver.get_config().yaw_channel.reverse;
+      break;
+    }
+  }
+
+  if (engine::IsKeyPressed(KEY_ENTER)) {
+    m_game->m_current_screen = m_return_to_screen;
+    return;
+  }
+
+  if (m_game->m_input_receiver.get_config().active_joystick_name == "") {
+    m_user_focus = 0;
+    m_channel_config_background->set_visible(false);
+  } else {
+    m_channel_config_background->set_visible(true);
+  }
+
+  // Update focus colors.
+  m_choose_gamepad_text_background->set_color(
+      engine::Color(255, 255, 255, m_user_focus == 0 ? 120 : 0));
+  for (int i = 0; i < m_channel_configs.size(); i++) {
+    m_channel_configs[i].background->set_color(
+        engine::Color(255, 255, 255, m_user_focus == (i + 1) ? 120 : 0));
+  }
+
+  // Update from input config.
+  update_from_input_config(m_game->m_input_receiver.get_config(), user_input);
+
+  // Update help text.
+  if (m_user_focus == 0) {
+    m_help_text->set_text("Use left/right to change active controller / "
+                          "Keyboard\nUse Enter to confirm.");
+  } else {
+    m_help_text->set_text("Use left/right to change channel number.\nPress 'R' "
+                          "to toggle reverse.\nUse Enter to confirm.");
+  }
+
+  m_game->m_device.draw_frame();
+}
+
+void ControllerConfigScreen::cycle_active_joystick(int amount) {
+  auto available_joysticks = m_game->m_input_receiver.get_available_joysticks();
+  UserInputReciever::Config &config = m_game->m_input_receiver.get_config();
+  config.active_joystick_name =
+      available_joysticks[(std::find(available_joysticks.begin(),
+                                     available_joysticks.end(),
+                                     config.active_joystick_name) -
+                           available_joysticks.begin() + amount) %
+                          available_joysticks.size()];
+}
+
+void ControllerConfigScreen::update_from_input_config(
+    const UserInputReciever::Config &input_config,
+    const UserInput &user_input) {
+  // Update chosen gamepad text.
+  if (input_config.active_joystick_name != "") {
+    m_choose_gamepad_text->set_text("Input from gamepad: " +
+                                    input_config.active_joystick_name);
+  } else {
+    m_choose_gamepad_text->set_text("Input from keyboard");
+  }
+
+  // Update channels config.
+  update_channel_config(input_config.throttle_channel, 0,
+                        user_input.controls_input.throttle_stick);
+  update_channel_config(input_config.pitch_channel, 1,
+                        user_input.controls_input.pitch_stick);
+  update_channel_config(input_config.roll_channel, 2,
+                        user_input.controls_input.roll_stick);
+  update_channel_config(input_config.yaw_channel, 3,
+                        user_input.controls_input.yaw_stick);
+}
+
+void ControllerConfigScreen::update_channel_config(
+    const UserInputReciever::Config::Channel &channel_config,
+    size_t channel_index, float value) {
+  ChannelConfig &ui_config = m_channel_configs[channel_index];
+  ui_config.channel_number_text->set_text(
+      "Channel: " + std::to_string(channel_config.joystick_channel));
+  if (channel_config.reverse) {
+    ui_config.reverse_text->set_color(engine::Color(255, 0, 0, 255));
+  } else {
+    ui_config.reverse_text->set_color(engine::Color(128, 128, 128, 128));
+  }
+
+  engine::Rect2D bar_position = ui_config.channel_value_bar->get_position();
+  bar_position.width = (value + 1) / 2 * 0.9f;
+  ui_config.channel_value_bar->set_position(bar_position);
+}
+
+ControllerConfigScreen::~ControllerConfigScreen() {
+  m_game->m_device.delete_drawable2d(m_background);
+  m_game->m_device.delete_drawable2d(m_help_text);
+  m_game->m_device.delete_drawable2d(m_title);
+  m_game->m_device.delete_drawable2d(m_choose_gamepad_text);
+  m_game->m_device.delete_drawable2d(m_choose_gamepad_text_background);
+  m_game->m_device.delete_drawable2d(m_channel_config_background);
+  for (ChannelConfig &channel_config : m_channel_configs) {
+    m_game->m_device.delete_drawable2d(channel_config.background);
+    m_game->m_device.delete_drawable2d(channel_config.channel_name_text);
+    m_game->m_device.delete_drawable2d(channel_config.channel_number_text);
+    m_game->m_device.delete_drawable2d(channel_config.reverse_text);
+    m_game->m_device.delete_drawable2d(channel_config.channel_value_background);
+    m_game->m_device.delete_drawable2d(channel_config.channel_value_bar);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

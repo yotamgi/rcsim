@@ -642,6 +642,9 @@ void RaylibDevice::delete_drawable2d(std::shared_ptr<Drawable2D> drawable) {
   m_2d_drawables.erase(
       std::remove(m_2d_drawables.begin(), m_2d_drawables.end(), drawable),
       m_2d_drawables.end());
+
+  // See member variable declaration for the reason of this "trash can".
+  m_2d_trash_can.push_back(drawable);
 }
 
 void RaylibDevice::draw_frame() {

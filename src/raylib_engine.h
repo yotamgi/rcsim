@@ -357,6 +357,11 @@ private:
   std::vector<std::shared_ptr<ShadowGroup>> m_shadow_groups;
   std::vector<std::shared_ptr<Drawable2D>> m_2d_drawables;
   Color m_ambient_light;
+
+  // Workaround a bug where deleting 2D drawables causes a crash. Instead of
+  // deleting them, they are moved to a "trash can" vector, and deleted when the
+  // destructor is called.
+  std::vector<std::shared_ptr<Drawable2D>> m_2d_trash_can;
 };
 
 class Joystick {

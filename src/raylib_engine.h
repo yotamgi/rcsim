@@ -3,11 +3,11 @@
 
 #include "raylib-cpp.hpp"
 
+#include <map>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <vector>
-#include <map>
 
 static raylib::Vector3 operator*(const raylib::Matrix &m,
                                  const raylib::Vector3 &v) {

@@ -216,7 +216,7 @@ Trainer::Trainer(engine::RaylibDevice *device)
                           .flap_area = WING_WIDTH / 2.0f * 0.4f,
                           .flap_point_from = 0,
                           .flap_point_to = 0,
-                          .max_flap_angle = 45,
+                          .max_flap_angle = -45,
                       },
                       // 5: Fuselage 2:
                       {

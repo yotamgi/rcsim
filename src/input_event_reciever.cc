@@ -65,7 +65,7 @@ void UserInputReciever::update_controls_from_keyboard(float time_delta) {
                change_amount);
   update_value(m_user_input.controls_input.roll_stick, KEY_RIGHT, KEY_LEFT,
                change_amount);
-  update_value(m_user_input.controls_input.yaw_stick, KEY_A, KEY_D,
+  update_value(m_user_input.controls_input.yaw_stick, KEY_D, KEY_A,
                change_amount);
 
   if (engine::IsKeyDown(KEY_W))

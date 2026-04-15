@@ -26,7 +26,7 @@ HeliFlightController::translate(const std::vector<float> &servo_data,
   // Otherwise, apply PID.
   float pitch = servo_data[HELI_CHANNEL_PITCH];
   float roll = servo_data[HELI_CHANNEL_ROLL];
-  float yaw = servo_data[HELI_CHANNEL_YAW];
+  float yaw = -servo_data[HELI_CHANNEL_YAW];
   m_heli_angles += m_heli->get_gyro_angularv() * time_delta;
   m_target_angles +=
       engine::vec3(pitch, yaw, roll) * time_delta * engine::vec3(8, 8, 6);

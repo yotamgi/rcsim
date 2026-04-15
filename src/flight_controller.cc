@@ -37,7 +37,7 @@ HeliFlightController::translate(const std::vector<float> &servo_data,
 
   engine::vec3 controls = error * engine::vec3(1, 1e-2, 1) +
                           derror * engine::vec3(5e-2, 3e-1, 5e-2) +
-                          m_error_integral * engine::vec3(2.5, 30, 10.);
+                          m_error_integral * engine::vec3(2.5, 20, 10.);
   std::vector<float> new_servo_data = servo_data;
   new_servo_data[HELI_CHANNEL_YAW] = controls.y;
   if (m_six_axis) {

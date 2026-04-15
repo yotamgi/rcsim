@@ -92,7 +92,7 @@ ServoData AirplaneControls::get_servo_data(
   servo_data[AIRPLANE_CHANNEL_THROTTLE] = input.throttle_stick;
   servo_data[AIRPLANE_CHANNEL_PITCH] = -input.pitch_stick;
   servo_data[AIRPLANE_CHANNEL_ROLL] = input.roll_stick;
-  servo_data[AIRPLANE_CHANNEL_YAW] = -input.yaw_stick;
+  servo_data[AIRPLANE_CHANNEL_YAW] = input.yaw_stick;
   servo_data[AIRPLANE_CHANNEL_FLAPRON] = -input.roll_stick;
   servo_data[AIRPLANE_CHANNEL_FLAPS] = input.gyro_6dof ? 1.0 : 0.0;
 

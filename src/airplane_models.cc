@@ -216,7 +216,7 @@ Trainer::Trainer(engine::RaylibDevice *device)
                           .flap_area = WING_WIDTH / 2.0f * 0.4f,
                           .flap_point_from = 0,
                           .flap_point_to = 0,
-                          .max_flap_angle = -45,
+                          .max_flap_angle = 45,
                       },
                       // 5: Fuselage 2:
                       {
@@ -281,7 +281,7 @@ Trainer::Trainer(engine::RaylibDevice *device)
               .touchpoint_to_channel_mapping =
                   {
                       {0,
-                       {.servo_index = AIRPLANE_CHANNEL_YAW, .max_angle = 45}},
+                       {.servo_index = AIRPLANE_CHANNEL_YAW, .max_angle = -45}},
                   },
               .servo_max_rps = {1, 3, 3, 3, 3, 3},
               .servo_init_values = {-1, 0, 0, 0, 0, 0},

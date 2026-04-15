@@ -313,8 +313,8 @@ Trainer::Trainer(engine::RaylibDevice *device)
                                  engine::mat4::Translate(0, -0.04, -0.9));
 
   std::shared_ptr<engine::Model> rudder_base = device->create_empty(m_ui_node);
-  rudder_base->set_transform(engine::mat4::RotateX(-30 / 180. * PI) *
-                             engine::mat4::Translate(0, 0, -0.86));
+  rudder_base->set_transform(engine::mat4::RotateX(-28 / 180. * PI) *
+                             engine::mat4::Translate(0, -0.075, -0.88));
   m_rudder_node = device->load_model("resources/media/cessna/CessnaRudder.obj",
                                      rudder_base);
   m_rudder_node->set_transform(engine::mat4::Scale(1. / 4, 1. / 4, 1. / 4));
@@ -340,16 +340,18 @@ void Trainer::update_ui() {
                              engine::mat4::RotateZ(m_prop_angle / 180. * PI) *
                              engine::mat4::Translate(0, 0, 0.4));
 
-  float roll_angle =
+  float left_wing_angle =
       m_servos[AIRPLANE_CHANNEL_ROLL].get() * 45.0f; // in degrees.
+  float right_wing_angle =
+      m_servos[AIRPLANE_CHANNEL_FLAPRON].get() * 45.0f; // in degrees.
   m_left_ailron_node->set_transform(
       engine::mat4::Scale(1. / 4, 1. / 4, 1. / 4) *
-      engine::mat4::RotateXYZ(engine::vec3(roll_angle, 0, -4) / 180. * PI) *
+      engine::mat4::RotateXYZ(engine::vec3(left_wing_angle, 0, -4) / 180. * PI) *
       engine::mat4::Translate(-0.33, 0.105, -0.12));
   m_right_ailron_node->set_transform(
       engine::mat4::Scale(1. / 4, 1. / 4, 1. / 4) *
-      engine::mat4::RotateXYZ(engine::vec3(-roll_angle - 7, 0, 183) / 180. *
-                              PI) *
+      engine::mat4::RotateZ(180 / 180. * PI) *
+      engine::mat4::RotateXYZ(engine::vec3(right_wing_angle - 7, 0, 3) / 180. * PI) *
       engine::mat4::Translate(0.33, 0.105, -0.12));
   m_elevator_node->set_transform(
       engine::mat4::Scale(1. / 4, 1. / 4, 1. / 4) *

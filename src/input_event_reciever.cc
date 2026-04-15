@@ -39,7 +39,8 @@ UserInput UserInputReciever::update_input(float time_delta) {
 static float
 get_channel(const UserInputReciever::Config::Channel &channel_config,
             const std::vector<float> &axes) {
-  if (channel_config.joystick_channel >= axes.size()) {
+  if (channel_config.joystick_channel >= axes.size() ||
+      channel_config.joystick_channel < 0) {
     return 0;
   }
   return axes[channel_config.joystick_channel] *

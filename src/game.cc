@@ -285,8 +285,8 @@ SimulatorScreen::SimulatorScreen(Game *game)
     : GameScreen(game),
       m_help_text(m_game->m_device.create_text2d(
           "Press 'h' for help", engine::Text2D::FontOptions{20})),
-      m_input_status_text(m_game->m_device.create_text2d(
-          "", engine::Text2D::FontOptions{20})),
+      m_input_status_text(
+          m_game->m_device.create_text2d("", engine::Text2D::FontOptions{20})),
       m_full_help_text_background(
           m_game->m_device.create_square2d(engine::Color(0, 0, 0, 50))),
       m_full_help_text(m_game->m_device.create_text2d(
@@ -405,10 +405,12 @@ ControllerConfigScreen::ControllerConfigScreen(
                                       engine::Color(0, 0, 0, 255)},
           m_choose_gamepad_text_background)),
       m_channel_config_background(m_game->m_device.create_square2d(
-          engine::Color(255, 255, 255, 20), m_background)),
+          engine::Color(255, 255, 255, 100), m_background)),
+      m_help_text_background(m_game->m_device.create_square2d(
+          engine::Color(255, 255, 255, 180), m_background)),
       m_help_text(m_game->m_device.create_text2d(
           "", engine::Text2D::FontOptions{20, engine::Color(0, 0, 0, 255), 1.5},
-          m_background)),
+          m_help_text_background)),
       m_return_to_screen(return_to_screen) {
   // Set elements positions.
   m_background->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
@@ -418,7 +420,9 @@ ControllerConfigScreen::ControllerConfigScreen(
   m_choose_gamepad_text->set_position(0.05f, 0.1f, Origin::MIN, Origin::MIN);
   m_channel_config_background->set_position(
       engine::Rect2D{0.1f, 0.35f, 0.8f, 0.4f});
-  m_help_text->set_position(0.5f, 0.9f, Origin::MID, Origin::MID);
+  m_help_text_background->set_position(
+      engine::Rect2D{0.5f, 0.9f, 0.5f, 0.15f, Origin::MID, Origin::MID});
+  m_help_text->set_position(0.5f, 0.5f, Origin::MID, Origin::MID);
 
   // Create the channel configs UI elements.
   std::string channel_names[]{"Throttle:", "Pitch:", "Roll:", "Yaw:"};
@@ -620,6 +624,7 @@ void ControllerConfigScreen::update_channel_config(
 ControllerConfigScreen::~ControllerConfigScreen() {
   m_game->m_device.delete_drawable2d(m_background);
   m_game->m_device.delete_drawable2d(m_help_text);
+  m_game->m_device.delete_drawable2d(m_help_text_background);
   m_game->m_device.delete_drawable2d(m_title);
   m_game->m_device.delete_drawable2d(m_choose_gamepad_text);
   m_game->m_device.delete_drawable2d(m_choose_gamepad_text_background);

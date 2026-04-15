@@ -125,6 +125,7 @@ private:
     std::shared_ptr<engine::Square2D> channel_value_bar;
   };
   std::vector<ChannelConfig> m_channel_configs;
+  std::shared_ptr<engine::Square2D> m_help_text_background;
   std::shared_ptr<engine::Text2D> m_help_text;
   size_t m_user_focus = 0;
   std::shared_ptr<GameScreen> m_return_to_screen;

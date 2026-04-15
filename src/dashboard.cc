@@ -170,10 +170,10 @@ HorizontalControlsInstrument::HorizontalControlsInstrument(
 
 void HorizontalControlsInstrument::update(float pin1, float pin2) {
   // Draw the yaw controls view.
-  m_pin_image->set_position(
-      {pin2 + 0.5f, 0.5f, int(PIN_SIZE), 1.0f, Origin::MID, Origin::MID});
-  m_second_pin_image->set_position(
-      {pin1 + 0.5f, 0.5f, int(PIN_SIZE), 1.0f, Origin::MID, Origin::MID});
+  m_pin_image->set_position({pin2 / 2.0f + 0.5f, 0.5f, int(PIN_SIZE), 1.0f,
+                             Origin::MID, Origin::MID});
+  m_second_pin_image->set_position({pin1 / 2.0f + 0.5f, 0.5f, int(PIN_SIZE),
+                                    1.0f, Origin::MID, Origin::MID});
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -272,13 +272,13 @@ Controls2dInstrument::Controls2dInstrument(
 
 void Controls2dInstrument::update(float pin1_y, float pin1_x, float pin2_y,
                                   float pin2_x) {
-  m_pin_image->set_position(engine::Rect2D{0.5f + pin1_x, 0.5f + pin1_y,
-                                           PIN_SIZE, PIN_SIZE, Origin::MID,
-                                           Origin::MID});
+  m_second_pin_image->set_position(engine::Rect2D{0.5f + pin1_x / 2.0f,
+                                           0.5f + pin1_y / 2.0f, PIN_SIZE,
+                                           PIN_SIZE, Origin::MID, Origin::MID});
 
-  m_second_pin_image->set_position(engine::Rect2D{0.5f + pin2_x, 0.5f + pin2_y,
-                                                  PIN_SIZE, PIN_SIZE,
-                                                  Origin::MID, Origin::MID});
+  m_pin_image->set_position(
+      engine::Rect2D{0.5f + pin2_x / 2.0f, 0.5f + pin2_y / 2.0f, PIN_SIZE,
+                     PIN_SIZE, Origin::MID, Origin::MID});
 }
 
 ////////////////////////////////////////////////////////////////////////////////

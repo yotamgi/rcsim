@@ -130,6 +130,8 @@ ModelChooseScreen::ModelChooseScreen(Game *game)
       m_help_text(m_game->m_device.create_text2d(
           "Press 'Space' for next model, 'Enter' to start",
           engine::Text2D::FontOptions{30, engine::Color(0, 0, 0, 255)})) {
+  m_game->m_chosen_model = 0;
+
   int angles_delta = 360.0f / m_game->m_model_confs.size();
   for (int i = 0; i < m_game->m_model_confs.size(); i++) {
     m_model_base_angles.push_back(i * angles_delta);

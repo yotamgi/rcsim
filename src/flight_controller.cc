@@ -35,7 +35,7 @@ HeliFlightController::translate(const std::vector<float> &servo_data,
   m_prev_error = error;
   m_error_integral = 0.8 * m_error_integral + error * time_delta;
 
-  engine::vec3 controls = error * engine::vec3(1, 1e-2, 1) +
+  engine::vec3 controls = error * engine::vec3(1, 5e-3, 1) +
                           derror * engine::vec3(5e-2, 3e-1, 5e-2) +
                           m_error_integral * engine::vec3(2.5, 20, 10.);
   std::vector<float> new_servo_data = servo_data;

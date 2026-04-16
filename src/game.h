@@ -11,7 +11,7 @@ class GameScreen;
 class GameScreen {
 public:
   GameScreen(Game *game) : m_game(game) {}
-  virtual void frame(float time_delta) = 0;
+  virtual bool frame(float time_delta) = 0;
 
 protected:
   Game *m_game;
@@ -24,7 +24,7 @@ class LoadingScreen : public GameScreen {
 public:
   LoadingScreen(Game *game);
   ~LoadingScreen();
-  void frame(float time_delta);
+  bool frame(float time_delta);
   std::shared_ptr<engine::Square2D> m_loading_background;
   std::shared_ptr<engine::Text2D> m_loading_headline;
   std::shared_ptr<engine::Text2D> m_loading_text;
@@ -36,7 +36,7 @@ class ModelChooseScreen : public GameScreen {
    */
 public:
   ModelChooseScreen(Game *game);
-  void frame(float time_delta);
+  bool frame(float time_delta);
 
 protected:
   void update_model_texts();
@@ -61,7 +61,7 @@ class TransitionToSimulatorScreen : public GameScreen {
    * screen. */
 public:
   TransitionToSimulatorScreen(Game *game);
-  void frame(float time_delta);
+  bool frame(float time_delta);
 
 protected:
   float get_alpha() const;
@@ -87,7 +87,7 @@ class SimulatorScreen : public GameScreen {
 public:
   SimulatorScreen(Game *game);
   ~SimulatorScreen();
-  void frame(float time_delta);
+  bool frame(float time_delta);
 
   static const engine::vec3 CAMERA_POSITION;
   static const engine::Color AMBIENT_LIGHT_COLOR;
@@ -105,7 +105,7 @@ class ControllerConfigScreen : public GameScreen {
 public:
   ControllerConfigScreen(Game *game, std::shared_ptr<GameScreen> return_to_screen);
   ~ControllerConfigScreen();
-  void frame(float time_delta);
+  bool frame(float time_delta);
 
 private:
   void update_from_input_config(const UserInputReciever::Config &input_config, const UserInput &user_input);
@@ -140,7 +140,7 @@ class Game {
 public:
   Game();
 
-  void frame();
+  bool frame();
 
 protected:
   std::shared_ptr<engine::Model> add_banana(const engine::vec3 &pos,

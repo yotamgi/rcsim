@@ -21,7 +21,7 @@ LoadingScreen::LoadingScreen(Game *game) : GameScreen(game) {
   m_loading_text->set_position(0.5f, 0.2f, Origin::MID, Origin::MIN);
 }
 
-void LoadingScreen::frame(float time_delta) {
+bool LoadingScreen::frame(float time_delta) {
 
   switch (m_current_stage) {
   case 0:
@@ -77,7 +77,6 @@ void LoadingScreen::frame(float time_delta) {
                              "Loading helicopter...\n");
     break;
   case 5: {
-    m_game->m_device.draw_frame();
     std::shared_ptr<Configuration> heli_conf =
         std::make_shared<BellHeliConf>(&m_game->m_device);
     heli_conf->model()->set_visible(false);
@@ -104,6 +103,7 @@ void LoadingScreen::frame(float time_delta) {
   }
   m_game->m_device.draw_frame();
   m_current_stage++;
+  return true;
 }
 
 LoadingScreen::~LoadingScreen() {
@@ -170,7 +170,7 @@ void ModelChooseScreen::update_model_texts() {
   m_model_summary_text->set_text(conf->get_summary());
 }
 
-void ModelChooseScreen::frame(float time_delta) {
+bool ModelChooseScreen::frame(float time_delta) {
   auto &confs = m_game->m_model_confs;
 
   // Update the models wheel angle.
@@ -198,6 +198,9 @@ void ModelChooseScreen::frame(float time_delta) {
     m_target_angle = m_model_base_angles[m_game->m_chosen_model];
     update_model_texts();
   }
+  if (engine::IsKeyPressed(KEY_ESCAPE)) {
+    return false;
+  }
 
   // Start game on "Enter"
   if (engine::IsKeyPressed(KEY_ENTER)) {
@@ -214,6 +217,7 @@ void ModelChooseScreen::frame(float time_delta) {
   }
 
   m_game->m_device.draw_frame();
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -245,13 +249,13 @@ float TransitionToSimulatorScreen::get_alpha() const {
          0.5; // Ease in-out with sine.
 }
 
-void TransitionToSimulatorScreen::frame(float time_delta) {
+bool TransitionToSimulatorScreen::frame(float time_delta) {
   m_timer += time_delta;
   float alpha = get_alpha();
 
   if (m_timer >= m_transition_time) {
     m_game->m_current_screen = std::make_shared<SimulatorScreen>(m_game);
-    return;
+    return true;
   }
 
   // Model and Camera.
@@ -278,6 +282,7 @@ void TransitionToSimulatorScreen::frame(float time_delta) {
       m_lightbulb_color_from * (1 - alpha) + m_lightbulb_color_to * alpha;
   m_game->m_light_bulb->set_color(lightbulb_color);
   m_game->m_device.draw_frame();
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -347,16 +352,26 @@ SimulatorScreen::SimulatorScreen(Game *game)
 
 SimulatorScreen::~SimulatorScreen() {
   m_game->m_device.delete_drawable2d(m_help_text);
+  m_game->m_device.delete_drawable2d(m_input_status_text);
   m_game->m_device.delete_drawable2d(m_full_help_text);
   m_game->m_device.delete_drawable2d(m_full_help_text_background);
 }
 
-void SimulatorScreen::frame(float time_delta) {
+bool SimulatorScreen::frame(float time_delta) {
 
   if (engine::IsKeyPressed(KEY_C)) {
     m_game->m_current_screen = std::make_shared<ControllerConfigScreen>(
         m_game, m_game->m_current_screen);
-    return;
+    return true;
+  }
+
+  if (engine::IsKeyPressed(KEY_ESCAPE)) {
+    m_game->m_current_screen = std::make_shared<ModelChooseScreen>(m_game);
+    // This is needed to update the key pressed state, otherwise the "Escape"
+    // key will be considered pressed in the model choose screen, causing it to
+    // immediately exit.
+    m_game->m_device.draw_frame();
+    return true;
   }
 
   // Update the model.
@@ -408,6 +423,7 @@ void SimulatorScreen::frame(float time_delta) {
   conf->dashboard()->update_ui(conf->controls()->get_telemetry(),
                                conf->model()->get_telemetry());
   m_game->m_device.draw_frame();
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -492,7 +508,7 @@ ControllerConfigScreen::ControllerConfigScreen(
   }
 }
 
-void ControllerConfigScreen::frame(float time_delta) {
+bool ControllerConfigScreen::frame(float time_delta) {
   UserInput user_input = m_game->m_input_receiver.update_input(time_delta);
 
   // Update from user keyboard input.
@@ -563,7 +579,7 @@ void ControllerConfigScreen::frame(float time_delta) {
 
   if (engine::IsKeyPressed(KEY_ENTER)) {
     m_game->m_current_screen = m_return_to_screen;
-    return;
+    return true;
   }
 
   if (m_game->m_input_receiver.get_config().active_joystick_name == "") {
@@ -594,6 +610,7 @@ void ControllerConfigScreen::frame(float time_delta) {
   }
 
   m_game->m_device.draw_frame();
+  return true;
 }
 
 void ControllerConfigScreen::cycle_active_joystick(int amount) {
@@ -687,10 +704,10 @@ Game::Game() : m_device(1440, 900, "rcsim - RC Simulator"), m_input_receiver() {
   m_current_screen = std::make_shared<LoadingScreen>(this);
 }
 
-void Game::frame() {
+bool Game::frame() {
   float time_delta = ::GetFrameTime();
   time_delta = time_delta == 0 ? 1e-3 : time_delta;
   time_delta = time_delta > (1. / 30) ? (1. / 30) : time_delta;
 
-  m_current_screen->frame(time_delta);
+  return m_current_screen->frame(time_delta);
 }

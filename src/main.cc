@@ -16,10 +16,7 @@ int main() {
   emscripten_set_main_loop_arg(
       [](void *arg) { static_cast<Game *>(arg)->frame(); }, &game, 0, true);
 #else
-  while (!WindowShouldClose()) {
-    // calculate the delta time, and make sure it does not exceed 100 fps
-    game.frame();
-  }
+  while (game.frame());
 #endif
 
   return 0;

@@ -47,6 +47,7 @@ private:
       .yaw_channel = {5, false},
       .throttle_channel = {2, true},
   };
+  float m_keyboard_throttle_velocity = 1.0;
 };
 
 #endif //  __INTPUT_EVENT_RECIEVER_H__

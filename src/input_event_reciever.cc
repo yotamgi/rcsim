@@ -69,10 +69,19 @@ void UserInputReciever::update_controls_from_keyboard(float time_delta) {
   update_value(m_user_input.controls_input.yaw_stick, KEY_D, KEY_A,
                change_amount);
 
-  if (engine::IsKeyDown(KEY_W))
-    m_user_input.controls_input.throttle_stick += time_delta;
-  else if (engine::IsKeyDown(KEY_S))
-    m_user_input.controls_input.throttle_stick -= time_delta;
+  if (engine::IsKeyDown(KEY_W)) {
+    m_user_input.controls_input.throttle_stick +=
+        time_delta * m_keyboard_throttle_velocity;
+    m_keyboard_throttle_velocity += time_delta * 2;
+  } else if (engine::IsKeyDown(KEY_S)) {
+    m_user_input.controls_input.throttle_stick -=
+        time_delta * m_keyboard_throttle_velocity;
+    m_keyboard_throttle_velocity += time_delta * 2;
+  } else {
+    // Make accelerating throttle responsiveness, with sensitive short presses
+    // and more course long presses.
+    m_keyboard_throttle_velocity = 1.0;
+  }
 
   m_user_input.controls_input.throttle_stick =
       m_user_input.controls_input.throttle_stick > 1

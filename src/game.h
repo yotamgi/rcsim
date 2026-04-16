@@ -22,8 +22,13 @@ class LoadingScreen : public GameScreen {
   /** Loads the global game state and presents a loading screen while doing so.
    */
 public:
-  LoadingScreen(Game *game) : GameScreen(game) {}
+  LoadingScreen(Game *game);
+  ~LoadingScreen();
   void frame(float time_delta);
+  std::shared_ptr<engine::Square2D> m_loading_background;
+  std::shared_ptr<engine::Text2D> m_loading_headline;
+  std::shared_ptr<engine::Text2D> m_loading_text;
+  int m_current_stage = 0;
 };
 
 class ModelChooseScreen : public GameScreen {

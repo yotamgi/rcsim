@@ -7,85 +7,109 @@ using Origin = engine::Rect2D::Origin;
 // Loading Screen implementation.
 ////////////////////////////////////////////////////////////////////////////////
 
-void LoadingScreen::frame(float time_delta) {
-
+LoadingScreen::LoadingScreen(Game *game) : GameScreen(game) {
   // Update Loading texture.
-  auto loading_bg =
+  m_loading_background =
       m_game->m_device.create_square2d(engine::Color(230, 230, 230, 255));
-  loading_bg->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
-  auto loading_headline = m_game->m_device.create_text2d(
+  m_loading_background->set_position(engine::Rect2D{0, 0, 1.0f, 1.0f});
+  m_loading_headline = m_game->m_device.create_text2d(
       "Loading...",
       engine::Text2D::FontOptions{80, engine::Color(0, 0, 0, 0xff)});
-  loading_headline->set_position(0.5f, 0.1f, Origin::MID, Origin::MID);
-  auto loading_text = m_game->m_device.create_text2d(
-      "\n\nLoading setting...\n",
-      engine::Text2D::FontOptions{20, engine::Color(0, 0, 0, 0xff)});
-  loading_text->set_position(0.5f, 0.2f, Origin::MID, Origin::MIN);
+  m_loading_text = m_game->m_device.create_text2d(
+      "", engine::Text2D::FontOptions{20, engine::Color(0, 0, 0, 0xff)});
+  m_loading_headline->set_position(0.5f, 0.1f, Origin::MID, Origin::MID);
+  m_loading_text->set_position(0.5f, 0.2f, Origin::MID, Origin::MIN);
+}
+
+void LoadingScreen::frame(float time_delta) {
+
+  switch (m_current_stage) {
+  case 0:
+    m_loading_text->set_text("\n\nLoading setting...\n");
+    break;
+  case 1: {
+    m_game->m_sun_light = m_game->m_device.create_light(
+        engine::LIGHT_DIRECTIONAL, raylib::Vector3(100, 200, -50),
+        raylib::Vector3(0, 0, 0), raylib::Color(130, 130, 130, 255));
+
+    m_game->m_light_bulb = m_game->m_device.create_light(
+        engine::LIGHT_POINT, raylib::Vector3(0.0, 1.5, 0.8),
+        raylib::Vector3(0, 0, 0), raylib::Color(150, 150, 150, 255));
+
+    // Load the stadium model.
+    std::shared_ptr<engine::Model> stadium_model = m_game->m_device.load_model(
+        "resources/media/BasketballStadium/source/63BasketBallZemin.obj");
+    raylib::Material *stadium_material = stadium_model->get_materials()[0];
+    m_game->m_stadium_texture = raylib::Texture(
+        "resources/media/BasketballStadium/textures/BasketZemin_Color.png");
+    m_game->m_stadium_texture.GenMipmaps();
+    m_game->m_stadium_texture.SetFilter(TEXTURE_FILTER_TRILINEAR);
+    stadium_material->SetTexture(MATERIAL_MAP_DIFFUSE,
+                                 m_game->m_stadium_texture);
+
+    stadium_model->set_transform(engine::mat4::Translate(0, 0, 0) *
+                                 engine::mat4::Scale(4, 4, 4));
+
+    // Add some bananas for scale.
+    m_game->m_device.add_shadow_group(
+        {m_game->add_banana(engine::vec3(-0.5, 0.05, 0.2),
+                            engine::vec3(90, 73, 0)),
+         m_game->add_banana(engine::vec3(0.9, 0.05, 0.3),
+                            engine::vec3(90, 40, 0)),
+         m_game->add_banana(engine::vec3(0.4, 0.05, 0.0),
+                            engine::vec3(90, 0, 0))},
+        512, 2);
+  } break;
+
+  case 2:
+    m_loading_text->set_text(m_loading_text->get_text() + "Loading skies...\n");
+    break;
+  case 3:
+
+    m_game->m_device.add_skybox_from_6_images(
+        "resources/media/skybox/px.png", "resources/media/skybox/nx.png",
+        "resources/media/skybox/py.png", "resources/media/skybox/ny.png",
+        "resources/media/skybox/pz.png", "resources/media/skybox/nz.png");
+    break;
+
+  case 4:
+    m_loading_text->set_text(m_loading_text->get_text() +
+                             "Loading helicopter...\n");
+    break;
+  case 5: {
+    m_game->m_device.draw_frame();
+    std::shared_ptr<Configuration> heli_conf =
+        std::make_shared<BellHeliConf>(&m_game->m_device);
+    heli_conf->model()->set_visible(false);
+    heli_conf->dashboard()->set_visible(false);
+    m_game->m_model_confs.push_back(heli_conf);
+  } break;
+
+  case 6:
+    m_loading_text->set_text(m_loading_text->get_text() +
+                             "Loading airplane...\n");
+    break;
+  case 7:
+    std::shared_ptr<Configuration> plane_conf =
+        std::make_shared<CessnaConf>(&m_game->m_device);
+    plane_conf->model()->set_visible(false);
+    plane_conf->dashboard()->set_visible(false);
+    m_game->m_model_confs.push_back(plane_conf);
+
+    m_game->m_chosen_model = 0;
+
+    // Change to next screen - the simulator.
+    m_game->m_current_screen = std::make_shared<ModelChooseScreen>(m_game);
+    break;
+  }
   m_game->m_device.draw_frame();
+  m_current_stage++;
+}
 
-  m_game->m_sun_light = m_game->m_device.create_light(
-      engine::LIGHT_DIRECTIONAL, raylib::Vector3(100, 200, -50),
-      raylib::Vector3(0, 0, 0), raylib::Color(130, 130, 130, 255));
-
-  m_game->m_light_bulb = m_game->m_device.create_light(
-      engine::LIGHT_POINT, raylib::Vector3(0.0, 1.5, 0.8),
-      raylib::Vector3(0, 0, 0), raylib::Color(150, 150, 150, 255));
-
-  // Load the stadium model.
-  std::shared_ptr<engine::Model> stadium_model = m_game->m_device.load_model(
-      "resources/media/BasketballStadium/source/63BasketBallZemin.obj");
-  raylib::Material *stadium_material = stadium_model->get_materials()[0];
-  m_game->m_stadium_texture = raylib::Texture(
-      "resources/media/BasketballStadium/textures/BasketZemin_Color.png");
-  m_game->m_stadium_texture.GenMipmaps();
-  m_game->m_stadium_texture.SetFilter(TEXTURE_FILTER_TRILINEAR);
-  stadium_material->SetTexture(MATERIAL_MAP_DIFFUSE, m_game->m_stadium_texture);
-
-  stadium_model->set_transform(engine::mat4::Translate(0, 0, 0) *
-                               engine::mat4::Scale(4, 4, 4));
-
-  // Add some bananas for scale.
-  m_game->m_device.add_shadow_group(
-      {m_game->add_banana(engine::vec3(-0.5, 0.05, 0.2),
-                          engine::vec3(90, 73, 0)),
-       m_game->add_banana(engine::vec3(0.9, 0.05, 0.3),
-                          engine::vec3(90, 40, 0)),
-       m_game->add_banana(engine::vec3(0.4, 0.05, 0.0),
-                          engine::vec3(90, 0, 0))},
-      512, 2);
-
-  // Add skybox.
-  loading_text->set_text(loading_text->get_text() + "Loading skies...\n");
-  m_game->m_device.draw_frame();
-
-  m_game->m_device.add_skybox_from_6_images(
-      "resources/media/skybox/px.png", "resources/media/skybox/nx.png",
-      "resources/media/skybox/py.png", "resources/media/skybox/ny.png",
-      "resources/media/skybox/pz.png", "resources/media/skybox/nz.png");
-
-  loading_text->set_text(loading_text->get_text() + "Loading helicopter...\n");
-  m_game->m_device.draw_frame();
-  std::shared_ptr<Configuration> heli_conf =
-      std::make_shared<BellHeliConf>(&m_game->m_device);
-  heli_conf->model()->set_visible(false);
-  heli_conf->dashboard()->set_visible(false);
-  m_game->m_model_confs.push_back(heli_conf);
-  loading_text->set_text(loading_text->get_text() + "Loading airplane...\n");
-  m_game->m_device.draw_frame();
-  std::shared_ptr<Configuration> plane_conf =
-      std::make_shared<CessnaConf>(&m_game->m_device);
-  plane_conf->model()->set_visible(false);
-  plane_conf->dashboard()->set_visible(false);
-  m_game->m_model_confs.push_back(plane_conf);
-
-  m_game->m_chosen_model = 0;
-
-  m_game->m_device.delete_drawable2d(loading_headline);
-  m_game->m_device.delete_drawable2d(loading_text);
-  m_game->m_device.delete_drawable2d(loading_bg);
-
-  // Change to next screen - the simulator.
-  m_game->m_current_screen = std::make_shared<ModelChooseScreen>(m_game);
+LoadingScreen::~LoadingScreen() {
+  m_game->m_device.delete_drawable2d(m_loading_headline);
+  m_game->m_device.delete_drawable2d(m_loading_text);
+  m_game->m_device.delete_drawable2d(m_loading_background);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +204,8 @@ void ModelChooseScreen::frame(float time_delta) {
     m_game->m_current_screen =
         std::make_shared<TransitionToSimulatorScreen>(m_game);
 
-    // For some reason, deleting the texts causes a crash. Hiding them instead.
+    // For some reason, deleting the texts causes a crash. Hiding them
+    // instead.
     m_game->m_device.delete_drawable2d(m_model_name_text);
     m_game->m_device.delete_drawable2d(m_model_summary_text);
     m_game->m_device.delete_drawable2d(m_separator_line);

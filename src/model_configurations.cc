@@ -58,7 +58,7 @@ std::string BellHeliConf::get_summary() const {
 
 void BellHeliConf::reset_for_animation() {
   m_model->get_servo(HELI_CHANNEL_THROTTLE).reset(0.3);
-  m_model->set_rotor_rps(15.);
+  m_model->set_rotor_rps(10.);
   m_model->set_rotation(engine::mat4::RotateY(PI / 2));
   m_flight_controller->reset(engine::vec3(0, 0, 0));
 }
@@ -71,7 +71,7 @@ void BellHeliConf::animate(float time_delta, UserInput user_input) {
   for (size_t channel = 0; channel < servo_data.size(); channel++) {
     m_model->get_servo(channel).update(servo_data[channel], time_delta);
   }
-  m_model->update(time_delta, engine::vec3(-1, 0, 0));
+  m_model->update(time_delta, engine::vec3(0, 0, 0));
   m_model->set_velocity(engine::vec3(0, 0, 0));
 }
 

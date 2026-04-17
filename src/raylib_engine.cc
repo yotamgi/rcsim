@@ -427,7 +427,7 @@ void RaylibDevice::ShadowGroup::write_shadowmap_to_shader(
   rlEnableTexture(m_shadowmap.texture.id);
 
   rlSetUniform(shader.GetLocation(
-                   TextFormat("shadowMaps[%i].shadowMap", m_shadow_index)),
+                   TextFormat("shadowMapsTextures[%i]", m_shadow_index)),
                &slot, SHADER_UNIFORM_INT, 1);
   shader.SetValue(shader.GetLocation(
                       TextFormat("shadowMaps[%i].resolution", m_shadow_index)),

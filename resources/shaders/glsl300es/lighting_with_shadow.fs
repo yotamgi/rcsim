@@ -38,13 +38,15 @@ uniform vec3 viewPos;
 struct ShadowMap {
     int enabled;
     mat4 lightVP;
-    sampler2D shadowMap;
     int resolution;
 };
 
 // Shadowmap inputs.
 uniform int outputDepth;
 uniform ShadowMap shadowMaps[MAX_SHADOWMAPS];
+
+// Putting textures in a struct seems to not be supported in GLSL, so workaround this.
+uniform sampler2D shadowMapsTextures[MAX_SHADOWMAPS];
 
 void main()
 {
@@ -122,7 +124,18 @@ void main()
                     {
                         for (int y = -2; y <= 2; y++)
                         {
-                            float sampleDepth = texture(shadowMaps[shadowmap_index].shadowMap, sampleCoords + texelSize*vec2(x, y)).r;
+                            // Since it is not possible to use dynamic indexing on an array of 
+                            // samplers, workaround this.
+                            float sampleDepth;
+                            if (shadowmap_index == 0) {
+                                sampleDepth = texture(shadowMapsTextures[0], sampleCoords + texelSize*vec2(x, y)).r;
+                            } else if (shadowmap_index == 1) {
+                                sampleDepth = texture(shadowMapsTextures[1], sampleCoords + texelSize*vec2(x, y)).r;
+                            } else if (shadowmap_index == 2) {
+                                sampleDepth = texture(shadowMapsTextures[2], sampleCoords + texelSize*vec2(x, y)).r;
+                            } else if (shadowmap_index == 3) {
+                                sampleDepth = texture(shadowMapsTextures[3], sampleCoords + texelSize*vec2(x, y)).r;
+                            }
                             if (curDepth - bias > sampleDepth) shadowCounter++;
                         }
                     }

@@ -27,7 +27,7 @@ public:
     Channel throttle_channel;
   };
 
-  std::vector<std::string> get_available_joysticks() const;
+  std::vector<std::string> get_available_joysticks();
   Config &get_config() { return m_config; }
 
 private:

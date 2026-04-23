@@ -2,7 +2,8 @@
 
 const int NUM_AVAILABLE_CURVES = 2;
 
-std::vector<std::string> UserInputReciever::get_available_joysticks() const {
+std::vector<std::string> UserInputReciever::get_available_joysticks() {
+  m_joysticks = engine::Joystick::get_available();
   std::vector<std::string> joystick_names;
   joystick_names.push_back(""); // Add empty string for keyboard.
   for (const auto &joystick : m_joysticks) {

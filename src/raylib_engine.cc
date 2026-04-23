@@ -773,8 +773,6 @@ static std::vector<int> get_rc_controllers() {
       if (rc_controller_priority == 2) {
         return {jid};
       } else if (rc_controller_priority == 1) {
-        std::cout << "Found joystick " << jid << ": "
-                  << glfwGetJoystickName(jid) << std::endl;
         result.push_back(jid);
       }
     }

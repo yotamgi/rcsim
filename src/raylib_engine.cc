@@ -730,10 +730,6 @@ RaylibDevice::~RaylibDevice() {
 // Joystick control
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(PLATFORM_DESKTOP)
-// Speial handling for platform desktop, since raylib doesn't seem to be able
-// to recognize simple joysticks.
-
 static int is_rc_control_heuristic(int jid) {
 
   // Num axes heuristic.
@@ -803,29 +799,5 @@ std::vector<float> Joystick::get_axes() const {
   const float *axes = glfwGetJoystickAxes(m_jid, &count);
   return std::vector<float>(axes, axes + count);
 }
-
-#else
-// For other platforms, use raylib's joystick handling.
-
-std::map<std::string, Joystick> Joystick::get_available() {
-  std::map<std::string, Joystick> joysticks;
-  for (int jid = 0; jid < 4; jid++) {
-    if (IsGamepadAvailable(jid)) {
-      joysticks.insert({GetGamepadName(jid), Joystick{jid}});
-    }
-  }
-  return joysticks;
-}
-
-std::vector<float> Joystick::get_axes() const {
-  std::vector<float> axes;
-  int axis_count = GetGamepadAxisCount(m_jid);
-  for (int i = 0; i < axis_count; i++) {
-    axes.push_back(GetGamepadAxisMovement(m_jid, i));
-  }
-  return axes;
-}
-
-#endif
 
 } // namespace engine

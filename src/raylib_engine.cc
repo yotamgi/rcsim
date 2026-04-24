@@ -739,10 +739,12 @@ static int is_rc_control_heuristic(int jid) {
     return false;
   }
 
+  #ifndef PLATFORM_WEB
   // If is considered a gamepad by GLFW, prefer it.
   if (glfwJoystickIsGamepad(jid)) {
     return 2;
   }
+  #endif
 
   // Name heuristic.
   std::string name(glfwGetJoystickName(jid));

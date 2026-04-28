@@ -274,14 +274,14 @@ bool TransitionToSimulatorScreen::frame(float time_delta) {
   conf->model()->update(time_delta, engine::vec3(0, 0, 0));
 
   // Lighting.
-  engine::Color ambient_color =
-      m_ambient_color_from * (1 - alpha) + m_ambient_color_to * alpha;
+  engine::Color ambient_color = engine::color_interpolate(
+      m_ambient_color_from, m_ambient_color_to, alpha);
   m_game->m_device.set_ambient_light(ambient_color);
-  engine::Color sun_light_color =
-      m_sun_light_color_from * (1 - alpha) + m_sun_light_color_to * alpha;
+  engine::Color sun_light_color = engine::color_interpolate(
+      m_sun_light_color_from, m_sun_light_color_to, alpha);
   m_game->m_sun_light->set_color(sun_light_color);
-  engine::Color lightbulb_color =
-      m_lightbulb_color_from * (1 - alpha) + m_lightbulb_color_to * alpha;
+  engine::Color lightbulb_color = engine::color_interpolate(
+      m_lightbulb_color_from, m_lightbulb_color_to, alpha);
   m_game->m_light_bulb->set_color(lightbulb_color);
   m_game->m_device.draw_frame();
   return true;

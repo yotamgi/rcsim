@@ -21,7 +21,7 @@ FetchContent_MakeAvailable(raylib)
 FetchContent_Declare(
   raylib_cpp
   GIT_REPOSITORY https://github.com/RobLoach/raylib-cpp.git
-  GIT_TAG v6.0.0
+  GIT_TAG v5.5.0
 )
 FetchContent_MakeAvailable(raylib_cpp)
 

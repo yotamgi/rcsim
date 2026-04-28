@@ -323,7 +323,8 @@ SimulatorScreen::SimulatorScreen(Game *game)
           m_game->m_device.create_square2d(engine::Color(0, 0, 0, 50))),
       m_full_help_text(m_game->m_device.create_text2d(
           FULL_HELP, engine::Text2D::FontOptions{20},
-          m_full_help_text_background)) {
+          m_full_help_text_background)),
+      m_wind_rand(0.5f, 1.0f) {
   for (int i = 0; i < m_game->m_model_confs.size(); i++) {
     std::shared_ptr<Configuration> conf = m_game->m_model_confs[i];
     bool visible = (i == m_game->m_chosen_model);
@@ -385,7 +386,9 @@ bool SimulatorScreen::frame(float time_delta) {
   for (size_t channel = 0; channel < servo_data.size(); channel++) {
     conf->model()->get_servo(channel).update(servo_data[channel], time_delta);
   }
-  conf->model()->update(time_delta, engine::vec3(0, 0, 0));
+  engine::vec3 wind = engine::vec3(0, 0, -2) +
+                      m_wind_rand.update(time_delta) * engine::vec3(2, 1, 2);
+  conf->model()->update(time_delta, wind);
 
   // Apply external force on the helicopter touch points.
   float model_mass = conf->model()->get_mass();

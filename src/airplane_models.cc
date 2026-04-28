@@ -257,11 +257,11 @@ Trainer::Trainer(engine::RaylibDevice *device)
                   {
                       // Wheels:
                       {.pos = engine::vec3(0.0, -0.26, 0.3),
-                       .friction_coeff = diag2(15.0f, 0.3f)},
+                       .friction_coeff = diag2(40.0f, 0.3f)},
                       {.pos = engine::vec3(0.23, -0.26, -0.07),
-                       .friction_coeff = diag2(15.0f, 0.3f)},
+                       .friction_coeff = diag2(40.0f, 0.3f)},
                       {.pos = engine::vec3(-0.23, -0.26, -0.07),
-                       .friction_coeff = diag2(15.0f, 0.3f)},
+                       .friction_coeff = diag2(40.0f, 0.3f)},
                       // Wing touchpoints:
                       {.pos = engine::vec3(1.0, 0.12, 0.14),
                        .friction_coeff = diag2(3.0f, 3.0f)},

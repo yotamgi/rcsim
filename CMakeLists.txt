@@ -21,25 +21,25 @@ FetchContent_MakeAvailable(raylib)
 FetchContent_Declare(
   raylib_cpp
   GIT_REPOSITORY https://github.com/RobLoach/raylib-cpp.git
-  GIT_TAG v5.5.0
+  GIT_TAG v6.0.0
 )
 FetchContent_MakeAvailable(raylib_cpp)
 
 # 6. Define your executable
-add_executable(${PROJECT_NAME} 
-    src/main.cc
-    src/game.cc
-    src/raylib_engine.cc
-    src/input_event_reciever.cc
-    src/airplane.cc
-    src/heli.cc
-    src/smooth_rand.cc
-    src/flight_controller.cc
-    src/airplane_models.cc
-    src/flying_object.cc
-    src/controls.cc
-    src/model_configurations.cc
-    src/dashboard.cc
+add_executable(${PROJECT_NAME}
+  src/main.cc
+  src/game.cc
+  src/raylib_engine.cc
+  src/input_event_reciever.cc
+  src/airplane.cc
+  src/heli.cc
+  src/smooth_rand.cc
+  src/flight_controller.cc
+  src/airplane_models.cc
+  src/flying_object.cc
+  src/controls.cc
+  src/model_configurations.cc
+  src/dashboard.cc
 )
 
 # 7. Link against raylib

@@ -127,6 +127,7 @@ private:
     std::shared_ptr<engine::Text2D> channel_name_text;
     std::shared_ptr<engine::Text2D> channel_number_text;
     std::shared_ptr<engine::Text2D> reverse_text;
+    std::shared_ptr<engine::Text2D> range_text;
     std::shared_ptr<engine::Square2D> channel_value_background;
     std::shared_ptr<engine::Square2D> channel_value_bar;
   };

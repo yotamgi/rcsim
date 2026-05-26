@@ -465,7 +465,7 @@ ControllerConfigScreen::ControllerConfigScreen(
       engine::Rect2D{0.05f, 0.2f, 0.9f, CONFIG_FONT_SIZE + 10});
   m_choose_gamepad_text->set_position(0.05f, 0.1f, Origin::MIN, Origin::MIN);
   m_channel_config_background->set_position(
-      engine::Rect2D{0.1f, 0.35f, 0.8f, 0.4f});
+      engine::Rect2D{0.05f, 0.35f, 0.9f, 0.4f});
   m_help_text_background->set_position(
       engine::Rect2D{0.5f, 0.9f, 0.5f, 0.15f, Origin::MID, Origin::MID});
   m_help_text->set_position(0.5f, 0.5f, Origin::MID, Origin::MID);
@@ -491,6 +491,11 @@ ControllerConfigScreen::ControllerConfigScreen(
         engine::Text2D::FontOptions{CONFIG_FONT_SIZE,
                                     engine::Color(0, 0, 0, 255)},
         channel_config.background);
+    channel_config.range_text = m_game->m_device.create_text2d(
+        "half-range",
+        engine::Text2D::FontOptions{CONFIG_FONT_SIZE,
+                                    engine::Color(0, 0, 0, 255)},
+        channel_config.background);
     channel_config.channel_value_background = m_game->m_device.create_square2d(
         engine::Color(255, 255, 255, 255), channel_config.background);
     channel_config.channel_value_bar = m_game->m_device.create_square2d(
@@ -502,14 +507,25 @@ ControllerConfigScreen::ControllerConfigScreen(
         0.05f, 1.0f / 8 + float(i) / 4, 0.9f, CONFIG_FONT_SIZE + 10});
     channel_config.channel_name_text->set_position(5, 0.5f, Origin::MIN,
                                                    Origin::MID);
-    channel_config.channel_number_text->set_position(0.25f, 0.5f, Origin::MIN,
+    channel_config.channel_number_text->set_position(0.18f, 0.5f, Origin::MIN,
                                                      Origin::MID);
-    channel_config.reverse_text->set_position(0.5f, 0.57f, Origin::MIN,
+    channel_config.reverse_text->set_position(0.38f, 0.5f, Origin::MIN,
                                               Origin::MID);
+    channel_config.range_text->set_position(0.55f, 0.5f, Origin::MIN,
+                                            Origin::MID);
     channel_config.channel_value_background->set_position(
         engine::Rect2D{0.75f, 0.05f, 0.24f, 0.9f});
     channel_config.channel_value_bar->set_position(
         engine::Rect2D{0.05f, 0.1f, 0.9f, 0.8f});
+  }
+}
+
+static void toggle_range(UserInputReciever::Config::Channel &conf) {
+  conf.input_range_to = 1.0f;
+  if (conf.input_range_from == -1.0f) {
+    conf.input_range_from = 0.0f;
+  } else {
+    conf.input_range_from = -1.0f;
   }
 }
 
@@ -582,7 +598,24 @@ bool ControllerConfigScreen::frame(float time_delta) {
     }
   }
 
-  if (engine::IsKeyPressed(KEY_ENTER)) {
+  if (IsKeyPressed(KEY_D)) {
+    switch (m_user_focus) {
+    case 1:
+      toggle_range(m_game->m_input_receiver.get_config().throttle_channel);
+      break;
+    case 2:
+      toggle_range(m_game->m_input_receiver.get_config().pitch_channel);
+      break;
+    case 3:
+      toggle_range(m_game->m_input_receiver.get_config().roll_channel);
+      break;
+    case 4:
+      toggle_range(m_game->m_input_receiver.get_config().yaw_channel);
+      break;
+    }
+  }
+
+  if (engine::IsKeyPressed(KEY_ENTER) | engine::IsKeyPressed(KEY_ESCAPE)) {
     m_game->m_current_screen = m_return_to_screen;
     return true;
   }
@@ -611,7 +644,8 @@ bool ControllerConfigScreen::frame(float time_delta) {
                           "Keyboard\nUse Enter to confirm.");
   } else {
     m_help_text->set_text("Use left/right to change channel number.\nPress 'R' "
-                          "to toggle reverse.\nUse Enter to confirm.");
+                          "to toggle reverse.\nPress 'D' to toggle channel "
+                          "half-range.\nUse Enter to confirm.");
   }
 
   m_game->m_device.draw_frame();
@@ -663,6 +697,13 @@ void ControllerConfigScreen::update_channel_config(
     ui_config.reverse_text->set_color(engine::Color(128, 128, 128, 128));
   }
 
+  if (channel_config.input_range_from == -1.0f &&
+      channel_config.input_range_to == 1.0f) {
+    ui_config.range_text->set_color(engine::Color(128, 128, 128, 128));
+  } else {
+    ui_config.range_text->set_color(engine::Color(255, 0, 0, 255));
+  }
+
   engine::Rect2D bar_position = ui_config.channel_value_bar->get_position();
   bar_position.width = (value + 1) / 2 * 0.9f;
   ui_config.channel_value_bar->set_position(bar_position);
@@ -681,6 +722,7 @@ ControllerConfigScreen::~ControllerConfigScreen() {
     m_game->m_device.delete_drawable2d(channel_config.channel_name_text);
     m_game->m_device.delete_drawable2d(channel_config.channel_number_text);
     m_game->m_device.delete_drawable2d(channel_config.reverse_text);
+    m_game->m_device.delete_drawable2d(channel_config.range_text);
     m_game->m_device.delete_drawable2d(channel_config.channel_value_background);
     m_game->m_device.delete_drawable2d(channel_config.channel_value_bar);
   }

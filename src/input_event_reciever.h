@@ -20,6 +20,8 @@ public:
     struct Channel {
       int joystick_channel;
       bool reverse;
+      float input_range_from = -1.;
+      float input_range_to = 1.;
     };
     Channel pitch_channel;
     Channel roll_channel;

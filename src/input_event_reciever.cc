@@ -44,8 +44,16 @@ get_channel(const UserInputReciever::Config::Channel &channel_config,
       channel_config.joystick_channel < 0) {
     return 0;
   }
-  return axes[channel_config.joystick_channel] *
+  // Change the channel value such that the output will be fron -1 to 1
+  // regardless of the inpt range.
+  float strech =
+      2 / (channel_config.input_range_to - channel_config.input_range_from);
+  float move = -1 - channel_config.input_range_from;
+  float value = (axes[channel_config.joystick_channel] * strech + move) *
          (channel_config.reverse ? -1 : 1);
+  value = value > 1 ? 1 : value;
+  value = value < -1 ? -1 : value;
+  return value;
 }
 
 void UserInputReciever::update_controls_from_joystick() {

@@ -21,10 +21,6 @@ UserInputReciever::UserInputReciever()
   m_user_input.controls_input.active_curve_index = 0;
   m_user_input.controls_input.gyro_6dof = true;
   m_user_input.controls_input.throttle_hold = false;
-
-  if (m_joysticks.size() == 1) {
-    m_config.active_joystick_name = m_joysticks.begin()->first;
-  }
 }
 
 UserInput UserInputReciever::update_input(float time_delta) {

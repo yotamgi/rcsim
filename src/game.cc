@@ -1,7 +1,28 @@
 #include "game.h"
 #include <algorithm>
+#include <iostream>
+#include <map>
 
 using Origin = engine::Rect2D::Origin;
+
+const std::vector<std::pair<std::string, UserInputReciever::Config>>
+    JOYSTICK_CONFIG_LIST = {
+        {"ART TECH GAME.",
+         UserInputReciever::Config{.pitch_channel = {1, true},
+                                   .roll_channel = {0, false},
+                                   .yaw_channel = {5, false},
+                                   .throttle_channel = {2, true}}},
+        {"PengFei Model RC Simulator - XTR",
+         UserInputReciever::Config{.pitch_channel = {0, false},
+                                   .roll_channel = {3, false},
+                                   .yaw_channel = {4, false},
+                                   .throttle_channel = {1, false, 0, 1}}},
+        {"", UserInputReciever::Config{.pitch_channel = {1, true},
+                                       .roll_channel = {2, true},
+                                       .yaw_channel = {3, true},
+                                       .throttle_channel = {0, true}}}
+        // no-indent
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Loading Screen implementation.
@@ -655,12 +676,26 @@ bool ControllerConfigScreen::frame(float time_delta) {
 void ControllerConfigScreen::cycle_active_joystick(int amount) {
   auto available_joysticks = m_game->m_input_receiver.get_available_joysticks();
   UserInputReciever::Config &config = m_game->m_input_receiver.get_config();
-  config.active_joystick_name =
+  std::string next_joystick_name =
       available_joysticks[(std::find(available_joysticks.begin(),
                                      available_joysticks.end(),
                                      config.active_joystick_name) -
                            available_joysticks.begin() + amount) %
                           available_joysticks.size()];
+
+  for (const auto &channel_config : JOYSTICK_CONFIG_LIST) {
+    std::cout << "Checking if " << channel_config.first << " is prefix of "
+              << next_joystick_name << std::endl;
+    // Check if the config name is a prefix of the joystick name.
+    if (next_joystick_name.rfind(channel_config.first, 0) == 0) {
+      std::cout << "Matched joystick config: " << channel_config.first
+                << std::endl;
+      config = channel_config.second;
+      config.active_joystick_name = next_joystick_name;
+      break;
+    }
+  }
+  return;
 }
 
 void ControllerConfigScreen::update_from_input_config(
